@@ -1,9 +1,17 @@
 @echo off
-echo Compiling OpenGL Project...
-g++ -std=c++17 src/main.cpp src/glad.c -Iinclude -Llib -lglfw3 -lopengl32 -lgdi32 -o main.exe
+echo ===================================================
+echo  Building Cinematic Halloween Haunted House (OpenGL)
+echo ===================================================
+
+g++ -std=c++17 src/main.cpp src/glad.c -Iinclude -Isrc -Llib -lglfw3 -lopengl32 -lgdi32 -luser32 -lshell32 -o HauntedHouse.exe
+
 if %ERRORLEVEL% EQU 0 (
-    echo [SUCCESS] Build succeeded! Running main.exe...
-    main.exe
+    echo.
+    echo [BUILD SUCCESS] Launching HauntedHouse.exe...
+    echo.
+    HauntedHouse.exe
 ) else (
-    echo [ERROR] Build failed!
+    echo.
+    echo [BUILD FAILED] Check compilation errors above.
+    pause
 )

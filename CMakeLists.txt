@@ -1,16 +1,75 @@
 cmake_minimum_required(VERSION 3.15)
-project(OpenGLProject C CXX)
+project(HalloweenHauntedHouse C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include)
-link_directories(lib)
-
-add_executable(main src/main.cpp src/glad.c)
-
-target_link_libraries(main PRIVATE
-    glfw3
-    opengl32
-    gdi32
+# Include header paths (GLAD, GLFW, GLM, stb_image)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+# Static and dynamic library search path
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+# Source files
+set(SOURCES
+    src/main.cpp
+    src/glad.c
+)
+
+# Headers for IDE project tree visibility
+set(HEADERS
+    src/Shader.h
+    src/Camera.h
+)
+
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+
+# Link platform and OpenGL libraries
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        glfw3
+        opengl32
+        gdi32
+        user32
+        shell32
+    )
+elseif (APPLE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        glfw
+        "-framework OpenGL"
+        "-framework Cocoa"
+        "-framework IOKit"
+        "-framework CoreVideo"
+    )
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        glfw
+        GL
+        X11
+        pthread
+        Xrandr
+        Xi
+        dl
+    )
+endif()
+
+# Copy shaders and assets to the build executable directory automatically
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
+)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+)
+
+# On Windows, copy glfw3.dll if it exists in the root or lib
+if (WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/glfw3.dll")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/glfw3.dll $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    )
+endif()

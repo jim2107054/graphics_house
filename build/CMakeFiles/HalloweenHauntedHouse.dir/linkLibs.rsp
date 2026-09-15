@@ -1,0 +1,1 @@
+  -L"Y:/4-1/Computer Graphics/oengl/opengl-project/opengl-project/lib"  -lglfw3 -lopengl32 -lgdi32 -luser32 -lshell32 -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 
