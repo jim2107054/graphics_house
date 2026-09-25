@@ -9,10 +9,12 @@
 
 ## 🎬 Project Overview
 
-An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scratch in C++ and OpenGL. The project visually demonstrates all **FOUR core computer graphics light models** operating concurrently within a single cohesive, atmospheric environment inspired by classic gothic horror aesthetics.
+An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scratch in C++ and OpenGL. The project visually demonstrates all **FOUR core computer graphics light models** operating concurrently with **Texture Mapping (`GL_MODULATE`)** within a single cohesive, atmospheric environment inspired by classic gothic horror aesthetics.
 
 ### 🌟 Key Visual & Technical Highlights
 - **4 Distinct Light Types** working simultaneously, individually toggleable with live status UI.
+- **Texture Mapping with `GL_MODULATE`**: Weathered wood planks, slate roof shingles, wet dirt/mud ground, cobblestone pathway, gnarly bark, peeling paint & rust on the car, and celestial moon.
+- **Robust Fallback**: Uses `stb_image` to load PNG/JPG/BMP textures from `textures/`. If an image file is missing, it dynamically synthesizes procedural textures in memory so it never crashes!
 - **Atmospheric Fog (`GL_FOG` - `GL_EXP2`)** with dark blue midnight horizon matching.
 - **Dynamic Planar Projected Shadows** driven by low-angle moonlight projection matrices.
 - **Sinister Carved Jack-o'-Lanterns** with glowing eyes, toothy mouths, and internal candlelight halos.
@@ -21,6 +23,30 @@ An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scr
 - **Abandoned Environment**: Rusted metal car catching specular highlights, bare twisted trees, rocks, tombstones, and crooked picket fence.
 - **First-Person Camera** (WASD + Mouse Look) and **Cinematic Auto-Tour Mode (`C`)**.
 - **2D HUD Overlay & Title Screen** with glowing borders, live FPS counter, reticle, and vignette.
+
+---
+
+## 📁 Where to Put Texture Files
+
+Image files belong in the **`textures/`** directory in your project root:
+```text
+opengl-project/
+├── textures/
+│   ├── wall.png (or .jpg / .bmp)   # Weathered wood planks for house walls & doors
+│   ├── roof.png (or .jpg / .bmp)   # Dark roof shingles / tiles
+│   ├── ground.png (or .jpg / .bmp) # Wet dirt / mud terrain
+│   ├── stone.png (or .jpg / .bmp)  # Cobblestone pathway & stone foundation
+│   ├── bark.png (or .jpg / .bmp)   # Tree trunks & branches
+│   ├── rust.png (or .jpg / .bmp)   # Peeling paint & rusted car metal
+│   └── moon.png (or .jpg / .bmp)   # Lunar surface texture
+├── include/
+├── lib/
+├── src/
+│   └── main.cpp
+├── run.bat
+└── run.ps1
+```
+*Note: You can drop any standard `.png`, `.jpg`, or `.bmp` file into `textures/` with these names. If any file is omitted, procedural textures are synthesized automatically.*
 
 ---
 
@@ -47,12 +73,13 @@ An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scr
 | **`3` / `F`** | Toggle Spot Light (Flashlight) |
 | **`4`** | Toggle Area Light (Window Interior Glow) |
 | **`0`** | Master Switch (Toggle ALL Lights) |
+| **`T`** | Toggle Texture Mapping ON / OFF (`GL_MODULATE`) |
 | **`G`** | Toggle Fog (`GL_FOG`) |
 | **`B`** | Toggle Bulb Pendulum Sway & Random Flicker |
 | **`C`** | Toggle Hands-Free Cinematic Auto-Tour Presentation Mode |
 | **`H`** | Toggle In-Game HUD & Controls Overlay |
 | **`P`** | Take Screenshot (Saves as uncompressed 24-bit `.bmp`) |
-| **`R`** | Reset Camera to Starting Position |
+| **`R`** | Reset Camera to Default Reference Image View |
 | **`Enter` / `Space`** | Start Simulation from Title Screen |
 | **`ESC`** | Exit Application |
 
@@ -60,37 +87,32 @@ An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scr
 
 ## 🛠️ How to Build and Run
 
-All required header files and FreeGLUT libraries are pre-packaged directly in `include/` and `lib/` for 100% standalone portability.
-
 ### Option 1: Quick Batch Script (Windows)
 Double-click `run.bat` or run in terminal:
 ```cmd
-run.bat
+.\run.bat
 ```
 
-### Option 2: Direct GCC/G++ Command Line (MinGW / MSYS2)
+### Option 2: PowerShell Script
+```powershell
+.\run.ps1
+```
+
+### Option 3: Direct GCC/G++ Command Line
 ```cmd
 g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
-main.exe
-```
-
-### Option 3: Using Make
-```cmd
-make run
-```
-
-### Option 4: Using CMake
-```cmd
-mkdir build
-cd build
-cmake ..
-cmake --build .
-./HorrorHouseAtNight.exe
+.\main.exe
 ```
 
 ---
 
 ## 🎓 Viva Defense Quick-Reference
+
+- **Q: Why use `GL_MODULATE` instead of `GL_REPLACE` for texture mapping?**  
+  *A:* `GL_REPLACE` overwrites polygon colors completely, discarding lighting calculations. `GL_MODULATE` multiplies the texture color ($C_t$) with the computed Phong lighting ($C_l$) such that $C = C_t \times C_l$, preserving all ambient, diffuse, specular highlights, and shadows on textured surfaces.
+
+- **Q: How does `GL_REPEAT` prevent texture stretching?**  
+  *A:* When UV texture coordinates exceed $1.0$, `GL_REPEAT` tiles the texture periodically based on the fractional part of $U$ and $V$, maintaining uniform resolution across large walls, roofs, and terrain.
 
 - **Q: How does OpenGL differentiate between a Point Light and a Directional Light?**  
   *A:* By the 4th element ($w$) of the position array passed to `glLightfv(..., GL_POSITION, pos)`:
@@ -101,7 +123,4 @@ cmake --build .
   *A:* `GL_SPOT_CUTOFF` specifies the half-angle of the light cone ($0^\circ$ to $90^\circ$). `GL_SPOT_EXPONENT` defines the power factor modulating radial falloff concentration from the central axis $\cos^\alpha(\theta)$ towards the cone edge.
 
 - **Q: Why does Legacy OpenGL require Area Light Emulation?**  
-  *A:* The fixed-function pipeline natively only supports mathematical point, directional, and spot lights (delta Dirac distributions). True area lights with soft penumbras require surface integral evaluation or Monte Carlo ray-tracing shaders. We emulate it using an offset point source with high ambient dispersion ($k_a$) and soft distance attenuation.
-
-- **Q: How do Planar Projected Shadows work?**  
-  *A:* We multiply the model matrix by a $4 \times 4$ planar projection matrix derived from the plane equation $Ax+By+Cz+D=0$ and the light vector $L$, flattening object vertices onto $Y=0$, rendered in a dark semi-transparent blending pass with lighting disabled.
+  *A:* The fixed-function pipeline natively only supports mathematical delta point, directional, and spot lights. True area lights with soft penumbras require surface integral evaluation or Monte Carlo ray-tracing. We emulate it using an offset point source with high ambient dispersion ($k_a$) and soft distance attenuation.
