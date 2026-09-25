@@ -1,3 +1,0 @@
-Y:/4-1/Computer Graphics/oengl/opengl-project/opengl-project/build/CMakeFiles/HalloweenHauntedHouse.dir
-Y:/4-1/Computer Graphics/oengl/opengl-project/opengl-project/build/CMakeFiles/edit_cache.dir
-Y:/4-1/Computer Graphics/oengl/opengl-project/opengl-project/build/CMakeFiles/rebuild_cache.dir

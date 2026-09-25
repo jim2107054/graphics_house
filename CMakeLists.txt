@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(HalloweenHauntedHouse C CXX)
+project(OpenGLStarter C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,15 +17,10 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(SOURCES
     src/main.cpp
     src/glad.c
+    src/stb_image.cpp
 )
 
-# Headers for IDE project tree visibility
-set(HEADERS
-    src/Shader.h
-    src/Camera.h
-)
-
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Link platform and OpenGL libraries
 if (WIN32)
@@ -56,17 +51,7 @@ else()
     )
 endif()
 
-# Copy shaders and assets to the build executable directory automatically
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
-)
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-)
-
-# On Windows, copy glfw3.dll if it exists in the root or lib
+# On Windows, copy glfw3.dll if it exists in the root
 if (WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/glfw3.dll")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
