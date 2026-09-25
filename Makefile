@@ -1,8 +1,8 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude -Isrc
-LDFLAGS = -Llib -lglfw3 -lopengl32 -lgdi32 -luser32 -lshell32
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
+LDFLAGS = -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm
 
-SRC = src/main.cpp src/glad.c src/stb_image.cpp
+SRC = src/main.cpp
 TARGET = main.exe
 
 all: $(TARGET)

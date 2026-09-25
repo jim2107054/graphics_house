@@ -1,12 +1,13 @@
 @echo off
 echo ===================================================
-echo  Building OpenGL Starter Project
+echo  Building Horror House at Night (Legacy OpenGL / GLUT)
+echo  Developer: MD Jahid Hasan Jim (Roll: 2107054)
 echo ===================================================
 
 :: Close any existing running instances to prevent file lock
 taskkill /F /IM main.exe >nul 2>&1
 
-g++ -std=c++17 src/main.cpp src/glad.c src/stb_image.cpp -Iinclude -Isrc -Llib -lglfw3 -lopengl32 -lgdi32 -luser32 -lshell32 -o main.exe
+g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
 
 if %ERRORLEVEL% EQU 0 (
     echo.
