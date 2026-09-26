@@ -137,6 +137,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <mmsystem.h>
 #endif
 
 #include <GL/gl.h>
@@ -217,6 +218,181 @@ float g_bulbFlickerFactor = 1.0f;
 float g_pumpkinFlicker = 1.0f;
 
 float g_moonDir[4] = { -0.25f, 0.70f, 0.65f, 0.0f };
+
+// ============================================================================
+// LIGHTNING & ATMOSPHERIC PHENOMENA
+// ============================================================================
+struct LightningSystem {
+    bool  active;
+    float timer;
+    float nextStrikeInterval;
+    float strikeProgress;
+    float strikeDuration;
+    float flashIntensity;
+    float thunderCountdown;
+    bool  thunderPending;
+} g_lightning = {
+    false,
+    0.0f,
+    12.0f, // Initial strike after 12s
+    0.0f,
+    0.72f,
+    0.0f,
+    0.0f,
+    false
+};
+
+void triggerLightning() {
+    g_lightning.active = true;
+    g_lightning.strikeProgress = 0.0f;
+    g_lightning.strikeDuration = 0.70f + ((float)(rand() % 25) * 0.01f);
+    g_lightning.timer = 0.0f;
+    g_lightning.nextStrikeInterval = 14.0f + ((float)(rand() % 140) * 0.1f); // 14s to 28s
+    g_lightning.thunderCountdown = 0.35f + ((float)(rand() % 35) * 0.01f);
+    g_lightning.thunderPending = true;
+    std::cout << "[ATMOSPHERE] Distant Lightning Flash Triggered!" << std::endl;
+}
+
+// ============================================================================
+// PROCEDURAL AUDIO SYNTHESIS & WINMM PLAYBACK (ZERO EXTERNAL ASSETS NEEDED)
+// ============================================================================
+#ifdef _WIN32
+bool g_audioEnabled = true;
+std::vector<unsigned char> g_ambientWav;
+std::vector<unsigned char> g_thunderWav;
+float g_thunderAudioTimer = 0.0f;
+
+void createWavHeader(unsigned char* header, int sampleRate, int numSamples) {
+    int dataSize = numSamples * 2;
+    int fileSize = 36 + dataSize;
+    
+    // "RIFF"
+    header[0] = 'R'; header[1] = 'I'; header[2] = 'F'; header[3] = 'F';
+    header[4] = (unsigned char)(fileSize & 0xFF);
+    header[5] = (unsigned char)((fileSize >> 8) & 0xFF);
+    header[6] = (unsigned char)((fileSize >> 16) & 0xFF);
+    header[7] = (unsigned char)((fileSize >> 24) & 0xFF);
+    
+    // "WAVE"
+    header[8] = 'W'; header[9] = 'A'; header[10] = 'V'; header[11] = 'E';
+    
+    // "fmt "
+    header[12] = 'f'; header[13] = 'm'; header[14] = 't'; header[15] = ' ';
+    header[16] = 16; header[17] = 0; header[18] = 0; header[19] = 0; // Subchunk1Size (16 for PCM)
+    header[20] = 1;  header[21] = 0; // AudioFormat (1 = PCM)
+    header[22] = 1;  header[23] = 0; // NumChannels (1 = Mono)
+    
+    header[24] = (unsigned char)(sampleRate & 0xFF);
+    header[25] = (unsigned char)((sampleRate >> 8) & 0xFF);
+    header[26] = (unsigned char)((sampleRate >> 16) & 0xFF);
+    header[27] = (unsigned char)((sampleRate >> 24) & 0xFF);
+    
+    int byteRate = sampleRate * 2;
+    header[28] = (unsigned char)(byteRate & 0xFF);
+    header[29] = (unsigned char)((byteRate >> 8) & 0xFF);
+    header[30] = (unsigned char)((byteRate >> 16) & 0xFF);
+    header[31] = (unsigned char)((byteRate >> 24) & 0xFF);
+    
+    header[32] = 2; header[33] = 0;  // BlockAlign (2 bytes)
+    header[34] = 16; header[35] = 0; // BitsPerSample (16 bits)
+    
+    // "data"
+    header[36] = 'd'; header[37] = 'a'; header[38] = 't'; header[39] = 'a';
+    header[40] = (unsigned char)(dataSize & 0xFF);
+    header[41] = (unsigned char)((dataSize >> 8) & 0xFF);
+    header[42] = (unsigned char)((dataSize >> 16) & 0xFF);
+    header[43] = (unsigned char)((dataSize >> 24) & 0xFF);
+}
+
+void initProceduralAudio() {
+    int sampleRate = 22050;
+    
+    // 1. Ambient Night Loop (6.0 seconds continuous seamless cycle)
+    float ambDuration = 6.0f;
+    int ambSamples = (int)(sampleRate * ambDuration);
+    g_ambientWav.resize(44 + ambSamples * 2);
+    createWavHeader(g_ambientWav.data(), sampleRate, ambSamples);
+    
+    short* ambData = (short*)(g_ambientWav.data() + 44);
+    for (int i = 0; i < ambSamples; ++i) {
+        float t = (float)i / sampleRate;
+        
+        // Low howling night wind (sub-harmonics + noise breath)
+        float wind1 = std::sin(2.0f * (float)M_PI * 48.0f * t + 0.4f * std::sin(2.0f * (float)M_PI * 0.35f * t));
+        float wind2 = std::sin(2.0f * (float)M_PI * 72.0f * t);
+        float noise = ((float)(rand() % 2000) / 1000.0f - 1.0f) * 0.28f;
+        float windVol = 0.20f + 0.10f * std::sin(2.0f * (float)M_PI * (t / ambDuration));
+        float wind = (wind1 * 0.5f + wind2 * 0.3f + noise * 0.2f) * windVol;
+        
+        // Faint distant night crickets (intermittent chirp bursts around 4200 Hz)
+        float chirpCadence = std::fmod(t, 0.48f);
+        float cricket = 0.0f;
+        if (chirpCadence < 0.055f) {
+            cricket = std::sin(2.0f * (float)M_PI * 4200.0f * t) * 0.045f;
+        }
+        
+        float sampleVal = (wind + cricket) * 13000.0f;
+        if (sampleVal > 32767.0f) sampleVal = 32767.0f;
+        if (sampleVal < -32768.0f) sampleVal = -32768.0f;
+        ambData[i] = (short)sampleVal;
+    }
+    
+    // 2. Thunder Sound Effect (3.0 seconds)
+    float thDuration = 3.0f;
+    int thSamples = (int)(sampleRate * thDuration);
+    g_thunderWav.resize(44 + thSamples * 2);
+    createWavHeader(g_thunderWav.data(), sampleRate, thSamples);
+    
+    short* thData = (short*)(g_thunderWav.data() + 44);
+    for (int i = 0; i < thSamples; ++i) {
+        float t = (float)i / sampleRate;
+        float sampleVal = 0.0f;
+        
+        if (t < 0.03f) {
+            sampleVal = 0.0f;
+        } else if (t < 0.22f) {
+            float tBoom = t - 0.03f;
+            float sub = std::sin(2.0f * (float)M_PI * 45.0f * tBoom) * std::exp(-tBoom * 16.0f);
+            float crack = ((float)(rand() % 2000) / 1000.0f - 1.0f) * std::exp(-tBoom * 20.0f);
+            sampleVal = (sub * 0.70f + crack * 0.55f);
+        } else {
+            float tRoll = t - 0.22f;
+            float rollEnv = std::exp(-tRoll * 1.15f);
+            float r1 = std::sin(2.0f * (float)M_PI * 36.0f * tRoll);
+            float r2 = std::sin(2.0f * (float)M_PI * 52.0f * tRoll + std::sin(tRoll * 5.0f));
+            float rNoise = ((float)(rand() % 2000) / 1000.0f - 1.0f) * 0.22f;
+            sampleVal = (r1 * 0.5f + r2 * 0.35f + rNoise * 0.15f) * rollEnv * 0.85f;
+        }
+        
+        float finalSample = sampleVal * 23000.0f;
+        if (finalSample > 32767.0f) finalSample = 32767.0f;
+        if (finalSample < -32768.0f) finalSample = -32768.0f;
+        thData[i] = (short)finalSample;
+    }
+}
+
+void playAmbientAudio() {
+    if (!g_audioEnabled || g_ambientWav.empty()) return;
+    PlaySoundA((LPCSTR)g_ambientWav.data(), NULL, SND_MEMORY | SND_ASYNC | SND_LOOP | SND_NODEFAULT);
+}
+
+void playThunderAudio() {
+    if (!g_audioEnabled || g_thunderWav.empty()) return;
+    PlaySoundA((LPCSTR)g_thunderWav.data(), NULL, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+    g_thunderAudioTimer = 3.1f; // Resume ambient loop when thunder finishes
+}
+
+void toggleAudio() {
+    g_audioEnabled = !g_audioEnabled;
+    if (g_audioEnabled) {
+        playAmbientAudio();
+        std::cout << "[AUDIO] Ambient Night Audio: ON" << std::endl;
+    } else {
+        PlaySoundA(NULL, NULL, 0);
+        std::cout << "[AUDIO] Ambient Night Audio: MUTED" << std::endl;
+    }
+}
+#endif
 
 struct Star {
     float x, y, z;
@@ -729,6 +905,9 @@ void initOpenGL() {
     glEnable(GL_LIGHTING);
     initAllTextures();
     initStars();
+#ifdef _WIN32
+    initProceduralAudio();
+#endif
 }
 
 // ============================================================================
@@ -1426,12 +1605,16 @@ void drawPuddles() {
     drawPuddle(-9.5f,  8.2f, 1.8f, 1.3f, -10.0f);
 }
 
-// Dead grass tufts (Crossed textured quads)
+// Dead grass tufts (Crossed textured quads with subtle wind sway)
 void drawGrassTuft(float x, float z, float width, float height, float rotY) {
     float y = getTerrainHeight(x, z);
     glPushMatrix();
     glTranslatef(x, y, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    // Subtle gentle night wind sway
+    float windAngle = std::sin(g_time * 1.35f + x * 0.35f + z * 0.25f) * 3.8f;
+    glRotatef(windAngle, 1.0f, 0.0f, 0.0f);
 
     applyMaterial(MAT_DEAD_GRASS);
     bindTexture(TEX_WALL); // weathered grain texture for fibrous blades
@@ -1837,12 +2020,16 @@ void drawScatteredBricks() {
     drawSingleBrick(-5.8f, 12.2f,  40.0f, 10.0f);
 }
 
-// Tangled Bare Dead Bush / Bramble Shrub
+// Tangled Bare Dead Bush / Bramble Shrub (with wind sway)
 void drawDeadBush(float x, float z, float scale, float rotY, unsigned int seed) {
     float groundY = getTerrainHeight(x, z);
     glPushMatrix();
     glTranslatef(x, groundY, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    // Subtle gentle night wind sway
+    float bushWind = std::sin(g_time * 1.25f + x * 0.3f + z * 0.2f) * 2.5f;
+    glRotatef(bushWind, 1.0f, 0.0f, 0.0f);
 
     applyMaterial(MAT_BARK);
     bindTexture(TEX_BARK);
@@ -2278,13 +2465,17 @@ void drawPumpkinArray() {
 // 3. ORGANIC BARE CREEPY TREES (Tapered Recursive Branches & Gnarled Roots)
 // ----------------------------------------------------------------------------
 
-// Dead hanging moss / vine tendril with chained drooping segments
+// Dead hanging moss / vine tendril with chained drooping segments (with wind sway)
 void drawDeadVine(float length, TreeRNG& rng) {
     int segments = 3;
     float segLen = length / segments;
     float currentR = 0.024f;
 
+    // Gentle swaying of hanging vines in night wind
+    float vineWind = (std::sin(g_time * 1.2f) * 3.8f + std::sin(g_time * 2.1f) * 1.4f);
+
     glPushMatrix();
+    glRotatef(vineWind, 1.0f, 0.0f, 0.0f);
     for (int s = 0; s < segments; ++s) {
         float nextR = currentR * 0.70f;
         drawCylinder(currentR, nextR, segLen, 5, 0.5f, 0.5f);
@@ -2305,6 +2496,14 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
     float segLen = len / (float)subSegments;
     float curR = baseR;
     float deltaR = (baseR - topR) / (float)subSegments;
+
+    // Organic wind sway deflection increasing towards branch tips
+    float windPhase = g_time * 1.12f + (float)(rng.state & 0xFF) * 0.04f;
+    float windAmp = 0.70f * std::sin(windPhase) + 0.30f * std::sin(windPhase * 2.2f);
+    float branchSway = windAmp * (0.5f + depth * 0.75f);
+
+    glPushMatrix();
+    glRotatef(branchSway, 0.707f, 0.0f, 0.707f);
 
     for (int s = 0; s < subSegments; ++s) {
         float nextR = curR - deltaR;
@@ -2347,6 +2546,7 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
             drawCylinder(topR * 0.75f, 0.005f, len * rng.nextFloat(0.35f, 0.55f), 4);
             glPopMatrix();
         }
+        glPopMatrix(); // close branch sway matrix
         return;
     }
 
@@ -2377,6 +2577,8 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
 
         glPopMatrix();
     }
+
+    glPopMatrix(); // close branch sway matrix
 }
 
 // Gnarled flaring root arms spreading outward and sinking into the ground
@@ -2411,6 +2613,10 @@ void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, fl
     glPushMatrix();
     glTranslatef(x, groundY, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    // Subtle gentle trunk sway
+    float trunkWind = (0.75f * std::sin(g_time * 1.10f + seed * 0.05f) + 0.30f * std::sin(g_time * 2.1f)) * 0.45f;
+    glRotatef(trunkWind, 0.0f, 0.0f, 1.0f);
 
     // Varied Brown-Grey Bark Tone Material
     Material treeMat = MAT_BARK;
@@ -3838,7 +4044,320 @@ void drawMoonAndStars() {
 }
 
 // ============================================================================
-// PLANAR PROJECTED SHADOW PASS
+// DYNAMIC SWAYING BULB LIGHT POOL & SHADOW CASTING
+// ============================================================================
+
+// Warm swinging radiant pool on porch floorboards & ground from swaying bulb
+void drawBulbLightPool() {
+    if (!g_light0PointOn) return;
+
+    bindTexture(TEX_NONE);
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous warm light pool
+
+    // Projected ground and porch coordinates based on swaying bulb
+    float swingOffsetX = (g_bulbCurX - g_bulbBaseX) * 0.75f;
+    float swingOffsetZ = (g_bulbCurZ - g_bulbBaseZ) * 0.75f;
+    float poolX = g_bulbBaseX + swingOffsetX;
+    float poolZ = g_bulbBaseZ + swingOffsetZ;
+    float poolY = 0.73f; // Just resting on porch floorboards
+
+    // 1. Porch Floor Light Pool Disc
+    glPushMatrix();
+    glTranslatef(poolX, poolY, poolZ);
+    int segments = 24;
+    float rCore = 0.95f;
+    float rOuter = 2.40f;
+
+    // Core warm hotspot
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 0.82f, 0.35f, 0.42f * g_bulbFlickerFactor);
+    glVertex3f(0.0f, 0.005f, 0.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float theta = 2.0f * (float)M_PI * (float)i / segments;
+        glColor4f(1.0f, 0.70f, 0.20f, 0.18f * g_bulbFlickerFactor);
+        glVertex3f(rCore * std::cos(theta), 0.005f, rCore * std::sin(theta));
+    }
+    glEnd();
+
+    // Outer soft falloff ring
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= segments; ++i) {
+        float theta = 2.0f * (float)M_PI * (float)i / segments;
+        float ct = std::cos(theta);
+        float st = std::sin(theta);
+        glColor4f(1.0f, 0.65f, 0.15f, 0.18f * g_bulbFlickerFactor);
+        glVertex3f(rCore * ct, 0.005f, rCore * st);
+        glColor4f(1.0f, 0.50f, 0.10f, 0.0f);
+        glVertex3f(rOuter * ct, 0.005f, rOuter * st);
+    }
+    glEnd();
+    glPopMatrix();
+
+    // 2. Terrain Ground Light Pool beneath Porch Steps
+    float groundPoolY = getTerrainHeight(poolX, poolZ + 1.8f) + 0.03f;
+    glPushMatrix();
+    glTranslatef(poolX, groundPoolY, poolZ + 1.8f);
+    float rGround = 3.2f;
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 0.75f, 0.25f, 0.22f * g_bulbFlickerFactor);
+    glVertex3f(0.0f, 0.01f, 0.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float theta = 2.0f * (float)M_PI * (float)i / segments;
+        glColor4f(1.0f, 0.60f, 0.15f, 0.0f);
+        glVertex3f(rGround * std::cos(theta), 0.01f, rGround * std::sin(theta));
+    }
+    glEnd();
+    glPopMatrix();
+
+    glPopAttrib();
+}
+
+// ----------------------------------------------------------------------------
+// ANIMATED NOCTURNAL BATS (Flapping Wings, Banked Turns & Glowing Red Eyes)
+// ----------------------------------------------------------------------------
+void drawBatWing(float side, float flapAngle) {
+    glPushMatrix();
+    glTranslatef(side * 0.05f, 0.0f, 0.0f);
+    glRotatef(side * flapAngle, 0.0f, 0.0f, 1.0f);
+
+    glBegin(GL_TRIANGLES);
+    // Inner wing membrane
+    glVertex3f(0.0f, 0.0f, 0.10f);
+    glVertex3f(side * 0.38f, 0.04f, 0.02f);
+    glVertex3f(0.0f, 0.0f, -0.12f);
+
+    // Outer wing spar / tip
+    glVertex3f(side * 0.38f, 0.04f, 0.02f);
+    glVertex3f(side * 0.78f, 0.10f * std::sin(flapAngle * 0.05f), -0.06f);
+    glVertex3f(side * 0.30f, 0.0f, -0.18f);
+
+    // Scalloped trailing web
+    glVertex3f(0.0f, 0.0f, -0.12f);
+    glVertex3f(side * 0.38f, 0.04f, 0.02f);
+    glVertex3f(side * 0.30f, 0.0f, -0.18f);
+    glEnd();
+
+    glPopMatrix();
+}
+
+void drawBat(float x, float y, float z, float yaw, float pitch, float roll, float flapAngle, float scale = 1.0f) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(yaw, 0.0f, 1.0f, 0.0f);
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f);
+    glRotatef(roll, 0.0f, 0.0f, 1.0f);
+    glScalef(scale, scale, scale);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+
+    // Torso Body
+    glPushMatrix();
+    glScalef(0.07f, 0.05f, 0.20f);
+    drawSphere(1.0f, 8, 6);
+    glPopMatrix();
+
+    // Head & Pointed Ears
+    glPushMatrix();
+    glTranslatef(0.0f, 0.02f, 0.18f);
+    drawSphere(0.05f, 8, 6);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(-0.035f, 0.035f, 0.0f);
+    glVertex3f(-0.010f, 0.035f, 0.0f);
+    glVertex3f(-0.030f, 0.095f, -0.01f);
+
+    glVertex3f(0.010f, 0.035f, 0.0f);
+    glVertex3f(0.035f, 0.035f, 0.0f);
+    glVertex3f(0.030f, 0.095f, -0.01f);
+    glEnd();
+    glPopMatrix();
+
+    // Glowing Crimson Eyes
+    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_POINT_BIT);
+    glDisable(GL_LIGHTING);
+    glPointSize(2.4f * scale);
+    glColor4f(1.0f, 0.15f, 0.15f, 0.95f);
+    glBegin(GL_POINTS);
+    glVertex3f(-0.022f, 0.032f, 0.225f);
+    glVertex3f( 0.022f, 0.032f, 0.225f);
+    glEnd();
+    glPopAttrib();
+
+    // Articulated Wings
+    drawBatWing(-1.0f, flapAngle);
+    drawBatWing( 1.0f, flapAngle);
+
+    glPopMatrix();
+}
+
+void drawAllBats() {
+    // Bat 1: Circling around the Gothic Spire Tower
+    float a1 = g_time * 0.95f;
+    float bx1 = 1.2f + 5.2f * std::cos(a1);
+    float bz1 = 1.2f + 5.2f * std::sin(a1);
+    float by1 = 12.0f + 1.2f * std::sin(a1 * 2.0f);
+    float yaw1 = -a1 * 180.0f / (float)M_PI + 90.0f;
+    float flap1 = std::sin(g_time * 16.0f) * 40.0f;
+    drawBat(bx1, by1, bz1, yaw1, 0.0f, -22.0f, flap1, 0.85f);
+
+    // Bat 2: Wider counter-clockwise orbit around house & chimney
+    float a2 = -g_time * 0.68f + 2.4f;
+    float bx2 = -1.5f + 9.5f * std::cos(a2);
+    float bz2 =  0.5f + 8.0f * std::sin(a2);
+    float by2 =  9.5f + 1.8f * std::cos(a2 * 1.5f);
+    float yaw2 = -a2 * 180.0f / (float)M_PI - 90.0f;
+    float flap2 = std::sin(g_time * 14.5f + 1.0f) * 38.0f;
+    drawBat(bx2, by2, bz2, yaw2, 0.0f, 18.0f, flap2, 0.95f);
+
+    // Bat 3: Swooping dramatically across the Giant Moon silhouette
+    float t3 = g_time * 0.48f;
+    float bx3 =  0.5f + 7.2f * std::cos(t3);
+    float bz3 = -29.0f + 2.5f * std::sin(t3);
+    float by3 = 24.5f + 2.0f * std::sin(t3 * 2.0f);
+    float yaw3 = -t3 * 180.0f / (float)M_PI + 90.0f;
+    float flap3 = std::sin(g_time * 15.0f + 2.0f) * 36.0f;
+    drawBat(bx3, by3, bz3, yaw3, 0.0f, -14.0f, flap3, 1.25f);
+
+    // Bat 4: High lunar guardian bat soaring near moon crest
+    float t4 = g_time * 0.38f + 3.14f;
+    float bx4 =  1.0f + 6.0f * std::cos(t4);
+    float bz4 = -27.5f + 3.0f * std::sin(t4);
+    float by4 = 28.0f + 1.4f * std::cos(t4 * 1.8f);
+    float yaw4 = -t4 * 180.0f / (float)M_PI + 90.0f;
+    float flap4 = std::sin(g_time * 13.0f + 3.0f) * 34.0f;
+    drawBat(bx4, by4, bz4, yaw4, 0.0f, -12.0f, flap4, 1.15f);
+
+    // Bat 5: Low stealth bat swooping across graveyard & front path
+    float t5 = g_time * 0.60f + 0.8f;
+    float bx5 =  7.5f + 5.5f * std::sin(t5);
+    float bz5 = 14.5f + 6.5f * std::cos(t5);
+    float gY = getTerrainHeight(bx5, bz5);
+    float by5 = gY + 3.5f + 1.2f * std::sin(t5 * 2.5f);
+    float yaw5 = std::atan2(5.5f * std::cos(t5), -6.5f * std::sin(t5)) * 180.0f / (float)M_PI;
+    float flap5 = std::sin(g_time * 17.0f + 0.5f) * 44.0f;
+    drawBat(bx5, by5, bz5, yaw5, 0.0f, 16.0f * std::cos(t5), flap5, 0.90f);
+}
+
+// ----------------------------------------------------------------------------
+// LAYERED GROUND MIST & ROLLING HORIZON FOG WISPS
+// ----------------------------------------------------------------------------
+void drawGroundMist() {
+    if (!g_fogEnabled) return;
+
+    bindTexture(TEX_NONE);
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    struct MistWispDef {
+        float cx, cz;
+        float rx, rz;
+        float heightOffset;
+        float speedX, speedZ;
+        float phase;
+        float baseAlpha;
+    };
+
+    static const MistWispDef WISPS[] = {
+        {  -4.5f,  13.5f, 4.5f, 3.2f, 0.18f,  0.18f,  0.08f, 0.0f, 0.14f }, // Front puddle wisp
+        {   5.0f,  10.5f, 4.2f, 3.0f, 0.22f,  0.14f, -0.06f, 1.2f, 0.13f }, // Car puddle wisp
+        {  -9.5f,   8.2f, 3.8f, 2.8f, 0.16f, -0.12f,  0.10f, 2.4f, 0.12f }, // Left porch puddle wisp
+        {  12.5f,  15.0f, 5.2f, 3.8f, 0.25f,  0.16f,  0.05f, 3.1f, 0.15f }, // Graveyard wisp
+        {  14.0f,   8.0f, 4.8f, 3.5f, 0.28f,  0.10f, -0.08f, 4.5f, 0.12f }, // Car right flank wisp
+        {  -0.5f,  18.0f, 5.5f, 3.4f, 0.20f,  0.15f,  0.07f, 5.2f, 0.14f }, // Entry pathway wisp
+        {  -8.0f,  18.5f, 4.5f, 3.2f, 0.24f, -0.10f,  0.12f, 1.8f, 0.11f }, // Left fence wisp
+        {   7.5f,  20.0f, 5.0f, 3.6f, 0.22f,  0.12f, -0.09f, 2.9f, 0.13f }, // Right fence wisp
+        {  -3.0f,   6.5f, 4.0f, 2.8f, 0.15f,  0.08f,  0.06f, 3.7f, 0.12f }, // Porch front step wisp
+        {   8.5f,   3.5f, 5.0f, 3.5f, 0.30f,  0.14f, -0.05f, 4.8f, 0.13f }, // Right manor wisp
+        { -12.5f,  12.0f, 4.6f, 3.2f, 0.22f, -0.15f,  0.08f, 0.6f, 0.11f }, // Distant left cemetery wisp
+        {   2.5f,  13.0f, 4.4f, 3.0f, 0.18f,  0.16f,  0.06f, 1.5f, 0.12f }  // Mid-yard wisp
+    };
+    static const int NUM_WISPS = sizeof(WISPS) / sizeof(WISPS[0]);
+
+    int segments = 16;
+    for (int w = 0; w < NUM_WISPS; ++w) {
+        const MistWispDef& wd = WISPS[w];
+        float mx = std::fmod(wd.cx + g_time * wd.speedX + 45.0f, 90.0f) - 45.0f;
+        float mz = std::fmod(wd.cz + g_time * wd.speedZ + 45.0f, 90.0f) - 45.0f;
+        float my = getTerrainHeight(mx, mz) + wd.heightOffset + 0.06f * std::sin(g_time * 0.5f + wd.phase);
+
+        float breath = 0.80f + 0.20f * std::sin(g_time * 0.45f + wd.phase);
+        float alpha = wd.baseAlpha * breath;
+        if (g_lightning.flashIntensity > 0.05f) {
+            alpha *= (1.0f + g_lightning.flashIntensity * 1.5f); // Mist brightly catches lightning!
+        }
+
+        float rx = wd.rx * breath;
+        float rz = wd.rz * breath;
+
+        glPushMatrix();
+        glTranslatef(mx, my, mz);
+
+        // Render soft multi-segment mist disk with Gaussian edge fade
+        glBegin(GL_TRIANGLE_FAN);
+        float mistR = 0.08f + 0.25f * g_lightning.flashIntensity;
+        float mistG = 0.12f + 0.30f * g_lightning.flashIntensity;
+        float mistB = 0.20f + 0.40f * g_lightning.flashIntensity;
+        glColor4f(mistR, mistG, mistB, alpha);
+        glVertex3f(0.0f, 0.04f, 0.0f);
+
+        for (int i = 0; i <= segments; ++i) {
+            float theta = 2.0f * (float)M_PI * (float)i / segments;
+            float px = rx * std::cos(theta);
+            float pz = rz * std::sin(theta);
+            float py = getTerrainHeight(mx + px, mz + pz) - getTerrainHeight(mx, mz);
+            glColor4f(mistR * 0.5f, mistG * 0.5f, mistB * 0.5f, 0.0f);
+            glVertex3f(px, py + 0.02f, pz);
+        }
+        glEnd();
+
+        glPopMatrix();
+    }
+
+    // 2. Distant Horizon Mist Wisps (Drifting through background tree line)
+    for (int d = 0; d < 4; ++d) {
+        float dx = -25.0f + d * 16.0f + std::sin(g_time * 0.15f + d) * 4.0f;
+        float dz = -18.0f - d * 6.0f;
+        float dy = 2.5f + std::sin(g_time * 0.2f + d * 1.5f) * 0.8f;
+        float dAlpha = 0.09f * (0.8f + 0.2f * std::sin(g_time * 0.3f + d));
+
+        glPushMatrix();
+        glTranslatef(dx, dy, dz);
+        glBegin(GL_QUADS);
+        glColor4f(0.06f, 0.10f, 0.18f, 0.0f);
+        glVertex3f(-9.0f, -1.2f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, dAlpha);
+        glVertex3f( 0.0f, -0.4f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, dAlpha * 0.8f);
+        glVertex3f( 0.0f,  1.4f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, 0.0f);
+        glVertex3f(-9.0f,  1.2f, 0.0f);
+
+        glColor4f(0.06f, 0.10f, 0.18f, dAlpha);
+        glVertex3f( 0.0f, -0.4f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, 0.0f);
+        glVertex3f( 9.0f, -1.2f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, 0.0f);
+        glVertex3f( 9.0f,  1.2f, 0.0f);
+        glColor4f(0.06f, 0.10f, 0.18f, dAlpha * 0.8f);
+        glVertex3f( 0.0f,  1.4f, 0.0f);
+        glEnd();
+        glPopMatrix();
+    }
+
+    glPopAttrib();
+}
+
+// ============================================================================
+// PLANAR PROJECTED SHADOW PASS (Moonlight + Moving Porch Bulb Shadows)
 // ============================================================================
 
 void buildShadowMatrix(float shadowMat[16], const float groundPlane[4], const float lightPos[4]) {
@@ -3875,36 +4394,115 @@ void renderShadowCasters() {
     drawAllTrees();
 }
 
-void renderPlanarShadows() {
-    if (!g_light1DirectionalOn) return;
-
-    float groundPlane[4] = { 0.0f, 1.0f, 0.0f, -0.005f };
-    float shadowMatrix[16];
-    buildShadowMatrix(shadowMatrix, groundPlane, g_moonDir);
-
-    bindTexture(TEX_NONE);
-    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_LIGHTING);
-    glDisable(GL_FOG);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glColor4f(0.01f, 0.02f, 0.04f, 0.55f);
-
+void renderBulbShadowCasters() {
+    // Porch railings & balusters
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
     glPushMatrix();
-    glMultMatrixf(shadowMatrix);
-    renderShadowCasters();
+    glTranslatef(-6.0f, 1.6f, 5.2f);
+    drawBox(0.12f, 0.08f, 3.8f);
     glPopMatrix();
+    for (int i = 0; i < 9; ++i) {
+        if (i == 3 || i == 6) continue;
+        float bz = 3.5f + i * 0.42f;
+        glPushMatrix();
+        glTranslatef(-6.0f, 1.25f, bz);
+        drawBox(0.06f, 0.65f, 0.06f);
+        glPopMatrix();
+    }
+    // Porch table & chair
+    glPushMatrix();
+    glTranslatef(-4.8f, 0.95f, 5.2f);
+    drawBox(1.6f, 0.08f, 1.2f);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef(-0.8f, 1.05f, 5.5f);
+    drawBox(0.8f, 0.08f, 0.8f);
+    glPopMatrix();
+}
 
-    glPopAttrib();
+void renderPlanarShadows() {
+    // 1. Directional Moonlight Shadows
+    if (g_light1DirectionalOn) {
+        float groundPlane[4] = { 0.0f, 1.0f, 0.0f, -0.005f };
+        float shadowMatrix[16];
+        buildShadowMatrix(shadowMatrix, groundPlane, g_moonDir);
+
+        bindTexture(TEX_NONE);
+        glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_FOG);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glColor4f(0.01f, 0.02f, 0.04f, 0.55f);
+
+        glPushMatrix();
+        glMultMatrixf(shadowMatrix);
+        renderShadowCasters();
+        glPopMatrix();
+
+        glPopAttrib();
+    }
+
+    // 2. Dynamic Point Light Moving Shadows from Swaying Bulb
+    if (g_light0PointOn && g_bulbCurY > 1.0f) {
+        float bulbPos[4] = { g_bulbCurX, g_bulbCurY, g_bulbCurZ, 1.0f };
+        float porchFloorPlane[4] = { 0.0f, 1.0f, 0.0f, -0.725f };
+        float porchShadowMat[16];
+        buildShadowMatrix(porchShadowMat, porchFloorPlane, bulbPos);
+
+        bindTexture(TEX_NONE);
+        glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_FOG);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Warm dark moving shadow on porch deck
+        glColor4f(0.02f, 0.015f, 0.01f, 0.48f * g_bulbFlickerFactor);
+
+        glPushMatrix();
+        glMultMatrixf(porchShadowMat);
+        renderBulbShadowCasters();
+        glPopMatrix();
+
+        glPopAttrib();
+    }
 }
 
 // ============================================================================
 // MAIN SCENE RENDERING PIPELINE
 // ============================================================================
 void render3DScene() {
-    // 1. UPDATE LIGHTS
+    // 1. UPDATE LIGHTS & ATMOSPHERE
+    float flash = g_lightning.flashIntensity;
+
+    // Atmospheric Fog (Brightens and turns electric lavender during lightning)
+    if (g_fogEnabled) {
+        glEnable(GL_FOG);
+        float fogR = 0.016f + 0.28f * flash;
+        float fogG = 0.026f + 0.32f * flash;
+        float fogB = 0.044f + 0.44f * flash;
+        float curFogColor[4] = { fogR, fogG, fogB, 1.0f };
+        glFogfv(GL_FOG_COLOR, curFogColor);
+    } else {
+        glDisable(GL_FOG);
+    }
+
+    // Global Ambient (Spikes during lightning strike)
+    float ambR = 0.025f + 0.32f * flash;
+    float ambG = 0.035f + 0.36f * flash;
+    float ambB = 0.055f + 0.48f * flash;
+    float curGlobalAmbient[4] = { ambR, ambG, ambB, 1.0f };
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, curGlobalAmbient);
+
+    // Clear Color (Sky backdrop flash)
+    glClearColor(0.012f + 0.25f * flash, 0.018f + 0.28f * flash, 0.032f + 0.40f * flash, 1.0f);
+
+    // Light 0: Point Light (Porch Bulb)
     if (g_light0PointOn) {
         glEnable(GL_LIGHT0);
         float pPos[4] = { g_bulbCurX, g_bulbCurY, g_bulbCurZ, 1.0f };
@@ -3922,9 +4520,20 @@ void render3DScene() {
         glDisable(GL_LIGHT0);
     }
 
-    if (g_light1DirectionalOn) {
+    // Light 1: Directional Moonlight / Overhead Lightning Bolt
+    if (g_light1DirectionalOn || flash > 0.05f) {
         glEnable(GL_LIGHT1);
-        glLightfv(GL_LIGHT1, GL_POSITION, g_moonDir);
+        if (flash > 0.05f) {
+            // Intense overhead lightning illumination
+            float lDir[4] = { 0.25f, 0.92f, 0.30f, 0.0f };
+            float lDiff[4] = { 0.28f + 1.25f * flash, 0.38f + 1.30f * flash, 0.58f + 1.55f * flash, 1.0f };
+            glLightfv(GL_LIGHT1, GL_POSITION, lDir);
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, lDiff);
+        } else {
+            float mDiff[4] = { 0.28f, 0.38f, 0.58f, 1.0f };
+            glLightfv(GL_LIGHT1, GL_POSITION, g_moonDir);
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, mDiff);
+        }
     } else {
         glDisable(GL_LIGHT1);
     }
@@ -3961,17 +4570,18 @@ void render3DScene() {
         glDisable(GL_LIGHT3);
     }
 
-    if (g_fogEnabled) glEnable(GL_FOG); else glDisable(GL_FOG);
-
     // 2. RENDER 3D SCENE OBJECTS
     drawMoonAndStars();
     drawGround();
+    drawBulbLightPool();
     drawHouse();
     drawHangingBulb();
     drawPumpkinArray();
     drawRustedCar(11.0f, 7.5f, -32.0f);
     drawFenceAndYardProps();
     drawAllTrees();
+    drawAllBats();
+    drawGroundMist();
 
     // 3. RENDER SHADOWS
     renderPlanarShadows();
@@ -4036,6 +4646,17 @@ void drawCinematicColorGrade() {
     glVertex2f(w,    h);
     glVertex2f(0.0f, h);
     glEnd();
+
+    // Electric blue-white screen flash during lightning strike
+    if (g_lightning.flashIntensity > 0.01f) {
+        glBegin(GL_QUADS);
+        glColor4f(0.60f, 0.72f, 0.98f, 0.28f * g_lightning.flashIntensity);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(w,    0.0f);
+        glVertex2f(w,    h);
+        glVertex2f(0.0f, h);
+        glEnd();
+    }
 }
 
 void drawScreenVignette() {
@@ -4112,11 +4733,11 @@ void renderTitleScreen() {
     drawString2D(cardX + 50.0f, cardY + 190.0f, GLUT_BITMAP_HELVETICA_18, "ROLL NUMBER   : 2107054", 1.0f, 0.85f, 0.35f);
 
     drawUIPanel(cardX + 40.0f, cardY + 215.0f, cardW - 80.0f, 165.0f, 0.02f, 0.03f, 0.05f, 0.75f);
-    drawString2D(cardX + 55.0f, cardY + 238.0f, GLUT_BITMAP_HELVETICA_12, "[Light 1] POINT LIGHT       : Hanging Porch Bulb (w=1.0, Attenuation, Pendulum & Flicker)", 1.0f, 0.85f, 0.3f);
+    drawString2D(cardX + 55.0f, cardY + 238.0f, GLUT_BITMAP_HELVETICA_12, "[Light 1] POINT LIGHT       : Hanging Porch Bulb (w=1.0, Attenuation, Moving Shadow & Pool)", 1.0f, 0.85f, 0.3f);
     drawString2D(cardX + 55.0f, cardY + 260.0f, GLUT_BITMAP_HELVETICA_12, "[Light 2] DIRECTIONAL LIGHT : Moonlight Sky (w=0.0, Low Angle, Casts Planar Shadows)", 0.4f, 0.75f, 1.0f);
-    drawString2D(cardX + 55.0f, cardY + 282.0f, GLUT_BITMAP_HELVETICA_12, "[Light 3] SPOT LIGHT        : Flashlight (Positional, 18.5 deg Cone Cutoff, Follows Camera)", 0.9f, 0.95f, 1.0f);
+    drawString2D(cardX + 55.0f, cardY + 282.0f, GLUT_BITMAP_HELVETICA_12, "[Light 3] SPOT LIGHT        : Flashlight (Positional, 22 deg Soft Cone, Follows Camera)", 0.9f, 0.95f, 1.0f);
     drawString2D(cardX + 55.0f, cardY + 304.0f, GLUT_BITMAP_HELVETICA_12, "[Light 4] AREA LIGHT EMUL.  : Parlor Window Glow (Elevated Ambient Dispersion)", 1.0f, 0.6f, 0.2f);
-    drawString2D(cardX + 55.0f, cardY + 326.0f, GLUT_BITMAP_HELVETICA_12, "[Textures] MAPPING (GL_MOD) : Wood Planks, Roof Shingles, Mud Ground, Cobblestone, Bark, Rust", 0.3f, 0.9f, 0.9f);
+    drawString2D(cardX + 55.0f, cardY + 326.0f, GLUT_BITMAP_HELVETICA_12, "[Atmosphere] LIVING SCENE   : Drifting Ground Mist, Bats, Wind Sway, Lightning [L] & Audio [M]", 0.3f, 0.9f, 0.9f);
     drawString2D(cardX + 55.0f, cardY + 348.0f, GLUT_BITMAP_HELVETICA_12, "+ GL_FOG Atmosphere, Phong Materials, Carved Jack-o'-Lanterns & Cinematic Camera Tour", 0.6f, 0.9f, 0.6f);
 
     float pulse = 0.6f + 0.4f * std::sin(g_time * 5.0f);
@@ -4153,11 +4774,11 @@ void renderSceneHUD() {
     drawString2D(380.0f, 40.0f, GLUT_BITMAP_HELVETICA_12, fpsStr, 0.4f, 0.9f, 0.4f);
 
     // Left Panel: 4-Light Live Status Indicator Card
-    drawUIPanel(20.0f, 65.0f, 450.0f, 175.0f, 0.03f, 0.04f, 0.07f, 0.82f);
-    drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & TEXTURE STATUS [1, 2, 3, 4, 0, T]:", 0.9f, 0.85f, 0.6f);
+    drawUIPanel(20.0f, 65.0f, 450.0f, 195.0f, 0.03f, 0.04f, 0.07f, 0.82f);
+    drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & ATMOSPHERE STATUS [1, 2, 3, 4, 0, T]:", 0.9f, 0.85f, 0.6f);
 
     if (g_light0PointOn) {
-        drawString2D(35.0f, 110.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ ON ] Warm Amber (Sway & Flicker)", 0.2f, 1.0f, 0.3f);
+        drawString2D(35.0f, 110.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ ON ] Warm Amber (Moving Shadow & Pool)", 0.2f, 1.0f, 0.3f);
     } else {
         drawString2D(35.0f, 110.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
     }
@@ -4169,7 +4790,7 @@ void renderSceneHUD() {
     }
 
     if (g_light2SpotOn) {
-        drawString2D(35.0f, 154.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ ON ] Focused 18.5 deg Beam [F]", 1.0f, 1.0f, 0.4f);
+        drawString2D(35.0f, 154.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ ON ] Focused 22 deg Soft Cone [F]", 1.0f, 1.0f, 0.4f);
     } else {
         drawString2D(35.0f, 154.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ OFF ] [F]", 0.7f, 0.2f, 0.2f);
     }
@@ -4186,22 +4807,35 @@ void renderSceneHUD() {
         drawString2D(35.0f, 198.0f, GLUT_BITMAP_HELVETICA_12, "[T] Texture Mapping           : [ OFF ] Solid Phong Materials", 0.8f, 0.6f, 0.3f);
     }
 
-    char featStr[128];
-    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Bulb Sway: %s [B] | Tour: %s [C]",
+#ifdef _WIN32
+    char featStr[160];
+    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Tour: %s [C] | Audio: %s [M] | Lightning: [L]",
              g_fogEnabled ? "ON" : "OFF",
-             g_bulbAnimEnabled ? "ON" : "OFF",
+             g_cinematicMode ? "ACTIVE" : "OFF",
+             g_audioEnabled ? "ON" : "MUTED");
+    drawString2D(35.0f, 222.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
+#else
+    char featStr[160];
+    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Tour: %s [C] | Lightning: [L]",
+             g_fogEnabled ? "ON" : "OFF",
              g_cinematicMode ? "ACTIVE" : "OFF");
     drawString2D(35.0f, 222.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
+#endif
+
+    if (g_lightning.active) {
+        drawString2D(35.0f, 244.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
+    }
 
     // Right Controls Cheat-Sheet
-    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 160.0f, 0.03f, 0.04f, 0.07f, 0.80f);
+    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 185.0f, 0.03f, 0.04f, 0.07f, 0.80f);
     drawString2D(w - 365.0f, 36.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS GUIDE:", 0.9f, 0.85f, 0.6f);
     drawString2D(w - 365.0f, 56.0f,  GLUT_BITMAP_HELVETICA_12, "W, A, S, D     : First-Person Walk / Strafe", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 76.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Move     : Look Around (Yaw / Pitch)", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 96.0f,  GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 116.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 0  : Toggle Individual/All Lights", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 134.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | C: Tour | R: Reset View", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 152.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 134.0f, GLUT_BITMAP_HELVETICA_12, "L: Lightning Strike | M: Audio Mute", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 152.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | C: Tour | R: Reset View", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 170.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
 
     if (g_cinematicMode) {
         drawUIPanel(w * 0.5f - 240.0f, h - 65.0f, 480.0f, 45.0f, 0.08f, 0.03f, 0.02f, 0.90f);
@@ -4439,6 +5073,7 @@ void idleCallback() {
         g_fpsTimer = 0.0f;
     }
 
+    // 1. Porch Bulb Sway & Flicker
     if (g_bulbAnimEnabled) {
         float f1 = std::sin(g_time * 18.0f);
         float f2 = std::cos(g_time * 33.0f);
@@ -4449,7 +5084,70 @@ void idleCallback() {
         g_bulbFlickerFactor = 1.0f;
     }
 
+    // 2. Pumpkin Warm Candle Flicker
     g_pumpkinFlicker = 0.85f + 0.15f * std::sin(g_time * 4.5f) * std::cos(g_time * 2.8f);
+
+    // 3. Lightning State Machine & Dynamic Flashes
+    g_lightning.timer += g_deltaTime;
+    if (!g_lightning.active && g_lightning.timer >= g_lightning.nextStrikeInterval) {
+        triggerLightning();
+    }
+
+    if (g_lightning.active) {
+        g_lightning.strikeProgress += g_deltaTime;
+        float prog = g_lightning.strikeProgress;
+        float dur = g_lightning.strikeDuration;
+
+        if (prog < 0.08f) {
+            // Pulse 1: Pre-flash spike
+            g_lightning.flashIntensity = (prog / 0.08f) * 0.70f;
+        } else if (prog < 0.13f) {
+            // Dark dip
+            g_lightning.flashIntensity = 0.15f;
+        } else if (prog < 0.28f) {
+            // Main blinding lightning strike
+            float tMain = (prog - 0.13f) / 0.15f;
+            g_lightning.flashIntensity = 1.0f - tMain * 0.35f;
+        } else if (prog < 0.36f) {
+            // Minor dip
+            g_lightning.flashIntensity = 0.35f;
+        } else if (prog < 0.48f) {
+            // Secondary return stroke
+            float tSec = (prog - 0.36f) / 0.12f;
+            g_lightning.flashIntensity = 0.75f - tSec * 0.40f;
+        } else if (prog < dur) {
+            // Smooth trailing dissipation
+            float tTail = (prog - 0.48f) / (dur - 0.48f);
+            g_lightning.flashIntensity = 0.35f * (1.0f - tTail) * (1.0f - tTail);
+        } else {
+            g_lightning.active = false;
+            g_lightning.flashIntensity = 0.0f;
+            g_lightning.timer = 0.0f;
+        }
+
+#ifdef _WIN32
+        // Delayed Thunder Audio Trigger
+        if (g_lightning.thunderPending) {
+            g_lightning.thunderCountdown -= g_deltaTime;
+            if (g_lightning.thunderCountdown <= 0.0f) {
+                g_lightning.thunderPending = false;
+                playThunderAudio();
+            }
+        }
+#endif
+    } else {
+        g_lightning.flashIntensity = 0.0f;
+    }
+
+#ifdef _WIN32
+    // Audio Loop Recovery after Thunder
+    if (g_thunderAudioTimer > 0.0f) {
+        g_thunderAudioTimer -= g_deltaTime;
+        if (g_thunderAudioTimer <= 0.0f) {
+            playAmbientAudio();
+        }
+    }
+#endif
 
     if (g_cinematicMode) {
         updateCinematicCamera(g_deltaTime);
@@ -4467,6 +5165,9 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
     if (g_appState == STATE_TITLE) {
         if (key == 13 || key == ' ') {
             g_appState = STATE_SCENE;
+#ifdef _WIN32
+            playAmbientAudio();
+#endif
         }
         if (key == 27) exit(0);
         return;
@@ -4521,6 +5222,16 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
             if (g_cinematicMode) g_cinematicTime = 0.0f;
             std::cout << "[CAMERA] Cinematic Auto-Tour : " << (g_cinematicMode ? "ACTIVE" : "DISABLED") << std::endl;
             break;
+        case 'l':
+        case 'L':
+            triggerLightning();
+            break;
+#ifdef _WIN32
+        case 'm':
+        case 'M':
+            toggleAudio();
+            break;
+#endif
         case 'p':
         case 'P': {
             static int ssCount = 1;
@@ -4601,6 +5312,9 @@ void mouseButtonCallback(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         if (g_appState == STATE_TITLE) {
             g_appState = STATE_SCENE;
+#ifdef _WIN32
+            playAmbientAudio();
+#endif
         } else {
             g_light2SpotOn = !g_light2SpotOn;
         }
@@ -4647,6 +5361,8 @@ int main(int argc, char** argv) {
     std::cout << "  [G] Toggle Fog                                          " << std::endl;
     std::cout << "  [B] Toggle Bulb Sway & Flicker                          " << std::endl;
     std::cout << "  [C] Toggle Cinematic Auto-Tour Presentation             " << std::endl;
+    std::cout << "  [L] Trigger Lightning Strike (Random + Manual)          " << std::endl;
+    std::cout << "  [M] Toggle Procedural Ambient Audio                     " << std::endl;
     std::cout << "  [H] Toggle HUD Overlay                                  " << std::endl;
     std::cout << "  [P] Take Screenshot (.bmp)                              " << std::endl;
     std::cout << "  [R] Reset Camera to Reference Image Vantage Point       " << std::endl;

@@ -70,14 +70,16 @@ opengl-project/
 | **`W` / `A` / `S` / `D`** | Move Forward / Strafe Left / Move Backward / Strafe Right |
 | **Mouse Motion** | Look Around (Yaw & Clamped Pitch) |
 | **`Space` / `Ctrl` (or `X`)** | Fly Up / Fly Down |
-| **`1`** | Toggle Point Light (Porch Bulb) |
-| **`2`** | Toggle Directional Light (Moonlight) |
-| **`3` / `F`** | Toggle Spot Light (Flashlight) |
+| **`1`** | Toggle Point Light (Porch Bulb with Moving Shadows & Light Pool) |
+| **`2`** | Toggle Directional Light (Moonlight with Planar Shadows) |
+| **`3` / `F`** | Toggle Spot Light (Flashlight with Volumetric Fog Beam) |
 | **`4`** | Toggle Area Light (Window Interior Glow) |
 | **`0`** | Master Switch (Toggle ALL Lights) |
 | **`T`** | Toggle Texture Mapping ON / OFF (`GL_MODULATE`) |
 | **`G`** | Toggle Fog (`GL_FOG`) |
 | **`B`** | Toggle Bulb Pendulum Sway & Random Flicker |
+| **`L`** | Trigger Distant Lightning Strike (Multi-Pulse Flash & Sky Burst) |
+| **`M`** | Toggle Procedural Ambient Audio & Thunder (WinMM) |
 | **`C`** | Toggle Hands-Free Cinematic Auto-Tour Presentation Mode |
 | **`H`** | Toggle In-Game HUD & Controls Overlay |
 | **`P`** | Take Screenshot (Saves as uncompressed 24-bit `.bmp`) |
@@ -123,6 +125,9 @@ g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi3
 
 - **Q: How do `GL_SPOT_CUTOFF` and `GL_SPOT_EXPONENT` control a Spotlight?**  
   *A:* `GL_SPOT_CUTOFF` specifies the half-angle of the light cone ($0^\circ$ to $90^\circ$). `GL_SPOT_EXPONENT` defines the power factor modulating radial falloff concentration from the central axis $\cos^\alpha(\theta)$ towards the cone edge.
+
+- **Q: How do Dynamic Planar Projected Shadows and the Swinging Light Pool work?**  
+  *A:* We compute a $4 \times 4$ projection matrix that flattens geometry onto planes ($y = 0.725$ for porch floor, $y = 0$ for terrain) along rays cast from the light position. For the swaying porch bulb, the light position $(x(t), y(t), z(t), 1.0)$ swings dynamically, causing the cast shadows of porch balusters and furniture to move across the floor in exact counter-motion with the swinging amber light pool.
 
 - **Q: Why does Legacy OpenGL require Area Light Emulation?**  
   *A:* The fixed-function pipeline natively only supports mathematical delta point, directional, and spot lights. True area lights with soft penumbras require surface integral evaluation or Monte Carlo ray-tracing. We emulate it using an offset point source with high ambient dispersion ($k_a$) and soft distance attenuation.
