@@ -15,12 +15,14 @@ An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scr
 - **4 Distinct Light Types** working simultaneously, individually toggleable with live status UI.
 - **Texture Mapping with `GL_MODULATE`**: Weathered wood planks, slate roof shingles, wet dirt/mud ground, cobblestone pathway, gnarly bark, peeling paint & rust on the car, and celestial moon.
 - **Robust Fallback**: Uses `stb_image` to load PNG/JPG/BMP textures from `textures/`. If an image file is missing, it dynamically synthesizes procedural textures in memory so it never crashes!
+- **Realistic Undulating Terrain & 3 Reflective Puddles**: Smooth heightmap elevation with finite-difference normals and mirror-like puddles catching moon and bulb reflections.
+- **Irregular Mossy Rocks & Boulders**: Perturbed low-poly faceted rock generator with top-facing moss tinting, partially embedded into the mud.
+- **Abandoned Environmental Clutter**: Smashed wooden crate with spilling planks, upright & mud-tilted barrels, fallen fence pickets, rusty metal bucket, scattered bricks, tangled dead bushes, and an antique leaning wrought-iron lamppost with glowing carriage lantern.
 - **Atmospheric Fog (`GL_FOG` - `GL_EXP2`)** with dark blue midnight horizon matching.
-- **Dynamic Planar Projected Shadows** driven by low-angle moonlight projection matrices.
+- **Dynamic Planar Projected Shadows** driven by low-angle moonlight projection matrices for house, car, trees, and clutter props.
 - **Sinister Carved Jack-o'-Lanterns** with glowing eyes, toothy mouths, and internal candlelight halos.
 - **Swaying & Flickering Porch Bulb** with physical harmonic pendulum motion and filament flicker.
-- **Full Gothic Mansion Architecture**: Multi-pitch gabled roofs, octagonal spire tower, stone base, porch, tilted hanging door, window muntins, and broken furniture.
-- **Abandoned Environment**: Rusted metal car catching specular highlights, bare twisted trees, rocks, tombstones, and crooked picket fence.
+- **Detailed Abandoned Rusted Car**: Beveled hood and trunk contours, sloped windshield with spiderweb glass cracks, ajar driver's door showing steering wheel & bench seat, dangling side mirror, dual headlights, chrome slotted grille, heavy bumpers with overriders, and deflated flat tyre listing the car into the mud with high metallic specular glints.
 - **First-Person Camera** (WASD + Mouse Look) and **Cinematic Auto-Tour Mode (`C`)**.
 - **2D HUD Overlay & Title Screen** with glowing borders, live FPS counter, reticle, and vignette.
 

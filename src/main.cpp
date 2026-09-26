@@ -335,28 +335,42 @@ void generateProceduralTexture(TextureID id, int width, int height, std::vector<
                     break;
                 }
                 case TEX_RUST: {
-                    // Peeling paint and rust oxidation spots
+                    // Peeling vintage paint, deep iron oxidation rust, and lower mud splatter
                     float p1 = std::sin(x * 0.12f + y * 0.08f);
                     float p2 = std::cos(x * 0.25f - y * 0.20f);
-                    float rustPatch = p1 * p2;
-                    if (rustPatch > 0.1f) {
-                        // Oxidized orange-brown rust
-                        r = (unsigned char)(140 + 30 * rustPatch);
-                        g = (unsigned char)(60 + 20 * rustPatch);
-                        b = (unsigned char)(30 + 10 * rustPatch);
+                    float p3 = std::sin(x * 0.45f + std::sin(y * 0.35f) * 2.0f);
+                    float rustPatch = p1 * p2 + p3 * 0.22f;
+
+                    // Vertical mud / dirt gradient near lower vehicle base (y < height * 0.38)
+                    float dirtFactor = 0.0f;
+                    if (y < height * 0.38f) {
+                        float v = 1.0f - (float)y / (height * 0.38f);
+                        dirtFactor = v * (0.75f + 0.25f * std::sin(x * 0.32f));
+                    }
+
+                    if (dirtFactor > 0.38f) {
+                        // Dark damp earth grime & mud splatters near wheels and rocker panels
+                        r = (unsigned char)(42.0f + 14.0f * p1);
+                        g = (unsigned char)(32.0f + 10.0f * p2);
+                        b = (unsigned char)(22.0f +  8.0f * p1);
+                    } else if (rustPatch > 0.08f) {
+                        // Oxidized orange-brown iron rust pitting and blistered metal
+                        float t = (rustPatch - 0.08f) * 2.2f;
+                        if (t > 1.0f) t = 1.0f;
+                        r = (unsigned char)(145.0f + 35.0f * t);
+                        g = (unsigned char)( 62.0f + 20.0f * t);
+                        b = (unsigned char)( 28.0f + 12.0f * t);
                     } else {
-                        // Weathered peeling paint
-                        r = (unsigned char)(80 + 20 * p1);
-                        g = (unsigned char)(90 + 25 * p2);
-                        b = (unsigned char)(110 + 20 * p1);
+                        // Weathered peeling paint (classic 1960s faded slate/teal with chipped borders)
+                        float chip = (rustPatch > 0.02f) ? 0.70f : 1.0f;
+                        r = (unsigned char)((72.0f + 20.0f * p1) * chip);
+                        g = (unsigned char)((86.0f + 22.0f * p2) * chip);
+                        b = (unsigned char)((96.0f + 18.0f * p1) * chip);
                     }
                     break;
                 }
                 case TEX_MOON: {
                     // Luminous cratered lunar surface
-                    float dx = (float)(x - width / 2);
-                    float dy = (float)(y - height / 2);
-                    float d = std::sqrt(dx * dx + dy * dy);
                     float crater1 = std::sin(x * 0.08f) * std::cos(y * 0.08f);
                     float crater2 = std::sin(x * 0.22f + y * 0.18f);
                     float shade = 0.82f + 0.18f * (crater1 * 0.6f + crater2 * 0.4f);
@@ -509,20 +523,68 @@ const Material MAT_FALLEN_LEAF = {
     6.0f
 };
 
-const Material MAT_RUSTY_METAL = {
-    { 0.25f, 0.15f, 0.12f, 1.0f },
-    { 0.60f, 0.38f, 0.30f, 1.0f },
-    { 0.60f, 0.45f, 0.35f, 1.0f },
+const Material MAT_CLAY_BRICK = {
+    { 0.22f, 0.12f, 0.08f, 1.0f },
+    { 0.58f, 0.28f, 0.18f, 1.0f },
+    { 0.08f, 0.06f, 0.04f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    50.0f
+    10.0f
+};
+
+const Material MAT_MOSS_STONE = {
+    { 0.16f, 0.20f, 0.14f, 1.0f },
+    { 0.38f, 0.48f, 0.32f, 1.0f },
+    { 0.10f, 0.12f, 0.08f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    12.0f
+};
+
+const Material MAT_RUSTY_METAL = {
+    { 0.24f, 0.16f, 0.12f, 1.0f },
+    { 0.60f, 0.40f, 0.28f, 1.0f },
+    { 0.88f, 0.82f, 0.72f, 1.0f }, // High specular highlight for metallic flashlight and bulb glint
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    78.0f
 };
 
 const Material MAT_CAR_GLASS = {
-    { 0.08f, 0.12f, 0.18f, 0.85f },
-    { 0.18f, 0.28f, 0.38f, 0.85f },
-    { 0.85f, 0.92f, 1.00f, 0.85f },
+    { 0.04f, 0.06f, 0.10f, 0.88f },
+    { 0.10f, 0.15f, 0.22f, 0.88f },
+    { 0.98f, 0.98f, 1.00f, 0.88f }, // Dark, mirror-like specular reflections
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    95.0f
+    128.0f
+};
+
+const Material MAT_RUBBER_TYRE = {
+    { 0.10f, 0.10f, 0.10f, 1.0f },
+    { 0.22f, 0.22f, 0.22f, 1.0f },
+    { 0.08f, 0.08f, 0.08f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    8.0f
+};
+
+const Material MAT_CHROME_TRIM = {
+    { 0.30f, 0.32f, 0.36f, 1.0f },
+    { 0.78f, 0.80f, 0.85f, 1.0f },
+    { 1.00f, 1.00f, 1.00f, 1.0f }, // Brilliant mirror chrome specular glint
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    128.0f
+};
+
+const Material MAT_CAR_INTERIOR = {
+    { 0.12f, 0.10f, 0.08f, 1.0f },
+    { 0.32f, 0.26f, 0.22f, 1.0f },
+    { 0.15f, 0.12f, 0.10f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    15.0f
+};
+
+const Material MAT_SEAT_FOAM = {
+    { 0.25f, 0.22f, 0.10f, 1.0f },
+    { 0.65f, 0.58f, 0.28f, 1.0f },
+    { 0.05f, 0.05f, 0.02f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    6.0f
 };
 
 const Material MAT_PUMPKIN_SKIN = {
@@ -719,6 +781,188 @@ void drawBox(float width, float height, float depth, float tileU = 1.0f, float t
     glTexCoord2f(tileU, 0.0f);  glVertex3f(-x, -y,  z);
     glTexCoord2f(tileU, tileV); glVertex3f(-x,  y,  z);
     glTexCoord2f(0.0f, tileV);  glVertex3f(-x,  y, -z);
+    glEnd();
+}
+
+void drawBeveledBox(float width, float height, float depth, float bevel = 0.04f, float tileU = 1.0f, float tileV = 1.0f) {
+    float x = width * 0.5f;
+    float y = height * 0.5f;
+    float z = depth * 0.5f;
+    float b = std::min(bevel, std::min(x * 0.45f, std::min(y * 0.45f, z * 0.45f)));
+    if (b <= 0.001f) {
+        drawBox(width, height, depth, tileU, tileV);
+        return;
+    }
+
+    float bx = x - b;
+    float by = y - b;
+    float bz = z - b;
+    float invSqrt2 = 0.70710678f;
+    float invSqrt3 = 0.57735027f;
+
+    glBegin(GL_QUADS);
+    // 1. Primary 6 Main Faces
+    // Front (+Z)
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx, -by,  z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx, -by,  z);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx,  by,  z);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx,  by,  z);
+
+    // Back (-Z)
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx, -by, -z);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx, -by, -z);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx,  by, -z);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx,  by, -z);
+
+    // Top (+Y)
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx,  y,  bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx,  y,  bz);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx,  y, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx,  y, -bz);
+
+    // Bottom (-Y)
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx, -y, -bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx, -y, -bz);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx, -y,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx, -y,  bz);
+
+    // Right (+X)
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( x, -by,  bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( x, -by, -bz);
+    glTexCoord2f(tileU, tileV); glVertex3f( x,  by, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( x,  by,  bz);
+
+    // Left (-X)
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-x, -by, -bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-x, -by,  bz);
+    glTexCoord2f(tileU, tileV); glVertex3f(-x,  by,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-x,  by, -bz);
+
+    // 2. 12 Beveled Edge Quads
+    // Top-Front (+Y, +Z)
+    glNormal3f(0.0f, invSqrt2, invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx,  by,  z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx,  by,  z);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx,   y,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx,   y,  bz);
+
+    // Top-Back (+Y, -Z)
+    glNormal3f(0.0f, invSqrt2, -invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx,  by, -z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx,  by, -z);
+    glTexCoord2f(tileU, tileV); glVertex3f(-bx,   y, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( bx,   y, -bz);
+
+    // Top-Right (+Y, +X)
+    glNormal3f(invSqrt2, invSqrt2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx,   y,  bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx,   y, -bz);
+    glTexCoord2f(tileU, tileV); glVertex3f(  x,  by, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(  x,  by,  bz);
+
+    // Top-Left (+Y, -X)
+    glNormal3f(-invSqrt2, invSqrt2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx,   y, -bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx,   y,  bz);
+    glTexCoord2f(tileU, tileV); glVertex3f( -x,  by,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( -x,  by, -bz);
+
+    // Bottom-Front (-Y, +Z)
+    glNormal3f(0.0f, -invSqrt2, invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx, -by,  z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx, -by,  z);
+    glTexCoord2f(tileU, tileV); glVertex3f(-bx,  -y,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( bx,  -y,  bz);
+
+    // Bottom-Back (-Y, -Z)
+    glNormal3f(0.0f, -invSqrt2, -invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx, -by, -z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx, -by, -z);
+    glTexCoord2f(tileU, tileV); glVertex3f( bx,  -y, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(-bx,  -y, -bz);
+
+    // Bottom-Right (-Y, +X)
+    glNormal3f(invSqrt2, -invSqrt2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx,  -y, -bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx,  -y,  bz);
+    glTexCoord2f(tileU, tileV); glVertex3f(  x, -by,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(  x, -by, -bz);
+
+    // Bottom-Left (-Y, -X)
+    glNormal3f(-invSqrt2, -invSqrt2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx,  -y,  bz);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx,  -y, -bz);
+    glTexCoord2f(tileU, tileV); glVertex3f( -x, -by, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( -x, -by,  bz);
+
+    // Front-Right (+Z, +X)
+    glNormal3f(invSqrt2, 0.0f, invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx, -by,  z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx,  by,  z);
+    glTexCoord2f(tileU, tileV); glVertex3f(  x,  by,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(  x, -by,  bz);
+
+    // Front-Left (+Z, -X)
+    glNormal3f(-invSqrt2, 0.0f, invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx,  by,  z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx, -by,  z);
+    glTexCoord2f(tileU, tileV); glVertex3f( -x, -by,  bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( -x,  by,  bz);
+
+    // Back-Right (-Z, +X)
+    glNormal3f(invSqrt2, 0.0f, -invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f( bx,  by, -z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f( bx, -by, -z);
+    glTexCoord2f(tileU, tileV); glVertex3f(  x, -by, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f(  x,  by, -bz);
+
+    // Back-Left (-Z, -X)
+    glNormal3f(-invSqrt2, 0.0f, -invSqrt2);
+    glTexCoord2f(0.0f, 0.0f);   glVertex3f(-bx, -by, -z);
+    glTexCoord2f(tileU, 0.0f);  glVertex3f(-bx,  by, -z);
+    glTexCoord2f(tileU, tileV); glVertex3f( -x,  by, -bz);
+    glTexCoord2f(0.0f, tileV);  glVertex3f( -x, -by, -bz);
+    glEnd();
+
+    // 3. 8 Corner Triangles
+    glBegin(GL_TRIANGLES);
+    // Top-Front-Right (+X, +Y, +Z)
+    glNormal3f(invSqrt3, invSqrt3, invSqrt3);
+    glVertex3f( bx,  by,   z); glVertex3f(  x,  by,  bz); glVertex3f( bx,   y,  bz);
+
+    // Top-Front-Left (-X, +Y, +Z)
+    glNormal3f(-invSqrt3, invSqrt3, invSqrt3);
+    glVertex3f(-bx,  by,   z); glVertex3f(-bx,   y,  bz); glVertex3f( -x,  by,  bz);
+
+    // Top-Back-Right (+X, +Y, -Z)
+    glNormal3f(invSqrt3, invSqrt3, -invSqrt3);
+    glVertex3f( bx,  by,  -z); glVertex3f( bx,   y, -bz); glVertex3f(  x,  by, -bz);
+
+    // Top-Back-Left (-X, +Y, -Z)
+    glNormal3f(-invSqrt3, invSqrt3, -invSqrt3);
+    glVertex3f(-bx,  by,  -z); glVertex3f( -x,  by, -bz); glVertex3f(-bx,   y, -bz);
+
+    // Bottom-Front-Right (+X, -Y, +Z)
+    glNormal3f(invSqrt3, -invSqrt3, invSqrt3);
+    glVertex3f( bx, -by,   z); glVertex3f( bx,  -y,  bz); glVertex3f(  x, -by,  bz);
+
+    // Bottom-Front-Left (-X, -Y, +Z)
+    glNormal3f(-invSqrt3, -invSqrt3, invSqrt3);
+    glVertex3f(-bx, -by,   z); glVertex3f( -x, -by,  bz); glVertex3f(-bx,  -y,  bz);
+
+    // Bottom-Back-Right (+X, -Y, -Z)
+    glNormal3f(invSqrt3, -invSqrt3, -invSqrt3);
+    glVertex3f( bx, -by,  -z); glVertex3f(  x, -by, -bz); glVertex3f( bx,  -y, -bz);
+
+    // Bottom-Back-Left (-X, -Y, -Z)
+    glNormal3f(-invSqrt3, -invSqrt3, -invSqrt3);
+    glVertex3f(-bx, -by,  -z); glVertex3f(-bx,  -y, -bz); glVertex3f( -x, -by, -bz);
     glEnd();
 }
 
@@ -925,6 +1169,17 @@ void drawBillboardHalo(float x, float y, float z, float radius, float r, float g
 // DETAILED SCENE RENDERING WITH TEXTURES
 // ============================================================================
 
+// Deterministic LCG RNG for stable, repeatable organic rocks, vegetation & trees
+struct TreeRNG {
+    unsigned int state;
+    TreeRNG(unsigned int seed) : state(seed) {}
+    float nextFloat(float minVal, float maxVal) {
+        state = (state * 1664525u + 1013904223u);
+        float norm = (float)(state & 0x00FFFFFF) / (float)0x00FFFFFF;
+        return minVal + norm * (maxVal - minVal);
+    }
+};
+
 // ============================================================================
 // REALISTIC TERRAIN, REFLECTIVE PUDDLES & SCATTERED GROUND PROPS
 // ============================================================================
@@ -1124,7 +1379,525 @@ void drawPebble(float x, float z, float scaleX, float scaleY, float scaleZ, floa
     glPopMatrix();
 }
 
-// Scatter dead grass tufts, fallen leaves, and small pebbles
+// ----------------------------------------------------------------------------
+// IRREGULAR MOSSY ROCKS & ENVIRONMENTAL ABANDONED CLUTTER
+// ----------------------------------------------------------------------------
+
+// Irregular Low-Poly Boulder with Deterministic Vertex Perturbation & Moss-Green Top Tint
+void drawIrregularRock(float x, float z, float rx, float ry, float rz, float rotY, float rotX, unsigned int seed, float mossFactor = 0.65f) {
+    float groundY = getTerrainHeight(x, z);
+    // Partially sunk into terrain
+    float y = groundY - ry * 0.30f;
+
+    TreeRNG rng(seed);
+
+    int stacks = 8;
+    int slices = 12;
+
+    struct RockVert {
+        float x, y, z;
+        float nx, ny, nz;
+        float moss;
+    };
+    std::vector<RockVert> verts((stacks + 1) * (slices + 1));
+
+    for (int i = 0; i <= stacks; ++i) {
+        float phi = (float)M_PI * (-0.5f + (float)i / stacks);
+        float cosPhi = std::cos(phi);
+        float sinPhi = std::sin(phi);
+
+        for (int j = 0; j <= slices; ++j) {
+            float theta = 2.0f * (float)M_PI * (float)j / slices;
+            float cosTheta = std::cos(theta);
+            float sinTheta = std::sin(theta);
+
+            // Natural organic perturbation per vertex
+            float perturb = 1.0f + rng.nextFloat(-0.24f, 0.24f);
+
+            float vx = rx * cosPhi * cosTheta * perturb;
+            float vy = ry * sinPhi * perturb;
+            float vz = rz * cosPhi * sinTheta * perturb;
+
+            int idx = i * (slices + 1) + j;
+            verts[idx].x = vx;
+            verts[idx].y = vy;
+            verts[idx].z = vz;
+
+            // Approximate vertex normal
+            float nx = vx / (rx * rx);
+            float ny = vy / (ry * ry);
+            float nz = vz / (rz * rz);
+            float nlen = std::sqrt(nx*nx + ny*ny + nz*nz);
+            if (nlen > 0.001f) { nx /= nlen; ny /= nlen; nz /= nlen; }
+            verts[idx].nx = nx;
+            verts[idx].ny = ny;
+            verts[idx].nz = nz;
+
+            // Moss tint calculation on upward-facing surfaces (ny > 0.15)
+            float upMoss = (ny > 0.15f) ? ((ny - 0.15f) / 0.85f * mossFactor) : 0.0f;
+            verts[idx].moss = upMoss;
+        }
+    }
+
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(rotX, 1.0f, 0.0f, 0.0f);
+
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+
+    glBegin(GL_QUADS);
+    for (int i = 0; i < stacks; ++i) {
+        for (int j = 0; j < slices; ++j) {
+            int idx00 = i * (slices + 1) + j;
+            int idx10 = (i + 1) * (slices + 1) + j;
+            int idx11 = (i + 1) * (slices + 1) + (j + 1);
+            int idx01 = i * (slices + 1) + (j + 1);
+
+            // Facet normal for crisp, rugged, craggy stone edges
+            float edge1X = verts[idx10].x - verts[idx00].x;
+            float edge1Y = verts[idx10].y - verts[idx00].y;
+            float edge1Z = verts[idx10].z - verts[idx00].z;
+
+            float edge2X = verts[idx01].x - verts[idx00].x;
+            float edge2Y = verts[idx01].y - verts[idx00].y;
+            float edge2Z = verts[idx01].z - verts[idx00].z;
+
+            float fnx = edge1Y * edge2Z - edge1Z * edge2Y;
+            float fny = edge1Z * edge2X - edge1X * edge2Z;
+            float fnz = edge1X * edge2Y - edge1Y * edge2X;
+            float fnlen = std::sqrt(fnx*fnx + fny*fny + fnz*fnz);
+            if (fnlen > 0.0001f) { fnx /= fnlen; fny /= fnlen; fnz /= fnlen; }
+
+            glNormal3f(fnx, fny, fnz);
+
+            auto emitVert = [&](int idx, float u, float v) {
+                float m = verts[idx].moss;
+                // Moss-green tint multiplier on upper faces
+                float r = 1.0f - 0.35f * m;
+                float g = 1.0f + 0.18f * m;
+                float b = 1.0f - 0.45f * m;
+                glColor4f(r, g, b, 1.0f);
+                glTexCoord2f(u, v);
+                glVertex3f(verts[idx].x, verts[idx].y, verts[idx].z);
+            };
+
+            emitVert(idx00, (float)j / slices * 2.0f, (float)i / stacks * 2.0f);
+            emitVert(idx10, (float)j / slices * 2.0f, (float)(i + 1) / stacks * 2.0f);
+            emitVert(idx11, (float)(j + 1) / slices * 2.0f, (float)(i + 1) / stacks * 2.0f);
+            emitVert(idx01, (float)(j + 1) / slices * 2.0f, (float)i / stacks * 2.0f);
+        }
+    }
+    glEnd();
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glPopMatrix();
+}
+
+// Broken Wooden Crate with Missing / Cracked Planks & Spilling Boards
+void drawBrokenCrate(float x, float z, float rotY, float tilt = 6.0f) {
+    float groundY = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, groundY + 0.42f, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(tilt, 0.0f, 0.0f, 1.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+
+    float cw = 1.05f, ch = 0.85f, cd = 0.85f;
+    float hw = cw * 0.5f, hh = ch * 0.5f, hd = cd * 0.5f;
+
+    // 4 Vertical corner posts
+    for (int i = -1; i <= 1; i += 2) {
+        for (int j = -1; j <= 1; j += 2) {
+            glPushMatrix();
+            glTranslatef(i * (hw - 0.04f), 0.0f, j * (hd - 0.04f));
+            drawBox(0.08f, ch, 0.08f, 0.3f, 1.0f);
+            glPopMatrix();
+        }
+    }
+
+    // Bottom floor slats
+    for (int i = -2; i <= 2; ++i) {
+        glPushMatrix();
+        glTranslatef(i * 0.20f, -hh + 0.02f, 0.0f);
+        drawBox(0.16f, 0.04f, cd - 0.08f, 0.5f, 1.0f);
+        glPopMatrix();
+    }
+
+    // Back side planks (+Z)
+    for (int i = -1; i <= 1; ++i) {
+        glPushMatrix();
+        glTranslatef(0.0f, i * 0.26f, hd - 0.02f);
+        drawBox(cw, 0.20f, 0.04f, 1.0f, 0.4f);
+        glPopMatrix();
+    }
+
+    // Left side planks (-X)
+    for (int i = -1; i <= 1; ++i) {
+        glPushMatrix();
+        glTranslatef(-hw + 0.02f, i * 0.26f, 0.0f);
+        drawBox(0.04f, 0.20f, cd, 0.4f, 1.0f);
+        glPopMatrix();
+    }
+
+    // Right side planks (+X)
+    for (int i = -1; i <= 1; ++i) {
+        glPushMatrix();
+        glTranslatef(hw - 0.02f, i * 0.26f, 0.0f);
+        drawBox(0.04f, 0.20f, cd, 0.4f, 1.0f);
+        glPopMatrix();
+    }
+
+    // Broken Front side (-Z): bottom plank intact, middle missing, top tilted cracked!
+    glPushMatrix();
+    glTranslatef(0.0f, -0.26f, -hd + 0.02f);
+    drawBox(cw, 0.20f, 0.04f, 1.0f, 0.4f); // Bottom plank
+    glPopMatrix();
+
+    // Smashed loose plank dangling out of the front
+    glPushMatrix();
+    glTranslatef(0.15f, 0.08f, -hd - 0.15f);
+    glRotatef(28.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-18.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.75f, 0.18f, 0.04f, 1.0f, 0.3f);
+    glPopMatrix();
+
+    // Loose broken board sticking out of the top
+    glPushMatrix();
+    glTranslatef(-0.10f, hh + 0.12f, 0.05f);
+    glRotatef(-35.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(22.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.85f, 0.04f, 0.18f, 1.0f, 0.3f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Old Wooden Barrel with Rusty Iron Hoops
+void drawOldBarrel(float x, float z, float rotY, float tilt = 0.0f) {
+    float groundY = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, groundY + 0.52f, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(tilt, 1.0f, 0.0f, 0.0f);
+
+    float rEnd = 0.44f;
+    float rMid = 0.54f;
+    float h = 1.05f;
+
+    // Wooden Staved Body (two tapered halves meeting at bulging belly)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+
+    glPushMatrix();
+    glTranslatef(0.0f, -h * 0.5f, 0.0f);
+    drawCylinder(rEnd, rMid, h * 0.5f, 16, 2.0f, 1.0f); // Lower half
+    glTranslatef(0.0f, h * 0.5f, 0.0f);
+    drawCylinder(rMid, rEnd, h * 0.5f, 16, 2.0f, 1.0f); // Upper half
+    glPopMatrix();
+
+    // Top & Bottom Recessed Lid Caps
+    glPushMatrix();
+    glTranslatef(0.0f, h * 0.5f - 0.02f, 0.0f);
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(rEnd * 0.95f, 0.01f, 0.02f, 14, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // 3 Rusty Metal Bands / Hoops around the barrel
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+
+    float hoopPositions[3] = { -h * 0.35f, 0.0f, h * 0.35f };
+    float hoopRadii[3]     = { rEnd * 1.08f, rMid * 1.03f, rEnd * 1.08f };
+
+    for (int i = 0; i < 3; ++i) {
+        glPushMatrix();
+        glTranslatef(0.0f, hoopPositions[i] - 0.025f, 0.0f);
+        drawCylinder(hoopRadii[i], hoopRadii[i], 0.05f, 16, 1.0f, 0.2f);
+        glPopMatrix();
+    }
+
+    glPopMatrix();
+}
+
+// Fallen Fence Planks / Pointed Pickets Lying in the Mud
+void drawFallenPlank(float x, float z, float rotY, float pitch) {
+    float y = getTerrainHeight(x, z) + 0.03f;
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+
+    drawBox(0.14f, 0.04f, 1.55f, 0.3f, 2.0f);
+    // Pointed picket top
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.85f);
+    drawPrismRoof(0.14f, 0.16f, 0.04f, 0.3f, 0.3f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Rusty Metal Bucket with Arched Wire Handle
+void drawRustyBucket(float x, float z, float rotY, float tilt = 22.0f) {
+    float y = getTerrainHeight(x, z) + 0.10f;
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(tilt, 1.0f, 0.0f, 0.0f);
+
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+
+    float rBase = 0.15f;
+    float rTop  = 0.22f;
+    float h     = 0.36f;
+
+    // Tapered bucket body
+    drawCylinder(rBase, rTop, h, 14, 1.0f, 1.0f);
+
+    // Bottom rim & top rolled rim
+    glPushMatrix();
+    glTranslatef(0.0f, h - 0.01f, 0.0f);
+    drawCylinder(rTop * 1.04f, rTop * 1.04f, 0.025f, 14, 1.0f, 0.2f);
+    glPopMatrix();
+
+    // Arched Wire Handle (Bail) draped over the bucket
+    bindTexture(TEX_NONE);
+    glLineWidth(2.5f);
+    glColor3f(0.35f, 0.25f, 0.20f);
+    glBegin(GL_LINE_STRIP);
+    for (int i = 0; i <= 12; ++i) {
+        float a = (float)i * (float)M_PI / 12.0f;
+        float hx = (rTop + 0.02f) * std::cos(a);
+        float hy = h + 0.22f * std::sin(a);
+        glVertex3f(hx, hy, 0.0f);
+    }
+    glEnd();
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glPopMatrix();
+}
+
+// Scattered Clay Bricks around the house foundation & corners
+void drawSingleBrick(float x, float z, float rotY, float pitch = 0.0f) {
+    float y = getTerrainHeight(x, z) + 0.035f;
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f);
+
+    applyMaterial(MAT_CLAY_BRICK);
+    bindTexture(TEX_STONE); // subtle rough stone/brick texture
+
+    drawBox(0.25f, 0.07f, 0.12f, 0.5f, 0.3f);
+    glPopMatrix();
+}
+
+void drawScatteredBricks() {
+    // Cluster 1: Near cracked foundation wall corner
+    drawSingleBrick( 7.5f, 3.8f,  18.0f);
+    drawSingleBrick( 7.9f, 3.2f, -42.0f,  6.0f);
+    drawSingleBrick( 7.2f, 4.3f,  65.0f);
+    drawSingleBrick( 8.3f, 4.0f, -10.0f, 12.0f);
+    drawSingleBrick( 7.8f, 4.8f,  30.0f);
+
+    // Cluster 2: Near porch steps / foundation
+    drawSingleBrick(-5.2f, 7.8f,  33.0f);
+    drawSingleBrick(-5.6f, 7.2f, -25.0f,  8.0f);
+    drawSingleBrick(-4.9f, 8.4f,  70.0f);
+
+    // Cluster 3: Near broken crate
+    drawSingleBrick(-6.8f, 10.8f, -15.0f);
+    drawSingleBrick(-5.8f, 12.2f,  40.0f, 10.0f);
+}
+
+// Tangled Bare Dead Bush / Bramble Shrub
+void drawDeadBush(float x, float z, float scale, float rotY, unsigned int seed) {
+    float groundY = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_BARK);
+    bindTexture(TEX_BARK);
+
+    TreeRNG rng(seed);
+    int numStems = 7;
+    for (int i = 0; i < numStems; ++i) {
+        float azimuth = (float)i * (360.0f / numStems) + rng.nextFloat(-20.0f, 20.0f);
+        float outAngle = rng.nextFloat(35.0f, 65.0f);
+        float stemLen = scale * rng.nextFloat(0.70f, 1.15f);
+
+        glPushMatrix();
+        glRotatef(azimuth, 0.0f, 1.0f, 0.0f);
+        glRotatef(outAngle, 1.0f, 0.0f, 0.0f);
+
+        // Lower stem
+        drawCylinder(0.045f * scale, 0.025f * scale, stemLen * 0.5f, 5, 1.0f, 1.0f);
+        glTranslatef(0.0f, stemLen * 0.5f, 0.0f);
+
+        // Crooked bend
+        glRotatef(rng.nextFloat(-25.0f, 25.0f), 1.0f, 0.0f, 0.0f);
+        glRotatef(rng.nextFloat(-25.0f, 25.0f), 0.0f, 0.0f, 1.0f);
+        drawCylinder(0.025f * scale, 0.010f * scale, stemLen * 0.5f, 4, 1.0f, 1.0f);
+        glTranslatef(0.0f, stemLen * 0.5f, 0.0f);
+
+        // Sub-twigs
+        for (int t = 0; t < 2; ++t) {
+            glPushMatrix();
+            glRotatef(rng.nextFloat(30.0f, 60.0f), 1.0f, 0.0f, 0.0f);
+            glRotatef((float)t * 180.0f + rng.nextFloat(-20.0f, 20.0f), 0.0f, 1.0f, 0.0f);
+            drawCylinder(0.012f * scale, 0.004f * scale, stemLen * 0.40f, 4);
+            glPopMatrix();
+        }
+
+        glPopMatrix();
+    }
+
+    glPopMatrix();
+}
+
+// Leaning Old Wrought-Iron Lamppost with Faint Glowing Lantern
+void drawLeaningLamppost(float x, float z, float rotY, float leanAngle = 11.5f) {
+    float groundY = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(leanAngle, 0.0f, 0.0f, 1.0f); // Haunting historic soil lean
+
+    // Stepped Pedestal Base Plinth
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+
+    glPushMatrix();
+    glTranslatef(0.0f, 0.12f, 0.0f);
+    drawBox(0.52f, 0.24f, 0.52f); // Bottom step
+    glTranslatef(0.0f, 0.18f, 0.0f);
+    drawBox(0.40f, 0.16f, 0.40f); // Middle tier
+    glTranslatef(0.0f, 0.14f, 0.0f);
+    drawCylinder(0.18f, 0.12f, 0.16f, 10, 1.0f, 0.5f); // Base collar
+    glPopMatrix();
+
+    // Fluted Tapered Iron Shaft (3.2m tall)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.55f, 0.0f);
+    drawCylinder(0.10f, 0.065f, 3.1f, 10, 1.0f, 3.0f);
+
+    // Mid-shaft decorative ring collar
+    glTranslatef(0.0f, 1.8f, 0.0f);
+    drawCylinder(0.09f, 0.09f, 0.06f, 10, 1.0f, 0.2f);
+
+    // Top capital header
+    glTranslatef(0.0f, 1.3f, 0.0f);
+    drawBox(0.18f, 0.08f, 0.18f);
+    glPopMatrix();
+
+    // Decorative Scrollwork Curved Bracket Arm holding the lantern
+    glPushMatrix();
+    glTranslatef(0.0f, 3.85f, 0.0f);
+
+    // Horizontal bracket arm
+    glPushMatrix();
+    glTranslatef(0.35f, 0.0f, 0.0f);
+    drawBox(0.70f, 0.05f, 0.05f);
+    glPopMatrix();
+
+    // Curved lower support strut
+    glPushMatrix();
+    glTranslatef(0.20f, -0.22f, 0.0f);
+    glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.45f, 0.04f, 0.04f);
+    glPopMatrix();
+
+    // Lantern Drop Mount
+    glTranslatef(0.65f, -0.15f, 0.0f);
+
+    // Antique 4-Sided Carriage Lantern Housing
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+
+    // Top roof cap
+    glPushMatrix();
+    glTranslatef(0.0f, 0.28f, 0.0f);
+    drawPrismRoof(0.38f, 0.18f, 0.38f, 0.5f, 0.5f);
+    glTranslatef(0.0f, 0.20f, 0.0f);
+    drawSphere(0.04f, 8, 6); // Top finial
+    glPopMatrix();
+
+    // Bottom finial drop
+    glPushMatrix();
+    glTranslatef(0.0f, -0.32f, 0.0f);
+    drawCylinder(0.06f, 0.01f, 0.12f, 8);
+    glPopMatrix();
+
+    // Glass Lantern Panes
+    applyMaterial(MAT_CAR_GLASS);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    drawBox(0.30f, 0.46f, 0.30f);
+    glPopMatrix();
+
+    // Faint Amber Glowing Filament Bulb inside Lantern
+    applyMaterial(MAT_BULB_EMISSIVE);
+    glPushMatrix();
+    drawSphere(0.07f, 10, 8);
+    glPopMatrix();
+
+    // Soft warm atmospheric lantern glow
+    drawBillboardHalo(0.0f, 0.0f, 0.0f, 1.1f, 1.0f, 0.70f, 0.25f, 0.40f);
+
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Complete Environmental Clutter & Props Master Function
+void drawEnvironmentalClutter() {
+    // 1. Irregular Moss-Tinted Boulders & Rocks (Partly sunk into terrain)
+    drawIrregularRock(  6.2f, 14.8f, 0.85f, 0.65f, 0.90f,  35.0f,  8.0f, 811, 0.75f); // Large foreground boulder
+    drawIrregularRock( -6.8f, 14.5f, 0.55f, 0.45f, 0.60f, -20.0f, -5.0f, 822, 0.65f); // Left puddle rock
+    drawIrregularRock( 12.8f,  6.5f, 0.70f, 0.50f, 0.75f,  50.0f, 10.0f, 833, 0.70f); // Car cluster rock
+    drawIrregularRock(  9.2f, 17.5f, 0.60f, 0.45f, 0.65f, -45.0f,  6.0f, 844, 0.60f); // Cemetery border rock
+    drawIrregularRock( -8.5f,  6.8f, 0.50f, 0.40f, 0.55f,  15.0f, -8.0f, 855, 0.80f); // Porch guard rock
+    drawIrregularRock(-13.5f, 21.0f, 0.75f, 0.55f, 0.80f,  75.0f,  5.0f, 866, 0.55f); // Distant left rock
+    drawIrregularRock( 14.5f, 19.0f, 0.65f, 0.48f, 0.70f, -30.0f, -6.0f, 877, 0.60f); // Distant right rock
+
+    // 2. Broken Wooden Crate
+    drawBrokenCrate(-6.2f, 11.5f, 22.0f, 6.0f);
+
+    // 3. Old Wooden Barrels
+    drawOldBarrel(-4.8f, 5.2f, -15.0f, 0.0f);  // Upright near porch
+    drawOldBarrel( 8.8f, 9.2f,  48.0f, 72.0f); // Tilted on side in mud near car
+
+    // 4. Fallen Fence Planks
+    drawFallenPlank(-13.5f, 18.0f,  35.0f,  4.0f);
+    drawFallenPlank(-13.8f, 10.5f, -50.0f, -3.0f);
+    drawFallenPlank(-14.2f,  2.0f,  20.0f,  5.0f);
+
+    // 5. Rusty Metal Bucket
+    drawRustyBucket(-3.5f, 8.8f, 30.0f, 24.0f);
+
+    // 6. Scattered Clay Bricks
+    drawScatteredBricks();
+
+    // 7. Tangled Bare Dead Bushes
+    drawDeadBush(-12.5f, 12.0f, 1.10f,  15.0f, 901); // Near fence
+    drawDeadBush(  8.2f, 16.5f, 1.20f, -35.0f, 902); // Near cemetery
+    drawDeadBush( -7.5f, 19.5f, 0.90f,  45.0f, 903); // Near road entrance
+    drawDeadBush( 12.0f, 11.0f, 1.00f, -60.0f, 904); // Behind car
+
+    // 8. Leaning Old Wrought Iron Lamppost
+    drawLeaningLamppost(-3.8f, 19.2f, 25.0f, 11.5f);
+}
+
+// Scatter dead grass tufts and fallen leaves
 void drawGroundProps() {
     // 1. Scattered Dead Grass Tufts (Crossed Quads)
     drawGrassTuft(  5.2f, 14.5f, 0.45f, 0.65f,  25.0f);
@@ -1173,23 +1946,6 @@ void drawGroundProps() {
     drawFallenLeaf( 15.0f, 14.8f, 0.26f, -30.0f,  5.0f, 0.42f, 0.20f, 0.08f);
     drawFallenLeaf( -2.8f, 17.5f, 0.24f,  75.0f,  4.0f, 0.50f, 0.25f, 0.09f);
     drawFallenLeaf(  2.2f, 16.8f, 0.25f, -10.0f, -5.0f, 0.44f, 0.22f, 0.08f);
-
-    // 3. Scattered Small Pebbles and Stones
-    drawPebble( 0.9f, 15.5f, 0.14f, 0.08f, 0.12f,  35.0f);
-    drawPebble(-1.4f, 14.2f, 0.18f, 0.09f, 0.15f, -20.0f);
-    drawPebble( 1.5f, 12.8f, 0.12f, 0.06f, 0.10f,  55.0f);
-    drawPebble(-0.8f, 10.5f, 0.20f, 0.11f, 0.17f, -45.0f);
-    drawPebble( 1.1f,  8.2f, 0.16f, 0.08f, 0.13f,  15.0f);
-    drawPebble(-1.6f,  6.8f, 0.15f, 0.07f, 0.12f, -30.0f);
-    drawPebble(-3.6f, 14.2f, 0.22f, 0.10f, 0.18f,  65.0f); // Near puddle 1
-    drawPebble(-5.8f, 12.8f, 0.17f, 0.08f, 0.14f, -15.0f);
-    drawPebble( 3.6f, 11.2f, 0.19f, 0.09f, 0.16f,  40.0f); // Near puddle 2
-    drawPebble( 6.2f,  9.8f, 0.24f, 0.12f, 0.20f, -25.0f);
-    drawPebble(-8.8f,  7.2f, 0.21f, 0.10f, 0.17f,  30.0f); // Near puddle 3
-    drawPebble( 5.5f, 13.8f, 0.25f, 0.12f, 0.22f, -50.0f); // Near monster tree
-    drawPebble( 7.5f, 14.2f, 0.18f, 0.09f, 0.15f,  20.0f);
-    drawPebble(11.8f,  6.8f, 0.28f, 0.14f, 0.24f,  45.0f); // Near car
-    drawPebble(10.5f, 15.2f, 0.20f, 0.10f, 0.16f, -35.0f); // Cemetery yard
 }
 
 // 1. Terrain & Wet Cobblestone Pathway
@@ -1291,6 +2047,7 @@ void drawGround() {
     // Reflective Puddles & Ground Details
     drawPuddles();
     drawGroundProps();
+    drawEnvironmentalClutter();
 }
 
 // 2. Carved Jack-o'-Lantern Pumpkins
@@ -1401,17 +2158,6 @@ void drawPumpkinArray() {
 // ----------------------------------------------------------------------------
 // 3. ORGANIC BARE CREEPY TREES (Tapered Recursive Branches & Gnarled Roots)
 // ----------------------------------------------------------------------------
-
-// Deterministic RNG for stable, repeatable organic tree generation
-struct TreeRNG {
-    unsigned int state;
-    TreeRNG(unsigned int seed) : state(seed) {}
-    float nextFloat(float minVal, float maxVal) {
-        state = (state * 1664525u + 1013904223u);
-        float norm = (float)(state & 0x00FFFFFF) / (float)0x00FFFFFF;
-        return minVal + norm * (maxVal - minVal);
-    }
-};
 
 // Dead hanging moss / vine tendril with chained drooping segments
 void drawDeadVine(float length, TreeRNG& rng) {
@@ -2185,60 +2931,708 @@ void drawHangingBulb() {
     }
 }
 
-// 6. Abandoned Rusted Car with Peeling Paint & Metal Texture
+// 6. Abandoned Rusted Car with Beveled Contours, Open Door, Deflated Tyre & Details
 void drawRustedCar(float x, float z, float rotY) {
     float groundY = getTerrainHeight(x, z);
-    glPushMatrix();
-    glTranslatef(x, groundY, z);
-    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 
+    glPushMatrix();
+    // Partially sunk into mud, with authentic deflated tyre listing & forward pitch
+    glTranslatef(x, groundY - 0.10f, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(-5.0f, 0.0f, 0.0f, 1.0f); // Roll listing to the right (flat tyre side)
+    glRotatef( 3.4f, 1.0f, 0.0f, 0.0f); // Pitch dipped down at front-right
+
+    // ------------------------------------------------------------------------
+    // A. WET MUD RUT & SUNKEN GROUND DEPRESSION UNDER FLAT TYRE
+    // ------------------------------------------------------------------------
+    applyMaterial(MAT_WET_GROUND);
+    bindTexture(TEX_GROUND);
+    glPushMatrix();
+    glTranslatef(1.02f, 0.04f, 1.35f); // Directly under front-right deflated tyre
+    drawBox(0.95f, 0.05f, 1.10f, 1.0f, 1.0f);
+    // Surrounding splashed mud ridge
+    glTranslatef(0.0f, 0.03f, 0.0f);
+    drawBox(1.15f, 0.03f, 1.30f, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // ------------------------------------------------------------------------
+    // B. LOWER CHASSIS, UNDERCARRIAGE & RUSTY EXHAUST SYSTEM
+    // ------------------------------------------------------------------------
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
 
+    // Lower Chassis Frame / Rocker panels (Beveled to catch light)
     glPushMatrix();
-    glTranslatef(0.0f, 0.7f, 0.0f);
-    drawBox(2.2f, 0.65f, 4.6f, 2.0f, 2.0f);
+    glTranslatef(0.0f, 0.40f, 0.0f);
+    drawBeveledBox(1.95f, 0.26f, 4.40f, 0.04f, 2.0f, 1.5f);
     glPopMatrix();
 
+    // Undercarriage Transmission Tunnel
     glPushMatrix();
-    glTranslatef(0.0f, 0.85f, 1.2f);
-    drawBox(2.0f, 0.45f, 2.0f, 1.5f, 1.0f);
+    glTranslatef(0.0f, 0.50f, 0.0f);
+    drawBox(0.45f, 0.16f, 3.40f);
     glPopMatrix();
 
+    // Rusted Exhaust Pipe & Muffler trailing underneath to the rear
     glPushMatrix();
-    glTranslatef(0.0f, 1.35f, -0.4f);
-    drawBox(1.9f, 0.75f, 2.1f, 1.5f, 1.5f);
+    glTranslatef(-0.48f, 0.28f, 0.60f);
+    // Exhaust pipe from engine bay
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.032f, 0.032f, 1.60f, 8);
+    // Rusted oval muffler box
+    glTranslatef(0.0f, 1.60f, 0.0f);
+    drawBeveledBox(0.32f, 0.16f, 0.65f, 0.03f);
+    // Tailpipe leading past rear bumper
+    glTranslatef(0.0f, 0.65f, 0.0f);
+    drawCylinder(0.030f, 0.030f, 0.65f, 8);
+    // Slanted down-turned tailpipe tip
+    glTranslatef(0.0f, 0.65f, 0.0f);
+    glRotatef(-25.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.030f, 0.028f, 0.18f, 8);
     glPopMatrix();
 
-    // Windshield
-    applyMaterial(MAT_CAR_GLASS);
+    // ------------------------------------------------------------------------
+    // C. MAIN BODY PANELS, SCULPTED FENDERS, HOOD & TRUNK
+    // ------------------------------------------------------------------------
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+
+    // Main Lower Body Tub (Wheel wells, lower doors, quarter panels)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.68f, 0.0f);
+    drawBeveledBox(2.18f, 0.38f, 4.62f, 0.06f, 2.0f, 1.8f);
+    glPopMatrix();
+
+    // 4 Curved Flared Wheel Well Arches (Fender Flares with mud splatter)
+    float archX[2] = { -1.10f, 1.10f };
+    float archZ[2] = { -1.35f, 1.35f };
+    for (int ix = 0; ix < 2; ++ix) {
+        for (int iz = 0; iz < 2; ++iz) {
+            glPushMatrix();
+            glTranslatef(archX[ix], 0.72f, archZ[iz]);
+            drawBeveledBox(0.12f, 0.28f, 1.12f, 0.03f, 0.5f, 0.5f);
+            glPopMatrix();
+        }
+    }
+
+    // Upper Body Waistline / Shoulder Crease (Beveled transition)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.94f, 0.0f);
+    drawBeveledBox(2.08f, 0.22f, 4.42f, 0.04f, 2.0f, 1.2f);
+    glPopMatrix();
+
+    // Sloped Front Engine Hood with Raised Central Power Crease
+    glPushMatrix();
+    glTranslatef(0.0f, 0.98f, 1.35f);
+    glRotatef(-4.8f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(1.98f, 0.14f, 1.72f, 0.04f, 1.5f, 1.0f); // Hood main plate
+    // Central raised power bulge / crease line
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawBeveledBox(0.65f, 0.04f, 1.62f, 0.02f);
+    // Chrome Hood Center Ornament / Emblem base
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.0f, 0.03f, 0.76f);
+    drawBox(0.06f, 0.05f, 0.14f);
+    glPopMatrix();
+
+    // Sloped Rear Trunk Deck Lid
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.98f, -1.55f);
+    glRotatef(3.2f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(1.92f, 0.14f, 1.32f, 0.04f, 1.5f, 1.0f);
+    // Chrome Trunk Keyhole Cylinder
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.0f, -0.04f, -0.66f);
+    drawCylinder(0.025f, 0.025f, 0.03f, 8);
+    glPopMatrix();
+
+    // Rear Quarter Panel Fuel Filler Door Flap
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(1.05f, 0.92f, -1.45f);
+    drawBox(0.02f, 0.14f, 0.14f);
+    glPopMatrix();
+
+    // ------------------------------------------------------------------------
+    // D. FRONT GRILLE, HEADLIGHTS, BUMPERS & CRUMPLED ACCENTS
+    // ------------------------------------------------------------------------
+    // Front Radiator Grille Shell Housing
+    glPushMatrix();
+    glTranslatef(0.0f, 0.72f, 2.34f);
+    drawBeveledBox(1.88f, 0.44f, 0.10f, 0.03f, 1.0f, 0.5f);
+
+    // Deep Dark Radiator Core Mesh behind grille
+    applyMaterial(MAT_RUBBER_TYRE);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glTranslatef(0.0f, 1.3f, 0.7f);
-    glRotatef(-30.0f, 1.0f, 0.0f, 0.0f);
-    drawBox(1.75f, 0.6f, 0.05f);
+    glTranslatef(0.0f, 0.0f, 0.02f);
+    drawBox(1.70f, 0.36f, 0.02f);
     glPopMatrix();
 
-    // Rubber & Rusted Wheels
-    applyMaterial(MAT_BARK);
-    bindTexture(TEX_BARK);
-    float wheelX = 1.05f;
-    float wheelZ[2] = { 1.3f, -1.3f };
-    for (int i = 0; i < 2; ++i) {
+    // Chrome Grille Matrix: Vertical Slats & Horizontal Crossbars
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    for (int i = -4; i <= 4; ++i) {
         glPushMatrix();
-        glTranslatef(wheelX, 0.42f, wheelZ[i]);
-        glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-        drawCylinder(0.42f, 0.42f, 0.28f, 12, 1.0f, 1.0f);
+        glTranslatef(i * 0.18f, 0.0f, 0.055f);
+        drawBox(0.028f, 0.34f, 0.035f);
         glPopMatrix();
-
+    }
+    for (int j = -1; j <= 1; ++j) {
         glPushMatrix();
-        glTranslatef(-wheelX - 0.28f, 0.42f, wheelZ[i]);
-        glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-        drawCylinder(0.42f, 0.42f, 0.28f, 12, 1.0f, 1.0f);
+        glTranslatef(0.0f, j * 0.11f, 0.055f);
+        drawBox(1.68f, 0.025f, 0.035f);
+        glPopMatrix();
+    }
+    // Center Vintage Insignia Emblem Badge
+    glPushMatrix();
+    glTranslatef(0.0f, 0.06f, 0.075f);
+    drawSphere(0.055f, 10, 8);
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // Dual Round Headlights (Left Intact with Glass, Right Broken with Exposed Bulb!)
+    float headLightX[2] = { -0.74f, 0.74f };
+    // 1. Left Headlight (Intact, chrome bezel with fluted reflective glass lens)
+    glPushMatrix();
+    glTranslatef(headLightX[0], 0.78f, 2.34f);
+    // Chrome Bezel Housing
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawCylinder(0.165f, 0.165f, 0.06f, 14, 1.0f, 0.2f);
+    // Chrome Reflector Bowl inside
+    glTranslatef(0.0f, 0.0f, 0.02f);
+    drawSphere(0.13f, 10, 8);
+    // Glass Convex Lens (High specular glint)
+    glTranslatef(0.0f, 0.0f, 0.04f);
+    applyMaterial(MAT_CAR_GLASS);
+    drawSphere(0.145f, 12, 10);
+    glPopMatrix();
+
+    // 2. Right Headlight (Broken/Abandoned: dented chrome rim, shattered shards, exposed bulb!)
+    glPushMatrix();
+    glTranslatef(headLightX[1], 0.78f, 2.34f);
+    glRotatef(6.0f, 0.0f, 1.0f, 0.2f); // Askew/dented
+    // Dented Chrome Bezel
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawCylinder(0.165f, 0.150f, 0.05f, 12, 1.0f, 0.2f);
+    // Dark Empty Lamp Bucket
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glTranslatef(0.0f, 0.0f, 0.015f);
+    drawSphere(0.12f, 8, 6);
+    // Tiny Exposed Tungsten Filament Bulb on Wire
+    applyMaterial(MAT_BULB_EMISSIVE);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.0f, 0.0f, 0.025f);
+    drawSphere(0.035f, 8, 6);
+    // Broken Glass Shards on rim edge
+    applyMaterial(MAT_CAR_GLASS);
+    glTranslatef(0.08f, -0.06f, 0.01f);
+    drawBox(0.04f, 0.06f, 0.015f);
+    glPopMatrix();
+
+    // Heavy Front Bumper Bar with Overriders (Bumperettes) & Frame Brackets
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.44f, 2.42f);
+    drawBeveledBox(2.28f, 0.14f, 0.12f, 0.03f, 2.0f, 0.3f);
+    // Frame Mounting Brackets
+    glTranslatef(-0.55f, 0.0f, -0.10f);
+    drawBox(0.08f, 0.10f, 0.12f);
+    glTranslatef(1.10f, 0.0f, 0.0f);
+    drawBox(0.08f, 0.10f, 0.12f);
+    // Chrome / Rusted Overrider Guards with Rubber Buffer Pads
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.0f, 0.06f, 0.14f);
+    drawBeveledBox(0.08f, 0.28f, 0.08f, 0.02f);
+    glTranslatef(-1.10f, 0.0f, 0.0f);
+    drawBeveledBox(0.08f, 0.28f, 0.08f, 0.02f);
+    glPopMatrix();
+
+    // Heavy Rear Bumper Bar & Bent Rusted License Plate
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.44f, -2.36f);
+    drawBeveledBox(2.22f, 0.14f, 0.12f, 0.03f, 2.0f, 0.3f);
+    // Rear Overriders
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glTranslatef(-0.55f, 0.05f, -0.04f);
+    drawBeveledBox(0.08f, 0.26f, 0.08f, 0.02f);
+    glTranslatef(1.10f, 0.0f, 0.0f);
+    drawBeveledBox(0.08f, 0.26f, 0.08f, 0.02f);
+
+    // Vintage License Plate hanging askew by one loose bolt ("H0RR0R-70")
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glTranslatef(-0.55f, 0.02f, -0.05f);
+    glRotatef(14.0f, 0.0f, 0.0f, 1.0f); // Tilted askew
+    drawBox(0.42f, 0.20f, 0.015f);
+    // Dark stamp border on plate
+    applyMaterial(MAT_DARK_WOOD);
+    drawBox(0.38f, 0.16f, 0.018f);
+    glPopMatrix();
+
+    // Red Glass Tail Light Lenses with Chrome Bezels
+    for (int i = 0; i < 2; ++i) {
+        // Chrome Bezel
+        applyMaterial(MAT_CHROME_TRIM);
+        bindTexture(TEX_NONE);
+        glPushMatrix();
+        glTranslatef(headLightX[i], 0.82f, -2.34f);
+        drawBox(0.20f, 0.14f, 0.04f);
+        // Red Glass Lens
+        applyMaterial(MAT_PUMPKIN_SKIN);
+        glTranslatef(0.0f, 0.0f, -0.02f);
+        drawBox(0.16f, 0.10f, 0.03f);
         glPopMatrix();
     }
 
+    // ------------------------------------------------------------------------
+    // E. CABIN, BEVELED ROOF, PILLARS & DARK REFLECTIVE WINDOWS
+    // ------------------------------------------------------------------------
+    // Tapered Cabin Roof with Projecting Rain Gutters / Drip Rails
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.68f, -0.32f);
+    drawBeveledBox(1.74f, 0.06f, 2.10f, 0.025f, 1.5f, 1.5f);
+    // Left & Right Rain Gutters
+    glTranslatef(-0.88f, -0.02f, 0.0f);
+    drawBox(0.04f, 0.04f, 2.12f);
+    glTranslatef(1.76f, 0.0f, 0.0f);
+    drawBox(0.04f, 0.04f, 2.12f);
     glPopMatrix();
+
+    // A-Pillars (Front windshield frame struts, sloped at 34 deg)
+    glPushMatrix();
+    glTranslatef(-0.84f, 1.34f, 0.44f);
+    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(0.06f, 0.74f, 0.06f, 0.015f);
+    glTranslatef(1.68f, 0.0f, 0.0f);
+    drawBeveledBox(0.06f, 0.74f, 0.06f, 0.015f);
+    glPopMatrix();
+
+    // B-Pillars (Middle vertical side frame)
+    glPushMatrix();
+    glTranslatef(-0.84f, 1.34f, -0.32f);
+    drawBeveledBox(0.06f, 0.66f, 0.06f, 0.015f);
+    glTranslatef(1.68f, 0.0f, 0.0f);
+    drawBeveledBox(0.06f, 0.66f, 0.06f, 0.015f);
+    glPopMatrix();
+
+    // C-Pillars (Rear window frame struts / sail panels, sloped at -28 deg)
+    glPushMatrix();
+    glTranslatef(-0.84f, 1.34f, -1.06f);
+    glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(0.08f, 0.72f, 0.08f, 0.02f);
+    glTranslatef(1.68f, 0.0f, 0.0f);
+    drawBeveledBox(0.08f, 0.72f, 0.08f, 0.02f);
+    glPopMatrix();
+
+    // Front Windshield (Dark reflective tinted glass)
+    applyMaterial(MAT_CAR_GLASS);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.34f, 0.46f);
+    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(1.60f, 0.65f, 0.035f);
+
+    // Cracked Windshield Spiderweb Fractures (Intricate etched impact lines)
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0f);
+    glColor4f(0.88f, 0.92f, 1.00f, 0.82f);
+    glBegin(GL_LINES);
+    // Impact epicenter at driver's eye level (-0.36, 0.12)
+    float cx = -0.36f, cy = 0.12f, cz = 0.024f;
+    // 8 Long Radial Shatter Cracks
+    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.42f, cy + 0.24f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.48f, cy + 0.20f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.32f, cy - 0.28f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.38f, cy - 0.26f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.52f, cy - 0.06f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.62f, cy - 0.10f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.18f, cy + 0.30f, cz);
+    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.18f, cy - 0.32f, cz);
+
+    // Inner Concentric Shatter Rings (Shockwave ripples)
+    glVertex3f(cx - 0.08f, cy + 0.04f, cz); glVertex3f(cx + 0.06f, cy + 0.08f, cz);
+    glVertex3f(cx + 0.06f, cy + 0.08f, cz); glVertex3f(cx + 0.09f, cy - 0.05f, cz);
+    glVertex3f(cx + 0.09f, cy - 0.05f, cz); glVertex3f(cx - 0.06f, cy - 0.08f, cz);
+    glVertex3f(cx - 0.06f, cy - 0.08f, cz); glVertex3f(cx - 0.08f, cy + 0.04f, cz);
+
+    // Outer Concentric Shatter Ring
+    glVertex3f(cx - 0.18f, cy + 0.08f, cz); glVertex3f(cx + 0.14f, cy + 0.16f, cz);
+    glVertex3f(cx + 0.14f, cy + 0.16f, cz); glVertex3f(cx + 0.20f, cy - 0.12f, cz);
+    glVertex3f(cx + 0.20f, cy - 0.12f, cz); glVertex3f(cx - 0.14f, cy - 0.16f, cz);
+    glVertex3f(cx - 0.14f, cy - 0.16f, cz); glVertex3f(cx - 0.18f, cy + 0.08f, cz);
+    glEnd();
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // Windshield Wipers: Driver's wiper frozen mid-sweep, passenger wiper at cowl
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    // Driver Wiper Arm (Frozen halfway up windshield at 48 deg)
+    glPushMatrix();
+    glTranslatef(-0.38f, 1.14f, 0.72f);
+    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-48.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.022f, 0.42f, 0.022f); // Arm
+    glTranslatef(0.015f, 0.18f, 0.015f);
+    drawBox(0.012f, 0.36f, 0.018f); // Blade
+    glPopMatrix();
+
+    // Passenger Wiper Arm (Bent/resting on lower cowl)
+    glPushMatrix();
+    glTranslatef(0.38f, 1.10f, 0.72f);
+    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-15.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.022f, 0.38f, 0.022f);
+    glPopMatrix();
+
+    // Rear Window Glass (Dark reflective sloped glass)
+    applyMaterial(MAT_CAR_GLASS);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.34f, -1.05f);
+    glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(1.58f, 0.64f, 0.035f);
+    glPopMatrix();
+
+    // Right Side Windows (Front passenger & rear quarter glass)
+    glPushMatrix();
+    glTranslatef(0.85f, 1.34f, 0.02f);
+    drawBox(0.035f, 0.58f, 0.62f); // Front right window
+    glTranslatef(0.0f, 0.0f, -0.68f);
+    drawBox(0.035f, 0.58f, 0.62f); // Rear right window
+    glPopMatrix();
+
+    // Left Rear Quarter Window
+    glPushMatrix();
+    glTranslatef(-0.85f, 1.34f, -0.66f);
+    drawBox(0.035f, 0.58f, 0.62f);
+    glPopMatrix();
+
+    // Interior Rear-View Mirror hanging from center roof header
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.62f, 0.32f);
+    drawCylinder(0.015f, 0.015f, 0.08f, 6); // Stem
+    glTranslatef(0.0f, -0.06f, 0.0f);
+    glRotatef(12.0f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(0.18f, 0.06f, 0.03f, 0.01f); // Housing
+    applyMaterial(MAT_CAR_GLASS);
+    glTranslatef(0.0f, 0.0f, 0.016f);
+    drawBox(0.16f, 0.045f, 0.01f); // Mirror face
+    glPopMatrix();
+
+    // ------------------------------------------------------------------------
+    // F. OPEN DRIVER'S DOOR (Ajar at 38 deg) & SNAPPED DANGLING SIDE MIRROR
+    // ------------------------------------------------------------------------
+    // Open Driver's Door (Swung open at 38 degrees on rusty hinges)
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(-0.95f, 0.68f, 0.44f); // Door hinge pivot on A-pillar
+    glRotatef(38.0f, 0.0f, 1.0f, 0.0f);  // Swung outward into the yard
+    glTranslatef(0.0f, 0.0f, -0.44f);
+
+    // Upper and Lower Heavy Door Hinges
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.22f, 0.42f);
+    drawCylinder(0.03f, 0.03f, 0.06f, 8);
+    glTranslatef(0.0f, -0.44f, 0.0f);
+    drawCylinder(0.03f, 0.03f, 0.06f, 8);
+    glPopMatrix();
+
+    // Outer Lower Door Panel (Beveled sheet metal)
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawBeveledBox(0.08f, 0.58f, 0.88f, 0.02f, 0.5f, 1.0f);
+
+    // Chrome Outer Push-Button Door Handle
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.055f, 0.18f, -0.32f);
+    drawBox(0.035f, 0.04f, 0.14f);
+    drawSphere(0.018f, 8, 6); // Push button
+    glPopMatrix();
+
+    // Door Window Frame Border
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glTranslatef(0.0f, 0.52f, 0.0f);
+    drawBox(0.06f, 0.48f, 0.06f); // Front vertical post
+    glTranslatef(0.0f, 0.0f, -0.82f);
+    drawBox(0.06f, 0.48f, 0.06f); // Rear vertical post
+    glTranslatef(0.0f, 0.22f, 0.41f);
+    drawBox(0.06f, 0.06f, 0.88f); // Top header sash
+
+    // Partially Rolled-Down / Broken Driver's Glass
+    applyMaterial(MAT_CAR_GLASS);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.0f, -0.20f, 0.0f);
+    drawBox(0.025f, 0.24f, 0.74f);
+
+    // Inner Door Trim Card (Armrest & interior chrome handle)
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.048f, -0.32f, 0.0f);
+    drawBox(0.025f, 0.44f, 0.80f); // Trim panel
+    // Molded Armrest
+    glTranslatef(0.02f, -0.05f, 0.0f);
+    drawBeveledBox(0.05f, 0.08f, 0.35f, 0.015f);
+    // Inner Chrome Door Latch Handle & Window Crank
+    applyMaterial(MAT_CHROME_TRIM);
+    glTranslatef(0.02f, 0.12f, 0.15f);
+    drawBox(0.03f, 0.035f, 0.08f);
+    glPopMatrix();
+
+    // Snapped Dangling Side Mirror (Torn from bracket, hanging by twisted wire)
+    glPushMatrix();
+    glTranslatef(-0.06f, -0.24f, 0.40f);
+    // Broken mounting bracket stub
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    drawBox(0.03f, 0.04f, 0.04f);
+
+    // Dangling wire lines
+    glDisable(GL_LIGHTING);
+    glColor3f(0.85f, 0.45f, 0.20f); // Copper wire
+    glLineWidth(1.8f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(-0.05f, -0.14f, 0.06f);
+    glEnd();
+    glEnable(GL_LIGHTING);
+
+    // Dangling Mirror Housing (Hanging askew at 52 deg)
+    glTranslatef(-0.05f, -0.14f, 0.06f);
+    glRotatef(52.0f, 1.0f, 0.2f, 0.8f);
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawBeveledBox(0.025f, 0.13f, 0.19f, 0.01f); // Chrome housing
+    // Mirror Glass Face (High specular reflection)
+    applyMaterial(MAT_CAR_GLASS);
+    glTranslatef(-0.015f, 0.0f, 0.0f);
+    drawBox(0.01f, 0.11f, 0.17f);
+    glPopMatrix();
+
+    glPopMatrix(); // End Open Driver's Door
+
+    // ------------------------------------------------------------------------
+    // G. DETAILED VINTAGE INTERIOR (Viewable through open door & windows)
+    // ------------------------------------------------------------------------
+    // Dusty Dashboard with Gauge Cluster & Glovebox
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.08f, 0.38f);
+    drawBeveledBox(1.68f, 0.22f, 0.42f, 0.02f);
+    // Instrument Gauge Binnacle (Speedometer dial & fuel/temp gauge)
+    applyMaterial(MAT_DARK_WOOD);
+    glPushMatrix();
+    glTranslatef(-0.42f, 0.04f, -0.18f);
+    drawCylinder(0.07f, 0.07f, 0.04f, 12); // Speedometer housing
+    glTranslatef(0.20f, 0.0f, 0.0f);
+    drawCylinder(0.05f, 0.05f, 0.04f, 10); // Aux gauge
+    // Speedometer needle
+    applyMaterial(MAT_PUMPKIN_SKIN);
+    glTranslatef(-0.20f, 0.0f, 0.042f);
+    drawBox(0.008f, 0.05f, 0.008f);
+    glPopMatrix();
+    // Glovebox Door with Chrome Button
+    applyMaterial(MAT_CAR_INTERIOR);
+    glPushMatrix();
+    glTranslatef(0.45f, -0.04f, -0.18f);
+    drawBox(0.42f, 0.14f, 0.02f);
+    applyMaterial(MAT_CHROME_TRIM);
+    glTranslatef(0.14f, 0.0f, -0.015f);
+    drawSphere(0.015f, 6, 6);
+    glPopMatrix();
+    glPopMatrix();
+
+    // 3-Spoke Classic Dished Steering Wheel on Tilted Column
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.42f, 1.14f, 0.16f);
+    glRotatef(-35.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.028f, 0.028f, 0.28f, 8); // Column
+    glTranslatef(0.0f, 0.28f, 0.0f);
+    // Wheel Rim
+    applyMaterial(MAT_RUSTY_METAL);
+    drawSphere(0.19f, 14, 10);
+    // 3 Chrome Spokes
+    applyMaterial(MAT_CHROME_TRIM);
+    for (int s = 0; s < 3; ++s) {
+        glPushMatrix();
+        glRotatef(s * 120.0f, 0.0f, 1.0f, 0.0f);
+        drawBox(0.018f, 0.012f, 0.16f);
+        glPopMatrix();
+    }
+    // Center Horn Button
+    drawSphere(0.04f, 8, 8);
+    glPopMatrix();
+
+    // Floor Shifter Lever & Foot Pedals
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.08f, 0.58f, 0.05f);
+    // Wrinkled Rubber Shift Boot
+    applyMaterial(MAT_RUBBER_TYRE);
+    drawCylinder(0.08f, 0.03f, 0.08f, 8);
+    // Chrome Shifter Lever
+    applyMaterial(MAT_CHROME_TRIM);
+    glTranslatef(0.0f, 0.08f, 0.0f);
+    glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.015f, 0.015f, 0.26f, 6);
+    // Spherical Shift Knob
+    glTranslatef(0.0f, 0.26f, 0.0f);
+    applyMaterial(MAT_DARK_WOOD);
+    drawSphere(0.035f, 8, 8);
+    glPopMatrix();
+
+    // Suspended Foot Pedals (Clutch, Brake, Accelerator)
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_NONE);
+    for (int p = -1; p <= 1; ++p) {
+        glPushMatrix();
+        glTranslatef(-0.42f + p * 0.10f, 0.62f, 0.35f);
+        drawBox(0.045f, 0.065f, 0.02f);
+        glPopMatrix();
+    }
+
+    // Torn Split-Bench Front Seat (Worn upholstery, exposed yellow foam & rusted springs!)
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_BARK);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.78f, -0.15f);
+    drawBeveledBox(1.64f, 0.24f, 0.56f, 0.03f); // Seat bottom cushion
+    glTranslatef(0.0f, 0.28f, -0.24f);
+    drawBeveledBox(1.64f, 0.46f, 0.16f, 0.03f); // Backrest
+
+    // Severe Tear on Driver's Seat Cushion (Exposed foam & rusted spring wire)
+    applyMaterial(MAT_SEAT_FOAM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.42f, -0.20f, 0.18f);
+    drawBox(0.38f, 0.12f, 0.26f); // Exposed foam core
+    // Rusted coiled seat springs poking out
+    applyMaterial(MAT_RUSTY_METAL);
+    for (int sp = 0; sp < 3; ++sp) {
+        glPushMatrix();
+        glTranslatef((sp - 1) * 0.09f, 0.08f, 0.0f);
+        drawCylinder(0.025f, 0.025f, 0.06f, 6);
+        glPopMatrix();
+    }
+    glPopMatrix();
+    glPopMatrix();
+
+    // Rear Passenger Bench Seat
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_BARK);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.78f, -0.92f);
+    drawBeveledBox(1.64f, 0.24f, 0.52f, 0.03f); // Rear cushion
+    glTranslatef(0.0f, 0.28f, -0.22f);
+    drawBeveledBox(1.64f, 0.44f, 0.14f, 0.03f); // Rear backrest
+    glPopMatrix();
+
+    // ------------------------------------------------------------------------
+    // H. WHEELS & DEFLATED SQUASHED FRONT-RIGHT TYRE
+    // ------------------------------------------------------------------------
+    float wheelX = 1.02f;
+    float wheelZ_front = 1.35f;
+    float wheelZ_rear  = -1.35f;
+
+    // 1. Rear-Left Wheel (Inflated)
+    glPushMatrix();
+    glTranslatef(-wheelX - 0.12f, 0.42f, wheelZ_rear);
+    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_BARK);
+    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
+    // Rusted steel deep-dish rim & chrome hubcap
+    glTranslatef(0.0f, -0.01f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawSphere(0.12f, 10, 8);
+    glPopMatrix();
+
+    // 2. Rear-Right Wheel (Inflated)
+    glPushMatrix();
+    glTranslatef(wheelX - 0.12f, 0.42f, wheelZ_rear);
+    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_BARK);
+    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
+    glTranslatef(0.0f, 0.21f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawSphere(0.12f, 10, 8);
+    glPopMatrix();
+
+    // 3. Front-Left Wheel (Inflated)
+    glPushMatrix();
+    glTranslatef(-wheelX - 0.12f, 0.42f, wheelZ_front);
+    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_BARK);
+    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
+    glTranslatef(0.0f, -0.01f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawSphere(0.12f, 10, 8);
+    glPopMatrix();
+
+    // 4. Front-Right Wheel (Deflated, Severely Flat & Squashed into Mud Rut)
+    glPushMatrix();
+    glTranslatef(wheelX - 0.14f, 0.22f, wheelZ_front);
+    glScalef(1.36f, 0.44f, 1.28f); // Severely flattened oval pancake squashed tyre
+    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_BARK);
+    drawCylinder(0.42f, 0.42f, 0.28f, 16, 1.0f, 1.0f);
+    // Sunken rusted rim resting on flattened rubber
+    glTranslatef(0.0f, 0.24f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
+    // Dented tarnished hubcap
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawSphere(0.10f, 8, 6);
+    glPopMatrix();
+
+    glPopMatrix(); // End Car
 }
 
 // 7. Wooden Picket Fence & Cemetery Tombstones
@@ -2347,6 +3741,7 @@ void buildShadowMatrix(float shadowMat[16], const float groundPlane[4], const fl
 void renderShadowCasters() {
     drawHouse();
     drawRustedCar(11.0f, 7.5f, -32.0f);
+    drawEnvironmentalClutter();
     drawAllTrees();
 }
 
