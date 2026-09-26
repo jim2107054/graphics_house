@@ -174,7 +174,7 @@ int   g_frameCount = 0;
 float g_fps = 60.0f;
 float g_fpsTimer = 0.0f;
 
-// Camera State (First Person - Exact reference view)
+// Camera State (First Person - Exact reference view matching Image 1)
 struct Camera {
     float x, y, z;
     float yaw;
@@ -182,8 +182,8 @@ struct Camera {
     float speed;
     float sens;
 } g_cam = {
-    0.4f, 1.45f, 19.5f,
-    -95.0f, 6.5f,
+    0.0f, 1.85f, 22.5f,
+    -90.0f, 5.0f,
     12.0f,
     0.15f
 };
@@ -217,7 +217,76 @@ float g_bulbCurZ = 5.2f;
 float g_bulbFlickerFactor = 1.0f;
 float g_pumpkinFlicker = 1.0f;
 
-float g_moonDir[4] = { -0.25f, 0.70f, 0.65f, 0.0f };
+float g_moonDir[4] = { -0.15f, 0.72f, 0.68f, 0.0f };
+
+// ============================================================================
+// DYNAMIC FALLING AUTUMN LEAVES PARTICLE SYSTEM (REQUIREMENT 2 & 7)
+// ============================================================================
+struct FallingLeafParticle {
+    float x, y, z;
+    float vy;
+    float rotX, rotY, rotZ;
+    float rotSpeedX, rotSpeedY, rotSpeedZ;
+    float size;
+    float swayPhase;
+    float swayAmp;
+    float swayFreq;
+    float r, g, b;
+    float originX, originZ;
+};
+
+const int MAX_FALLING_LEAVES = 80;
+std::vector<FallingLeafParticle> g_fallingLeaves;
+
+void initFallingLeaves() {
+    g_fallingLeaves.resize(MAX_FALLING_LEAVES);
+    for (int i = 0; i < MAX_FALLING_LEAVES; ++i) {
+        // Distribute across tree canopies: right monster tree (60%), left cemetery trees (30%), path (10%)
+        float rChoice = (float)(rand() % 100) / 100.0f;
+        float ox, oz;
+        if (rChoice < 0.60f) {
+            ox = 4.5f + ((float)(rand() % 80) / 10.0f);   // 4.5 to 12.5 (Right tree)
+            oz = 11.0f + ((float)(rand() % 90) / 10.0f);  // 11.0 to 20.0
+        } else if (rChoice < 0.90f) {
+            ox = -15.0f + ((float)(rand() % 120) / 10.0f); // -15.0 to -3.0 (Left trees)
+            oz = 4.0f + ((float)(rand() % 140) / 10.0f);   // 4.0 to 18.0
+        } else {
+            ox = -2.5f + ((float)(rand() % 50) / 10.0f);   // -2.5 to 2.5 (Center path)
+            oz = 8.0f + ((float)(rand() % 120) / 10.0f);
+        }
+
+        g_fallingLeaves[i].originX = ox;
+        g_fallingLeaves[i].originZ = oz;
+        g_fallingLeaves[i].x = ox;
+        g_fallingLeaves[i].y = 1.0f + ((float)(rand() % 150) / 10.0f); // 1.0m to 16.0m
+        g_fallingLeaves[i].z = oz;
+        g_fallingLeaves[i].vy = 0.45f + ((float)(rand() % 45) / 100.0f); // 0.45 to 0.90 m/s slow drift
+        g_fallingLeaves[i].rotX = (float)(rand() % 360);
+        g_fallingLeaves[i].rotY = (float)(rand() % 360);
+        g_fallingLeaves[i].rotZ = (float)(rand() % 360);
+        g_fallingLeaves[i].rotSpeedX = 25.0f + ((float)(rand() % 60));
+        g_fallingLeaves[i].rotSpeedY = 35.0f + ((float)(rand() % 75));
+        g_fallingLeaves[i].rotSpeedZ = 20.0f + ((float)(rand() % 50));
+        g_fallingLeaves[i].size = 0.16f + ((float)(rand() % 12) / 100.0f);
+        g_fallingLeaves[i].swayPhase = (float)(rand() % 628) / 100.0f;
+        g_fallingLeaves[i].swayAmp = 0.6f + ((float)(rand() % 60) / 100.0f);
+        g_fallingLeaves[i].swayFreq = 1.2f + ((float)(rand() % 80) / 100.0f);
+
+        // Autumn leaf colors: burnt orange, decayed crimson, dark golden-olive
+        int tone = rand() % 3;
+        if (tone == 0) {
+            g_fallingLeaves[i].r = 0.48f; g_fallingLeaves[i].g = 0.22f; g_fallingLeaves[i].b = 0.08f;
+        } else if (tone == 1) {
+            g_fallingLeaves[i].r = 0.40f; g_fallingLeaves[i].g = 0.14f; g_fallingLeaves[i].b = 0.06f;
+        } else {
+            g_fallingLeaves[i].r = 0.30f; g_fallingLeaves[i].g = 0.28f; g_fallingLeaves[i].b = 0.12f;
+        }
+    }
+}
+
+void updateFallingLeaves(float dt);
+void drawFallingLeaves();
+
 
 // ============================================================================
 // LIGHTNING & ATMOSPHERIC PHENOMENA
@@ -636,40 +705,40 @@ void applyMaterial(const Material& m) {
 }
 
 const Material MAT_DARK_WOOD = {
-    { 0.18f, 0.14f, 0.10f, 1.0f },
-    { 0.45f, 0.35f, 0.28f, 1.0f },
-    { 0.08f, 0.08f, 0.08f, 1.0f },
-    { 0.00f, 0.00f, 0.00f, 1.0f },
-    8.0f
-};
-
-const Material MAT_WEATHERED_WALL = {
-    { 0.22f, 0.23f, 0.26f, 1.0f },
-    { 0.55f, 0.56f, 0.62f, 1.0f },
     { 0.06f, 0.06f, 0.08f, 1.0f },
+    { 0.16f, 0.16f, 0.20f, 1.0f },
+    { 0.05f, 0.05f, 0.06f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     6.0f
 };
 
+const Material MAT_WEATHERED_WALL = {
+    { 0.12f, 0.14f, 0.18f, 1.0f },
+    { 0.28f, 0.32f, 0.38f, 1.0f },
+    { 0.08f, 0.09f, 0.12f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    8.0f
+};
+
 const Material MAT_ROOF_SHINGLE = {
-    { 0.16f, 0.16f, 0.20f, 1.0f },
-    { 0.42f, 0.44f, 0.52f, 1.0f },
-    { 0.14f, 0.16f, 0.20f, 1.0f },
+    { 0.08f, 0.10f, 0.14f, 1.0f },
+    { 0.22f, 0.26f, 0.34f, 1.0f },
+    { 0.12f, 0.15f, 0.20f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     16.0f
 };
 
 const Material MAT_STONE = {
-    { 0.20f, 0.22f, 0.25f, 1.0f },
-    { 0.52f, 0.55f, 0.60f, 1.0f },
-    { 0.25f, 0.28f, 0.32f, 1.0f },
+    { 0.16f, 0.18f, 0.22f, 1.0f },
+    { 0.45f, 0.48f, 0.54f, 1.0f },
+    { 0.22f, 0.25f, 0.30f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     28.0f
 };
 
 const Material MAT_WET_GROUND = {
-    { 0.12f, 0.14f, 0.16f, 1.0f },
-    { 0.38f, 0.42f, 0.45f, 1.0f },
+    { 0.10f, 0.12f, 0.15f, 1.0f },
+    { 0.32f, 0.36f, 0.40f, 1.0f },
     { 0.45f, 0.52f, 0.60f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     60.0f
@@ -684,19 +753,19 @@ const Material MAT_PUDDLE_WATER = {
 };
 
 const Material MAT_DEAD_GRASS = {
-    { 0.15f, 0.13f, 0.08f, 1.0f },
-    { 0.42f, 0.38f, 0.25f, 1.0f },
+    { 0.12f, 0.11f, 0.08f, 1.0f },
+    { 0.35f, 0.32f, 0.22f, 1.0f },
     { 0.04f, 0.04f, 0.02f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     4.0f
 };
 
 const Material MAT_FALLEN_LEAF = {
-    { 0.18f, 0.10f, 0.04f, 1.0f },
-    { 0.50f, 0.26f, 0.10f, 1.0f },
-    { 0.06f, 0.04f, 0.02f, 1.0f },
+    { 0.22f, 0.12f, 0.05f, 1.0f },
+    { 0.58f, 0.30f, 0.12f, 1.0f },
+    { 0.08f, 0.05f, 0.03f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    6.0f
+    8.0f
 };
 
 const Material MAT_CLAY_BRICK = {
@@ -708,17 +777,17 @@ const Material MAT_CLAY_BRICK = {
 };
 
 const Material MAT_MOSS_STONE = {
-    { 0.16f, 0.20f, 0.14f, 1.0f },
-    { 0.38f, 0.48f, 0.32f, 1.0f },
+    { 0.14f, 0.18f, 0.12f, 1.0f },
+    { 0.34f, 0.44f, 0.28f, 1.0f },
     { 0.10f, 0.12f, 0.08f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     12.0f
 };
 
 const Material MAT_RUSTY_METAL = {
-    { 0.24f, 0.16f, 0.12f, 1.0f },
-    { 0.60f, 0.40f, 0.28f, 1.0f },
-    { 0.88f, 0.82f, 0.72f, 1.0f }, // High specular highlight for metallic flashlight and bulb glint
+    { 0.20f, 0.14f, 0.10f, 1.0f },
+    { 0.52f, 0.35f, 0.24f, 1.0f },
+    { 0.88f, 0.82f, 0.72f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     78.0f
 };
@@ -726,15 +795,15 @@ const Material MAT_RUSTY_METAL = {
 const Material MAT_CAR_GLASS = {
     { 0.04f, 0.06f, 0.10f, 0.88f },
     { 0.10f, 0.15f, 0.22f, 0.88f },
-    { 0.98f, 0.98f, 1.00f, 0.88f }, // Dark, mirror-like specular reflections
+    { 0.98f, 0.98f, 1.00f, 0.88f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     128.0f
 };
 
 const Material MAT_RUBBER_TYRE = {
-    { 0.10f, 0.10f, 0.10f, 1.0f },
-    { 0.22f, 0.22f, 0.22f, 1.0f },
     { 0.08f, 0.08f, 0.08f, 1.0f },
+    { 0.18f, 0.18f, 0.18f, 1.0f },
+    { 0.06f, 0.06f, 0.06f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     8.0f
 };
@@ -742,7 +811,7 @@ const Material MAT_RUBBER_TYRE = {
 const Material MAT_CHROME_TRIM = {
     { 0.30f, 0.32f, 0.36f, 1.0f },
     { 0.78f, 0.80f, 0.85f, 1.0f },
-    { 1.00f, 1.00f, 1.00f, 1.0f }, // Brilliant mirror chrome specular glint
+    { 1.00f, 1.00f, 1.00f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     128.0f
 };
@@ -764,27 +833,27 @@ const Material MAT_SEAT_FOAM = {
 };
 
 const Material MAT_PUMPKIN_SKIN = {
-    { 0.22f, 0.08f, 0.01f, 1.0f },
-    { 0.80f, 0.35f, 0.05f, 1.0f },
+    { 0.25f, 0.10f, 0.02f, 1.0f },
+    { 0.88f, 0.42f, 0.08f, 1.0f },
     { 0.35f, 0.20f, 0.06f, 1.0f },
     { 0.02f, 0.01f, 0.00f, 1.0f },
-    20.0f
+    22.0f
 };
 
 const Material MAT_PUMPKIN_GLOW = {
-    { 0.80f, 0.45f, 0.05f, 1.0f },
-    { 1.00f, 0.75f, 0.15f, 1.0f },
+    { 0.90f, 0.60f, 0.10f, 1.0f },
+    { 1.00f, 0.85f, 0.20f, 1.0f },
     { 1.00f, 0.95f, 0.50f, 1.0f },
-    { 1.00f, 0.70f, 0.12f, 1.0f },
-    35.0f
+    { 1.00f, 0.82f, 0.18f, 1.0f },
+    45.0f
 };
 
 const Material MAT_WINDOW_GLOW = {
-    { 0.60f, 0.40f, 0.15f, 1.0f },
-    { 0.98f, 0.80f, 0.35f, 1.0f },
-    { 0.90f, 0.75f, 0.30f, 1.0f },
-    { 1.00f, 0.82f, 0.28f, 1.0f },
-    25.0f
+    { 0.85f, 0.65f, 0.25f, 1.0f },
+    { 1.00f, 0.90f, 0.50f, 1.0f },
+    { 1.00f, 0.95f, 0.65f, 1.0f },
+    { 1.00f, 0.88f, 0.42f, 1.0f },
+    40.0f
 };
 
 const Material MAT_BULB_EMISSIVE = {
@@ -796,16 +865,16 @@ const Material MAT_BULB_EMISSIVE = {
 };
 
 const Material MAT_MOON = {
-    { 0.75f, 0.82f, 0.92f, 1.0f },
-    { 0.95f, 0.98f, 1.00f, 1.0f },
+    { 0.80f, 0.88f, 0.96f, 1.0f },
+    { 0.98f, 0.99f, 1.00f, 1.0f },
     { 0.60f, 0.70f, 0.85f, 1.0f },
-    { 0.95f, 0.98f, 1.00f, 1.0f },
+    { 0.98f, 0.99f, 1.00f, 1.0f },
     35.0f
 };
 
 const Material MAT_BARK = {
-    { 0.16f, 0.14f, 0.12f, 1.0f },
-    { 0.45f, 0.38f, 0.32f, 1.0f },
+    { 0.12f, 0.10f, 0.09f, 1.0f },
+    { 0.36f, 0.30f, 0.25f, 1.0f },
     { 0.02f, 0.02f, 0.02f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     4.0f
@@ -844,18 +913,18 @@ void initOpenGL() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.012f, 0.018f, 0.032f, 1.0f);
+    glClearColor(0.018f, 0.038f, 0.065f, 1.0f); // Deep misty cyan-teal night sky matching Image 1
 
-    // Deep, moody midnight global ambient (keeps shadows deep and mysterious)
-    float globalAmbient[] = { 0.025f, 0.035f, 0.055f, 1.0f };
+    // Deep, moody midnight global ambient
+    float globalAmbient[] = { 0.030f, 0.045f, 0.065f, 1.0f };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
-    // Atmospheric Blue-Midnight Fog (matches horizon & sky)
-    float fogColor[4] = { 0.016f, 0.026f, 0.044f, 1.0f };
+    // Atmospheric Blue-Teal Fog (matching Image 1 & 2)
+    float fogColor[4] = { 0.022f, 0.048f, 0.082f, 1.0f };
     glFogi(GL_FOG_MODE, GL_EXP2);
     glFogfv(GL_FOG_COLOR, fogColor);
-    glFogf(GL_FOG_DENSITY, 0.022f);
+    glFogf(GL_FOG_DENSITY, 0.018f);
     glHint(GL_FOG_HINT, GL_NICEST);
     if (g_fogEnabled) glEnable(GL_FOG); else glDisable(GL_FOG);
 
@@ -905,6 +974,7 @@ void initOpenGL() {
     glEnable(GL_LIGHTING);
     initAllTextures();
     initStars();
+    initFallingLeaves();
 #ifdef _WIN32
     initProceduralAudio();
 #endif
@@ -1756,6 +1826,72 @@ void drawFallenLeaf(float x, float z, float size, float rotY, float pitch, float
     glPopMatrix();
 }
 
+// Dynamic falling & fluttering leaves system update
+void updateFallingLeaves(float dt) {
+    for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
+        FallingLeafParticle& l = g_fallingLeaves[i];
+        l.y -= l.vy * dt;
+
+        // Fluttering wind sway
+        float swayTime = g_time * l.swayFreq + l.swayPhase;
+        l.x = l.originX + std::sin(swayTime) * l.swayAmp;
+        l.z = l.originZ + std::cos(swayTime * 0.8f) * (l.swayAmp * 0.65f);
+
+        // 3D tumbling rotation
+        l.rotX += l.rotSpeedX * dt;
+        l.rotY += l.rotSpeedY * dt;
+        l.rotZ += l.rotSpeedZ * dt;
+
+        // Check ground landing
+        float ground = getTerrainHeight(l.x, l.z) + 0.04f;
+        if (l.y <= ground) {
+            // Respawn in the upper canopy
+            l.y = 12.0f + ((float)(rand() % 45) / 10.0f); // 12.0m to 16.5m
+            float rChoice = (float)(rand() % 100) / 100.0f;
+            if (rChoice < 0.60f) {
+                l.originX = 4.5f + ((float)(rand() % 80) / 10.0f);
+                l.originZ = 11.0f + ((float)(rand() % 90) / 10.0f);
+            } else if (rChoice < 0.90f) {
+                l.originX = -15.0f + ((float)(rand() % 120) / 10.0f);
+                l.originZ = 4.0f + ((float)(rand() % 140) / 10.0f);
+            } else {
+                l.originX = -2.5f + ((float)(rand() % 50) / 10.0f);
+                l.originZ = 8.0f + ((float)(rand() % 120) / 10.0f);
+            }
+            l.x = l.originX;
+            l.z = l.originZ;
+        }
+    }
+}
+
+// Render dynamic airborne falling leaves
+void drawFallingLeaves() {
+    applyMaterial(MAT_FALLEN_LEAF);
+    bindTexture(TEX_NONE);
+
+    for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
+        const FallingLeafParticle& l = g_fallingLeaves[i];
+        glPushMatrix();
+        glTranslatef(l.x, l.y, l.z);
+        glRotatef(l.rotX, 1.0f, 0.0f, 0.0f);
+        glRotatef(l.rotY, 0.0f, 1.0f, 0.0f);
+        glRotatef(l.rotZ, 0.0f, 0.0f, 1.0f);
+
+        glColor4f(l.r, l.g, l.b, 0.95f);
+        float hs = l.size * 0.5f;
+        glBegin(GL_QUADS);
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(-hs, 0.0f, -hs * 0.7f);
+        glVertex3f( hs, 0.0f, -hs * 0.7f);
+        glVertex3f( hs * 0.8f, 0.0f,  hs * 0.7f);
+        glVertex3f(-hs * 0.8f, 0.0f,  hs * 0.7f);
+        glEnd();
+
+        glPopMatrix();
+    }
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 // Small pebbles and rocks resting on the ground
 void drawPebble(float x, float z, float scaleX, float scaleY, float scaleZ, float rotY) {
     float y = getTerrainHeight(x, z);
@@ -2519,109 +2655,147 @@ void drawGround() {
     drawEnvironmentalClutter();
 }
 
-// 2. Carved Jack-o'-Lantern Pumpkins
+// 2. Carved Jack-o'-Lantern Pumpkins (Exact Image 3 Styling & Proportions)
 void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceStyle) {
     float groundY = y + getTerrainHeight(x, z);
 
     glPushMatrix();
-    glTranslatef(x, groundY + 0.38f * scale, z);
+    glTranslatef(x, groundY + 0.35f * scale, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-    glScalef(scale, scale, scale);
+    glScalef(scale, scale * 0.85f, scale);
 
-    // Body
+    // 1. Ribbed Pumpkin Body (Segmented vertical lobes for authentic organic shape)
     applyMaterial(MAT_PUMPKIN_SKIN);
     bindTexture(TEX_NONE);
+
+    int numLobes = 10;
+    for (int l = 0; l < numLobes; ++l) {
+        float lobeAngle = (float)l * (360.0f / numLobes);
+        glPushMatrix();
+        glRotatef(lobeAngle, 0.0f, 1.0f, 0.0f);
+        glTranslatef(0.18f, 0.0f, 0.0f);
+        glScalef(0.48f, 0.52f, 0.45f);
+        drawSphere(1.0f, 12, 10);
+        glPopMatrix();
+    }
+
+    // Central pumpkin core to seal body
     glPushMatrix();
-    glScalef(0.68f, 0.54f, 0.68f);
-    drawSphere(1.0f, 20, 16);
+    glScalef(0.60f, 0.50f, 0.60f);
+    drawSphere(1.0f, 16, 12);
     glPopMatrix();
 
-    // Stalk
+    // 2. Curled Pumpkin Stem / Stalk on Top
     applyMaterial(MAT_BARK);
     bindTexture(TEX_BARK);
     glPushMatrix();
-    glTranslatef(0.0f, 0.50f, 0.0f);
-    glRotatef(15.0f, 0.0f, 0.0f, 1.0f);
-    drawCylinder(0.07f, 0.04f, 0.25f, 8, 1.0f, 1.0f);
+    glTranslatef(0.0f, 0.48f, 0.0f);
+    glRotatef(22.0f, 0.0f, 0.0f, 1.0f);
+    glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.065f, 0.035f, 0.28f, 8, 1.0f, 1.0f);
     glPopMatrix();
 
-    // Carved Glowing Face
+    // 3. Glowing Carved Face (Eyes, Nose, Sinister Jagged Mouth)
     applyMaterial(MAT_PUMPKIN_GLOW);
     bindTexture(TEX_NONE);
 
     if (faceStyle == 0) {
+        // Classic jagged wicked grin (Image 3 right foreground)
         glBegin(GL_TRIANGLES);
-        glNormal3f(-0.3f, 0.2f, 0.95f);
-        glVertex3f(-0.22f, 0.10f, 0.56f);
-        glVertex3f(-0.06f, 0.15f, 0.61f);
-        glVertex3f(-0.15f, 0.28f, 0.54f);
+        // Left Eye (triangular slanted)
+        glNormal3f(-0.25f, 0.2f, 0.95f);
+        glVertex3f(-0.24f, 0.12f, 0.58f);
+        glVertex3f(-0.06f, 0.16f, 0.63f);
+        glVertex3f(-0.16f, 0.30f, 0.56f);
 
-        glNormal3f(0.3f, 0.2f, 0.95f);
-        glVertex3f( 0.06f, 0.15f, 0.61f);
-        glVertex3f( 0.22f, 0.10f, 0.56f);
-        glVertex3f( 0.15f, 0.28f, 0.54f);
+        // Right Eye
+        glNormal3f(0.25f, 0.2f, 0.95f);
+        glVertex3f( 0.06f, 0.16f, 0.63f);
+        glVertex3f( 0.24f, 0.12f, 0.58f);
+        glVertex3f( 0.16f, 0.30f, 0.56f);
 
+        // Nose
         glNormal3f(0.0f, 0.1f, 1.0f);
-        glVertex3f(-0.05f, 0.02f, 0.65f);
-        glVertex3f( 0.05f, 0.02f, 0.65f);
-        glVertex3f( 0.00f, 0.10f, 0.64f);
+        glVertex3f(-0.06f, 0.02f, 0.66f);
+        glVertex3f( 0.06f, 0.02f, 0.66f);
+        glVertex3f( 0.00f, 0.12f, 0.65f);
         glEnd();
 
+        // Sinister toothy grin
         glBegin(GL_TRIANGLE_FAN);
         glNormal3f(0.0f, -0.2f, 0.98f);
-        glVertex3f(0.0f, -0.12f, 0.64f);
-        glVertex3f(-0.35f, -0.02f, 0.45f);
-        glVertex3f(-0.25f, -0.16f, 0.56f);
-        glVertex3f(-0.16f, -0.07f, 0.61f);
-        glVertex3f(-0.08f, -0.18f, 0.64f);
-        glVertex3f( 0.00f, -0.08f, 0.65f);
-        glVertex3f( 0.08f, -0.18f, 0.64f);
-        glVertex3f( 0.16f, -0.07f, 0.61f);
-        glVertex3f( 0.25f, -0.16f, 0.56f);
-        glVertex3f( 0.35f, -0.02f, 0.45f);
+        glVertex3f( 0.00f, -0.10f, 0.65f);
+        glVertex3f(-0.38f, -0.01f, 0.46f);
+        glVertex3f(-0.28f, -0.16f, 0.58f);
+        glVertex3f(-0.18f, -0.05f, 0.63f);
+        glVertex3f(-0.09f, -0.18f, 0.65f);
+        glVertex3f( 0.00f, -0.06f, 0.66f);
+        glVertex3f( 0.09f, -0.18f, 0.65f);
+        glVertex3f( 0.18f, -0.05f, 0.63f);
+        glVertex3f( 0.28f, -0.16f, 0.58f);
+        glVertex3f( 0.38f, -0.01f, 0.46f);
         glEnd();
     } else {
+        // Angled menacing grin (Image 3 left foreground)
         glBegin(GL_TRIANGLES);
+        // Slanted eyes
         glNormal3f(-0.35f, 0.2f, 0.93f);
-        glVertex3f(-0.20f, 0.12f, 0.58f);
-        glVertex3f(-0.08f, 0.18f, 0.62f);
-        glVertex3f(-0.18f, 0.26f, 0.56f);
+        glVertex3f(-0.22f, 0.14f, 0.59f);
+        glVertex3f(-0.08f, 0.20f, 0.63f);
+        glVertex3f(-0.20f, 0.28f, 0.57f);
 
         glNormal3f(0.35f, 0.2f, 0.93f);
-        glVertex3f( 0.08f, 0.18f, 0.62f);
-        glVertex3f( 0.20f, 0.12f, 0.58f);
-        glVertex3f( 0.18f, 0.26f, 0.56f);
+        glVertex3f( 0.08f, 0.20f, 0.63f);
+        glVertex3f( 0.22f, 0.14f, 0.59f);
+        glVertex3f( 0.20f, 0.28f, 0.57f);
+
+        // Nose
+        glNormal3f(0.0f, 0.1f, 1.0f);
+        glVertex3f(-0.05f, 0.04f, 0.66f);
+        glVertex3f( 0.05f, 0.04f, 0.66f);
+        glVertex3f( 0.00f, 0.13f, 0.65f);
         glEnd();
 
         glBegin(GL_TRIANGLE_FAN);
         glNormal3f(0.0f, -0.2f, 0.98f);
-        glVertex3f(0.0f, -0.14f, 0.64f);
-        glVertex3f(-0.28f, -0.04f, 0.52f);
-        glVertex3f(-0.18f, -0.16f, 0.59f);
-        glVertex3f(-0.09f, -0.09f, 0.63f);
-        glVertex3f( 0.00f, -0.17f, 0.64f);
-        glVertex3f( 0.10f, -0.10f, 0.63f);
-        glVertex3f( 0.20f, -0.16f, 0.58f);
-        glVertex3f( 0.28f, -0.04f, 0.52f);
+        glVertex3f( 0.00f, -0.12f, 0.65f);
+        glVertex3f(-0.32f, -0.02f, 0.54f);
+        glVertex3f(-0.22f, -0.15f, 0.60f);
+        glVertex3f(-0.11f, -0.07f, 0.64f);
+        glVertex3f( 0.00f, -0.16f, 0.65f);
+        glVertex3f( 0.11f, -0.07f, 0.64f);
+        glVertex3f( 0.22f, -0.15f, 0.60f);
+        glVertex3f( 0.32f, -0.02f, 0.54f);
         glEnd();
     }
 
     glPopMatrix();
 
-    drawBillboardHalo(x, groundY + 0.38f * scale, z + 0.22f * scale, 0.85f * scale, 1.0f, 0.58f, 0.12f, 0.45f * g_pumpkinFlicker);
+    // Warm radiant point glow on surrounding ground and path
+    drawBillboardHalo(x, groundY + 0.25f * scale, z + 0.15f * scale, 1.1f * scale, 1.0f, 0.65f, 0.15f, 0.55f * g_pumpkinFlicker);
 }
 
+// Master Array of Halloween Jack-o'-Lanterns (Exact Image 3 Layout & Natural Sizing)
 void drawPumpkinArray() {
-    drawPumpkin( 1.1f, 0.0f, 14.8f, 1.55f, -12.0f, 0);
-    drawPumpkin(-1.9f, 0.0f, 15.6f, 1.25f,  28.0f, 1);
-    drawPumpkin( 2.4f, 0.0f, 15.2f, 0.78f, -32.0f, 0);
-    drawPumpkin( 3.2f, 0.0f, 14.5f, 0.55f,  45.0f, 1);
-    drawPumpkin(-0.6f, 0.0f, 11.5f, 1.15f,   8.0f, 0);
-    drawPumpkin(-2.8f, 0.0f,  9.8f, 1.30f,  38.0f, 1);
-    drawPumpkin( 0.4f, 0.0f,  7.6f, 0.95f, -18.0f, 0);
-    drawPumpkin(-1.8f, 0.0f,  5.8f, 0.82f,  20.0f, 1);
-    drawPumpkin(-0.3f, 0.0f,  4.2f, 0.70f, -10.0f, 0);
-    drawPumpkin(-3.2f, 0.0f,  3.5f, 0.65f,  35.0f, 1);
+    // 1. RIGHT FOREGROUND CLUSTER (Image 3 prominent cluster)
+    drawPumpkin( 1.8f, 0.0f, 17.5f, 0.58f, -15.0f, 0); // Main wide grinning pumpkin
+    drawPumpkin( 2.8f, 0.0f, 17.8f, 0.38f,  10.0f, 1); // Beside it
+    drawPumpkin( 3.6f, 0.0f, 17.4f, 0.34f, -22.0f, 0); // Beside it
+    drawPumpkin( 4.3f, 0.0f, 17.9f, 0.22f,  30.0f, 1); // Tiny pumpkin
+
+    // 2. LEFT FOREGROUND CLUSTER (Image 3 left angled pumpkin)
+    drawPumpkin(-2.2f, 0.0f, 17.6f, 0.52f,  32.0f, 1); // Menacing angled grin
+    drawPumpkin(-3.2f, 0.0f, 18.0f, 0.30f, -18.0f, 0); // Small companion
+
+    // 3. MIDGROUND & BACKGROUND PATHSIDE PUMPKINS (Receding along wet path to house)
+    drawPumpkin(-1.2f, 0.0f, 14.2f, 0.44f,  15.0f, 0);
+    drawPumpkin( 1.6f, 0.0f, 13.5f, 0.42f, -20.0f, 1);
+    drawPumpkin(-2.4f, 0.0f, 11.5f, 0.38f,  28.0f, 0);
+    drawPumpkin( 0.7f, 0.0f,  9.8f, 0.34f, -12.0f, 1);
+    drawPumpkin(-1.5f, 0.0f,  8.0f, 0.30f,  22.0f, 0);
+    drawPumpkin( 1.2f, 0.0f,  6.2f, 0.28f, -35.0f, 1);
+    drawPumpkin(-0.4f, 0.0f,  4.8f, 0.26f,   8.0f, 0);
+    drawPumpkin(-2.2f, 0.0f,  3.8f, 0.24f,  40.0f, 1);
 }
 
 // ----------------------------------------------------------------------------
@@ -2651,7 +2825,52 @@ void drawDeadVine(float length, TreeRNG& rng) {
     glPopMatrix();
 }
 
-// Recursive Tapered Branch Drawing Function with subtle organic curves & knuckles
+// Cluster of sparse clinging autumn leaves on branches and twigs (Images 4 & 5)
+void drawLeafCluster(float scale, TreeRNG& rng) {
+    int numLeaves = 3 + (rng.nextFloat(0.0f, 1.0f) > 0.45f ? 2 : 0);
+    applyMaterial(MAT_FALLEN_LEAF);
+    bindTexture(TEX_WALL);
+
+    for (int l = 0; l < numLeaves; ++l) {
+        float rotX = rng.nextFloat(-50.0f, 50.0f);
+        float rotY = (float)l * (360.0f / numLeaves) + rng.nextFloat(-25.0f, 25.0f);
+        float rotZ = rng.nextFloat(15.0f, 65.0f);
+        float lSize = scale * rng.nextFloat(0.20f, 0.35f);
+
+        // Autumn leaf colors: burnt orange, decayed crimson, withered olive-brown
+        float tone = rng.nextFloat(0.0f, 1.0f);
+        float r, g, b;
+        if (tone < 0.45f) {
+            r = 0.46f; g = 0.20f; b = 0.07f; // Burnt orange
+        } else if (tone < 0.75f) {
+            r = 0.38f; g = 0.12f; b = 0.05f; // Decayed crimson
+        } else {
+            r = 0.28f; g = 0.26f; b = 0.11f; // Withered olive-brown
+        }
+
+        glPushMatrix();
+        glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+        glRotatef(rotX, 1.0f, 0.0f, 0.0f);
+        glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+        glTranslatef(0.0f, lSize * 0.45f, 0.0f);
+
+        glColor4f(r, g, b, 0.95f);
+        glBegin(GL_QUADS);
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f); glVertex3f(-lSize * 0.32f, 0.0f, -lSize * 0.45f);
+        glTexCoord2f(1.0f, 0.0f); glVertex3f( lSize * 0.32f, 0.0f, -lSize * 0.45f);
+        glTexCoord2f(1.0f, 1.0f); glVertex3f( lSize * 0.22f, 0.0f,  lSize * 0.45f);
+        glTexCoord2f(0.0f, 1.0f); glVertex3f(-lSize * 0.22f, 0.0f,  lSize * 0.45f);
+        glEnd();
+
+        glPopMatrix();
+    }
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    applyMaterial(MAT_BARK);
+    bindTexture(TEX_BARK);
+}
+
+// Recursive Tapered Branch Drawing Function with subtle organic curves, knuckles & autumn foliage
 void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDepth, TreeRNG& rng) {
     if (depth > maxDepth || baseR < 0.012f) return;
 
@@ -2686,13 +2905,16 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
         glRotatef(bendZ, 0.0f, 0.0f, 1.0f);
 
         // Occasional bare crooked twig jutting sideways from intermediate joints
-        if (depth >= 1 && rng.nextFloat(0.0f, 1.0f) > 0.60f) {
+        if (depth >= 1 && rng.nextFloat(0.0f, 1.0f) > 0.55f) {
             glPushMatrix();
             float twigPitch = rng.nextFloat(45.0f, 75.0f);
             float twigYaw   = rng.nextFloat(0.0f, 360.0f);
             glRotatef(twigYaw, 0.0f, 1.0f, 0.0f);
             glRotatef(twigPitch, 1.0f, 0.0f, 0.0f);
             drawCylinder(nextR * 0.6f, 0.006f, len * rng.nextFloat(0.25f, 0.45f), 4);
+            if (rng.nextFloat(0.0f, 1.0f) > 0.40f) {
+                drawLeafCluster(len * 0.40f, rng);
+            }
             glPopMatrix();
         }
 
@@ -2700,13 +2922,14 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
     }
 
     if (depth == maxDepth) {
-        // Terminal crooked bare twigs at branch tips
+        // Terminal crooked twigs with clinging autumn leaf clusters at branch tips (Images 4 & 5)
         int numTwigs = (rng.nextFloat(0.0f, 1.0f) > 0.35f) ? 2 : 1;
         for (int t = 0; t < numTwigs; ++t) {
             glPushMatrix();
             glRotatef(rng.nextFloat(-42.0f, 42.0f), 1.0f, 0.0f, 0.0f);
             glRotatef(rng.nextFloat(0.0f, 360.0f), 0.0f, 1.0f, 0.0f);
             drawCylinder(topR * 0.75f, 0.005f, len * rng.nextFloat(0.35f, 0.55f), 4);
+            drawLeafCluster(len * 0.65f, rng);
             glPopMatrix();
         }
         glPopMatrix(); // close branch sway matrix
@@ -2728,8 +2951,16 @@ void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDep
 
         drawOrganicBranch(childBaseR, childTopR, childLen, depth + 1, maxDepth, rng);
 
+        // Clinging autumn leaves on secondary branches
+        if (depth >= 1 && rng.nextFloat(0.0f, 1.0f) > 0.45f) {
+            glPushMatrix();
+            glTranslatef(0.0f, childLen * 0.5f, 0.0f);
+            drawLeafCluster(childLen * 0.45f, rng);
+            glPopMatrix();
+        }
+
         // Dead hanging vine / moss tendril dangling vertically
-        if ((depth == 1 || depth == 2) && rng.nextFloat(0.0f, 1.0f) > 0.55f) {
+        if ((depth == 1 || depth == 2) && rng.nextFloat(0.0f, 1.0f) > 0.60f) {
             glPushMatrix();
             glTranslatef(0.0f, childLen * 0.35f, 0.0f);
             glRotatef(-branchAngle, 1.0f, 0.0f, 0.0f); // hang down against gravity
@@ -2803,28 +3034,28 @@ void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, fl
     glPopMatrix();
 }
 
-// Scatter 7 Organic Creepy Trees across the scene (stable seeds, varied scale & tones)
+// Scatter 7 Organic Creepy Trees across the scene (stable seeds, varied scale & tones matching Images 4 & 5)
 void drawAllTrees() {
-    // 1. Massive Foreground Monster Framing Tree (Right foreground framing the scene)
-    drawOrganicCreepyTree(  6.8f, 13.0f, 0.92f, 15.5f, -15.0f, 1001, 0.90f);
+    // 1. Massive Foreground Monster Framing Tree (Right foreground framing the scene - Image 5)
+    drawOrganicCreepyTree(  7.8f, 15.5f, 0.95f, 16.5f, -20.0f, 1001, 0.88f);
 
-    // 2. Left Porch / Cemetery Guard Tree (Towering near porch steps)
-    drawOrganicCreepyTree(-11.0f,  4.0f, 0.62f, 12.2f,  30.0f, 2002, 1.05f);
+    // 2. Left Porch / Cemetery Guard Tree (Towering near cemetery crosses - Image 4)
+    drawOrganicCreepyTree(-10.5f,  9.0f, 0.68f, 13.5f,  25.0f, 2002, 1.02f);
 
     // 3. Right Manor Background Tree (Behind house on right)
-    drawOrganicCreepyTree( 13.8f,  1.5f, 0.58f, 13.0f, -45.0f, 3003, 0.88f);
+    drawOrganicCreepyTree( 13.5f,  1.0f, 0.60f, 13.5f, -40.0f, 3003, 0.85f);
 
     // 4. Left Midground Cemetery Tree (Near cemetery tombstones)
-    drawOrganicCreepyTree(-14.5f, 16.0f, 0.45f, 10.0f,  65.0f, 4004, 1.12f);
+    drawOrganicCreepyTree(-14.5f, 16.0f, 0.52f, 11.5f,  55.0f, 4004, 1.05f);
 
-    // 5. Right Midground Yard Tree (Framing pathway & rusted car)
-    drawOrganicCreepyTree( 15.5f, 14.5f, 0.48f, 10.5f, -22.0f, 5005, 0.95f);
+    // 5. Right Midground Yard Tree (Framing pathway)
+    drawOrganicCreepyTree( 15.0f, 14.0f, 0.50f, 11.0f, -15.0f, 5005, 0.92f);
 
     // 6. Distant Left Tree (Fading into the blue fog)
-    drawOrganicCreepyTree( -8.0f, 28.0f, 0.38f,  8.8f,  18.0f, 6006, 0.82f);
+    drawOrganicCreepyTree( -8.5f, 28.0f, 0.38f,  9.0f,  18.0f, 6006, 0.80f);
 
     // 7. Distant Right Tree (Fading into the blue fog)
-    drawOrganicCreepyTree(  9.8f, 29.0f, 0.40f,  9.2f, -32.0f, 7007, 0.85f);
+    drawOrganicCreepyTree( 10.5f, 29.0f, 0.40f,  9.5f, -32.0f, 7007, 0.82f);
 }
 
 // 4. Gothic Haunted House with Detailed Abandoned Architecture & Micro-Details
@@ -4148,7 +4379,7 @@ void drawRustedCar(float x, float z, float rotY) {
     glPopMatrix(); // End Car
 }
 
-// 7. Wooden Picket Fence & Cemetery Tombstones
+// 7. Wooden Picket Fence, Cemetery Tombstones & Weathered Crosses (Image 4)
 void drawFenceAndYardProps() {
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
@@ -4184,9 +4415,31 @@ void drawFenceAndYardProps() {
         drawBox(0.7f, 1.4f, 0.22f, 1.0f, 1.0f); // Embedded into soil
         glPopMatrix();
     }
+
+    // Small Weathered Cemetery Crosses on Left Grassy Knoll (Image 4)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    float crossPos[3][3] = {
+        { -8.5f, 0.0f, 11.5f },
+        { -9.8f, 0.0f, 13.2f },
+        { -11.2f, 0.0f, 10.5f }
+    };
+    for (int c = 0; c < 3; ++c) {
+        float cy = getTerrainHeight(crossPos[c][0], crossPos[c][2]);
+        glPushMatrix();
+        glTranslatef(crossPos[c][0], cy + 0.65f, crossPos[c][2]);
+        glRotatef(std::sin(c * 2.8f) * 10.0f, 0.0f, 1.0f, 0.0f);
+        glRotatef(std::cos(c * 1.5f) * 6.0f, 0.0f, 0.0f, 1.0f); // slight crooked tilt
+        // Vertical post
+        drawBox(0.10f, 1.30f, 0.08f);
+        // Horizontal crossbeam
+        glTranslatef(0.0f, 0.28f, 0.0f);
+        drawBox(0.75f, 0.10f, 0.08f);
+        glPopMatrix();
+    }
 }
 
-// 8. Giant Moon with Texture
+// 8. Giant Moon with Texture (Situated directly behind house spire - Images 1 & 2)
 void drawMoonAndStars() {
     bindTexture(TEX_NONE);
     glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT);
@@ -4202,20 +4455,23 @@ void drawMoonAndStars() {
     }
     glEnd();
 
-    float moonX =   0.5f;
-    float moonY =  25.0f;
-    float moonZ = -30.0f;
-    float moonRadius = 11.2f;
+    // Giant Luminous Moon placed directly behind the central Gothic Spire
+    float moonX =   1.2f;
+    float moonY =  24.5f;
+    float moonZ = -34.0f;
+    float moonRadius = 13.8f;
 
     glEnable(GL_LIGHTING);
     applyMaterial(MAT_MOON);
     bindTexture(TEX_MOON);
     glPushMatrix();
     glTranslatef(moonX, moonY, moonZ);
-    drawSphere(moonRadius, 32, 28, 1.0f, 1.0f);
+    glRotatef(-25.0f, 0.0f, 1.0f, 0.0f);
+    drawSphere(moonRadius, 36, 32, 1.0f, 1.0f);
     glPopMatrix();
 
-    drawBillboardHalo(moonX, moonY, moonZ, moonRadius * 2.8f, 0.80f, 0.90f, 1.0f, 0.55f);
+    // Soft celestial atmospheric halo behind the house
+    drawBillboardHalo(moonX, moonY, moonZ, moonRadius * 2.4f, 0.85f, 0.92f, 1.0f, 0.45f);
 
     glPopAttrib();
 }
@@ -4373,51 +4629,52 @@ void drawBat(float x, float y, float z, float yaw, float pitch, float roll, floa
 }
 
 void drawAllBats() {
-    // Bat 1: Circling around the Gothic Spire Tower
-    float a1 = g_time * 0.95f;
-    float bx1 = 1.2f + 5.2f * std::cos(a1);
-    float bz1 = 1.2f + 5.2f * std::sin(a1);
-    float by1 = 12.0f + 1.2f * std::sin(a1 * 2.0f);
-    float yaw1 = -a1 * 180.0f / (float)M_PI + 90.0f;
-    float flap1 = std::sin(g_time * 16.0f) * 40.0f;
-    drawBat(bx1, by1, bz1, yaw1, 0.0f, -22.0f, flap1, 0.85f);
+    // ------------------------------------------------------------------------
+    // BATS FLYING ACROSS THE GIANT MOON FACE (Exact Image 1 Formation)
+    // ------------------------------------------------------------------------
+    float moonCenterZ = -28.5f;
 
-    // Bat 2: Wider counter-clockwise orbit around house & chimney
-    float a2 = -g_time * 0.68f + 2.4f;
-    float bx2 = -1.5f + 9.5f * std::cos(a2);
-    float bz2 =  0.5f + 8.0f * std::sin(a2);
-    float by2 =  9.5f + 1.8f * std::cos(a2 * 1.5f);
-    float yaw2 = -a2 * 180.0f / (float)M_PI - 90.0f;
-    float flap2 = std::sin(g_time * 14.5f + 1.0f) * 38.0f;
-    drawBat(bx2, by2, bz2, yaw2, 0.0f, 18.0f, flap2, 0.95f);
+    // Bat 1: Upper-left cutting across the bright face of the moon
+    float span = 28.0f;
+    float t1 = std::fmod(g_time * 2.8f, span) - 14.0f;
+    float bx1 = 1.2f + t1;
+    float by1 = 27.2f - t1 * 0.22f + 0.6f * std::sin(g_time * 3.5f);
+    float bz1 = moonCenterZ + 1.5f;
+    float flap1 = std::sin(g_time * 18.0f) * 45.0f;
+    drawBat(bx1, by1, bz1, 75.0f, -8.0f, -14.0f, flap1, 1.45f);
 
-    // Bat 3: Swooping dramatically across the Giant Moon silhouette
-    float t3 = g_time * 0.48f;
-    float bx3 =  0.5f + 7.2f * std::cos(t3);
-    float bz3 = -29.0f + 2.5f * std::sin(t3);
-    float by3 = 24.5f + 2.0f * std::sin(t3 * 2.0f);
-    float yaw3 = -t3 * 180.0f / (float)M_PI + 90.0f;
-    float flap3 = std::sin(g_time * 15.0f + 2.0f) * 36.0f;
-    drawBat(bx3, by3, bz3, yaw3, 0.0f, -14.0f, flap3, 1.25f);
+    // Bat 2: Mid-moon descending silhouetted bat (trailing Bat 1)
+    float t2 = std::fmod(g_time * 2.5f + 5.2f, span) - 14.0f;
+    float bx2 = 1.2f + t2;
+    float by2 = 24.8f - t2 * 0.28f + 0.5f * std::sin(g_time * 3.2f + 1.0f);
+    float bz2 = moonCenterZ + 1.8f;
+    float flap2 = std::sin(g_time * 16.5f + 1.2f) * 42.0f;
+    drawBat(bx2, by2, bz2, 72.0f, -10.0f, -16.0f, flap2, 1.35f);
 
-    // Bat 4: High lunar guardian bat soaring near moon crest
-    float t4 = g_time * 0.38f + 3.14f;
-    float bx4 =  1.0f + 6.0f * std::cos(t4);
-    float bz4 = -27.5f + 3.0f * std::sin(t4);
-    float by4 = 28.0f + 1.4f * std::cos(t4 * 1.8f);
-    float yaw4 = -t4 * 180.0f / (float)M_PI + 90.0f;
-    float flap4 = std::sin(g_time * 13.0f + 3.0f) * 34.0f;
-    drawBat(bx4, by4, bz4, yaw4, 0.0f, -12.0f, flap4, 1.15f);
+    // Bat 3: Lower-right dipping bat across the moon
+    float t3 = std::fmod(g_time * 2.6f + 9.5f, span) - 14.0f;
+    float bx3 = 1.2f + t3;
+    float by3 = 22.5f - t3 * 0.20f + 0.7f * std::cos(g_time * 3.0f + 2.0f);
+    float bz3 = moonCenterZ + 2.0f;
+    float flap3 = std::sin(g_time * 17.5f + 2.5f) * 45.0f;
+    drawBat(bx3, by3, bz3, 76.0f, -6.0f, -12.0f, flap3, 1.25f);
 
-    // Bat 5: Low stealth bat swooping across graveyard & front path
-    float t5 = g_time * 0.60f + 0.8f;
-    float bx5 =  7.5f + 5.5f * std::sin(t5);
-    float bz5 = 14.5f + 6.5f * std::cos(t5);
-    float gY = getTerrainHeight(bx5, bz5);
-    float by5 = gY + 3.5f + 1.2f * std::sin(t5 * 2.5f);
-    float yaw5 = std::atan2(5.5f * std::cos(t5), -6.5f * std::sin(t5)) * 180.0f / (float)M_PI;
-    float flap5 = std::sin(g_time * 17.0f + 0.5f) * 44.0f;
-    drawBat(bx5, by5, bz5, yaw5, 0.0f, 16.0f * std::cos(t5), flap5, 0.90f);
+    // Bat 4: High crest soaring bat near upper moon rim
+    float t4 = std::fmod(g_time * 2.2f + 13.8f, span) - 14.0f;
+    float bx4 = 1.2f + t4;
+    float by4 = 29.2f - t4 * 0.16f + 0.4f * std::sin(g_time * 2.8f);
+    float bz4 = moonCenterZ + 1.2f;
+    float flap4 = std::sin(g_time * 15.0f + 3.0f) * 38.0f;
+    drawBat(bx4, by4, bz4, 78.0f, -5.0f, -10.0f, flap4, 1.55f);
+
+    // Bat 5: Circling around the house spire & trees
+    float a5 = g_time * 0.85f;
+    float bx5 = 1.2f + 6.0f * std::cos(a5);
+    float bz5 = 1.2f + 6.0f * std::sin(a5);
+    float by5 = 13.5f + 1.5f * std::sin(a5 * 2.0f);
+    float yaw5 = -a5 * 180.0f / (float)M_PI + 90.0f;
+    float flap5 = std::sin(g_time * 16.0f) * 40.0f;
+    drawBat(bx5, by5, bz5, yaw5, 0.0f, -22.0f, flap5, 0.90f);
 }
 
 // ----------------------------------------------------------------------------
@@ -4757,6 +5014,7 @@ void render3DScene() {
     drawRustedCar(11.0f, 7.5f, -32.0f);
     drawFenceAndYardProps();
     drawAllTrees();
+    drawFallingLeaves();
     drawAllBats();
     drawGroundMist();
 
@@ -5263,6 +5521,9 @@ void idleCallback() {
 
     // 2. Pumpkin Warm Candle Flicker
     g_pumpkinFlicker = 0.85f + 0.15f * std::sin(g_time * 4.5f) * std::cos(g_time * 2.8f);
+
+    // 2.1 Dynamic Falling Leaves Animation (drifting and tumbling down from trees)
+    updateFallingLeaves(g_deltaTime);
 
     // 3. Lightning State Machine & Dynamic Flashes
     g_lightning.timer += g_deltaTime;
