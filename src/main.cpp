@@ -1563,7 +1563,7 @@ void drawPuddle(float cx, float cz, float radiusX, float radiusZ, float rotAngle
         glNormal3f(nx, ny, nz);
 
         // Dark soaked mud
-        glColor4f(0.25f, 0.25f, 0.28f, 1.0f);
+        glColor4f(0.22f, 0.22f, 0.25f, 1.0f);
         glTexCoord2f(inX * 0.2f, inZ * 0.2f);
         glVertex3f(inX, 0.002f, inZ);
 
@@ -1590,6 +1590,35 @@ void drawPuddle(float cx, float cz, float radiusX, float radiusZ, float rotAngle
     }
     glEnd();
 
+    // 3. Dynamic Water Ripple Drip Rings (expanding concentric rings with fading alpha)
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous water glint
+    glLineWidth(1.6f);
+
+    for (int d = 0; d < 2; ++d) {
+        float dripTime = g_time * 1.2f + (float)d * 1.4f + std::abs(cx) * 0.4f;
+        float cycle = std::fmod(dripTime, 2.4f);
+        float rProgress = cycle / 2.4f;
+        float ripRadius = rProgress * (radiusX * 0.72f);
+        float ripAlpha = (1.0f - rProgress) * 0.35f;
+
+        float dripOffsetX = (d == 0) ? -0.25f : 0.35f;
+        float dripOffsetZ = (d == 0) ? 0.15f : -0.20f;
+
+        glColor4f(0.55f, 0.72f, 0.95f, ripAlpha);
+        glBegin(GL_LINE_LOOP);
+        for (int i = 0; i < 20; ++i) {
+            float theta = 2.0f * (float)M_PI * (float)i / 20.0f;
+            float px = dripOffsetX + ripRadius * std::cos(theta);
+            float pz = dripOffsetZ + (ripRadius * (radiusZ / radiusX)) * std::sin(theta);
+            glVertex3f(px, 0.012f, pz);
+        }
+        glEnd();
+    }
+    glPopAttrib();
+
     glPopMatrix();
 }
 
@@ -1603,6 +1632,66 @@ void drawPuddles() {
 
     // Puddle 3: Left side near cemetery / porch corner
     drawPuddle(-9.5f,  8.2f, 1.8f, 1.3f, -10.0f);
+}
+
+// Gossamer Cobweb Geometry (Translucent additive spiderweb in corners)
+void drawCobweb(float x, float y, float z, float size, float rotX, float rotY, float rotZ) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(rotX, 1.0f, 0.0f, 0.0f);
+    glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+
+    bindTexture(TEX_NONE);
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous thread glint
+
+    // 1. Semi-translucent web veil fan
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(0.85f, 0.90f, 0.98f, 0.16f);
+    glVertex3f(0.0f, 0.0f, 0.0f); // Corner origin
+
+    int segments = 8;
+    for (int i = 0; i <= segments; ++i) {
+        float theta = (float)M_PI * 0.5f * ((float)i / segments);
+        float r = size * (0.85f + 0.15f * std::sin((float)i * 1.8f));
+        glColor4f(0.70f, 0.78f, 0.92f, 0.02f);
+        glVertex3f(r * std::cos(theta), r * std::sin(theta), 0.01f * std::sin(theta * 3.0f));
+    }
+    glEnd();
+
+    // 2. Radial Spoke Strands
+    glLineWidth(1.4f);
+    glColor4f(0.92f, 0.95f, 1.0f, 0.32f);
+    glBegin(GL_LINES);
+    for (int i = 0; i <= segments; ++i) {
+        float theta = (float)M_PI * 0.5f * ((float)i / segments);
+        float r = size * (0.85f + 0.15f * std::sin((float)i * 1.8f));
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(r * std::cos(theta), r * std::sin(theta), 0.0f);
+    }
+    glEnd();
+
+    // 3. Concentric Spiral Threads
+    int rings = 4;
+    for (int r = 1; r <= rings; ++r) {
+        float ringFrac = (float)r / rings;
+        float rRad = size * ringFrac;
+        glColor4f(0.85f, 0.92f, 1.0f, 0.25f * (1.0f - ringFrac * 0.5f));
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i <= segments; ++i) {
+            float theta = (float)M_PI * 0.5f * ((float)i / segments);
+            glVertex3f(rRad * std::cos(theta), rRad * std::sin(theta), 0.0f);
+        }
+        glEnd();
+    }
+
+    glPopAttrib();
+    glPopMatrix();
 }
 
 // Dead grass tufts (Crossed textured quads with subtle wind sway)
@@ -1801,7 +1890,7 @@ void drawIrregularRock(float x, float z, float rx, float ry, float rz, float rot
 void drawBrokenCrate(float x, float z, float rotY, float tilt = 6.0f) {
     float groundY = getTerrainHeight(x, z);
     glPushMatrix();
-    glTranslatef(x, groundY + 0.42f, z);
+    glTranslatef(x, groundY + 0.38f, z); // Embedded slightly into dirt
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
     glRotatef(tilt, 0.0f, 0.0f, 1.0f);
 
@@ -1882,7 +1971,7 @@ void drawBrokenCrate(float x, float z, float rotY, float tilt = 6.0f) {
 void drawOldBarrel(float x, float z, float rotY, float tilt = 0.0f) {
     float groundY = getTerrainHeight(x, z);
     glPushMatrix();
-    glTranslatef(x, groundY + 0.52f, z);
+    glTranslatef(x, groundY + 0.48f, z); // Embedded base into soil
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
     glRotatef(tilt, 1.0f, 0.0f, 0.0f);
 
@@ -1927,7 +2016,7 @@ void drawOldBarrel(float x, float z, float rotY, float tilt = 0.0f) {
 
 // Fallen Fence Planks / Pointed Pickets Lying in the Mud
 void drawFallenPlank(float x, float z, float rotY, float pitch) {
-    float y = getTerrainHeight(x, z) + 0.03f;
+    float y = getTerrainHeight(x, z) + 0.015f;
     glPushMatrix();
     glTranslatef(x, y, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
@@ -1948,7 +2037,7 @@ void drawFallenPlank(float x, float z, float rotY, float pitch) {
 
 // Rusty Metal Bucket with Arched Wire Handle
 void drawRustyBucket(float x, float z, float rotY, float tilt = 22.0f) {
-    float y = getTerrainHeight(x, z) + 0.10f;
+    float y = getTerrainHeight(x, z) + 0.05f;
     glPushMatrix();
     glTranslatef(x, y, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
@@ -2078,14 +2167,14 @@ void drawLeaningLamppost(float x, float z, float rotY, float leanAngle = 11.5f) 
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
     glRotatef(leanAngle, 0.0f, 0.0f, 1.0f); // Haunting historic soil lean
 
-    // Stepped Pedestal Base Plinth
+    // Stepped Pedestal Base Plinth (deepened to stay grounded under soil lean)
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
 
     glPushMatrix();
-    glTranslatef(0.0f, 0.12f, 0.0f);
-    drawBox(0.52f, 0.24f, 0.52f); // Bottom step
-    glTranslatef(0.0f, 0.18f, 0.0f);
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawBox(0.52f, 0.38f, 0.52f); // Deepened bottom step (penetrates terrain)
+    glTranslatef(0.0f, 0.25f, 0.0f);
     drawBox(0.40f, 0.16f, 0.40f); // Middle tier
     glTranslatef(0.0f, 0.14f, 0.0f);
     drawCylinder(0.18f, 0.12f, 0.16f, 10, 1.0f, 0.5f); // Base collar
@@ -2283,44 +2372,118 @@ void drawGround() {
             float nx11, ny11, nz11; getTerrainNormal(x1, z1, nx11, ny11, nz11);
             float nx01, ny01, nz01; getTerrainNormal(x0, z1, nx01, ny01, nz01);
 
-            // Mud wetness calculation (darker and wetter looking near puddles)
-            auto calcWetness = [](float px, float pz) {
+            // Ground Contact Darkening / Analytical Ambient Occlusion & Mud Wetness
+            auto calcGroundOcclusion = [](float px, float pz) {
+                float ao = 1.0f;
+
+                // A. Puddles / Wet Mud rim
                 float dp1 = std::sqrt((px + 4.5f)*(px + 4.5f) + (pz - 13.5f)*(pz - 13.5f));
                 float dp2 = std::sqrt((px - 5.0f)*(px - 5.0f) + (pz - 10.5f)*(pz - 10.5f));
                 float dp3 = std::sqrt((px + 9.5f)*(px + 9.5f) + (pz - 8.2f)*(pz - 8.2f));
-                float minD = std::min(dp1, std::min(dp2, dp3));
-                if (minD < 4.0f) {
-                    return 0.45f + 0.55f * (minD / 4.0f);
+                float minPuddle = std::min(dp1, std::min(dp2, dp3));
+                if (minPuddle < 3.8f) {
+                    float pFactor = 0.42f + 0.58f * (minPuddle / 3.8f);
+                    ao = std::min(ao, pFactor);
                 }
-                return 1.0f;
+
+                // B. House Main Foundation Perimeter AO ([-9.75, 7.75] x [-7.75, 5.75])
+                float dxMain = std::max(0.0f, std::max(-9.75f - px, px - 7.75f));
+                float dzMain = std::max(0.0f, std::max(-7.75f - pz, pz - 5.75f));
+                float dHouse = std::sqrt(dxMain * dxMain + dzMain * dzMain);
+                if (dHouse < 2.2f) {
+                    float houseAO = 0.48f + 0.52f * std::pow(dHouse / 2.2f, 0.70f);
+                    ao = std::min(ao, houseAO);
+                }
+
+                // C. Porch Perimeter AO ([-6.2, 0.6] x [3.2, 7.4])
+                float dxPorch = std::max(0.0f, std::max(-6.2f - px, px - 0.6f));
+                float dzPorch = std::max(0.0f, std::max(3.2f - pz, pz - 7.4f));
+                float dPorch = std::sqrt(dxPorch * dxPorch + dzPorch * dzPorch);
+                if (dPorch < 1.4f) {
+                    float porchAO = 0.52f + 0.48f * (dPorch / 1.4f);
+                    ao = std::min(ao, porchAO);
+                }
+
+                // D. Abandoned Car Contact AO (Footprint at (11.0, 7.5))
+                float dCar = std::sqrt((px - 11.0f)*(px - 11.0f) + (pz - 7.5f)*(pz - 7.5f));
+                if (dCar < 3.2f) {
+                    float carAO = 0.46f + 0.54f * (dCar / 3.2f);
+                    ao = std::min(ao, carAO);
+                }
+
+                // E. Tree Trunks & Root Flares Contact AO
+                const float trees[7][2] = {
+                    {  6.8f, 13.0f }, { -11.0f,  4.0f }, { 13.8f,  1.5f },
+                    { -14.5f, 16.0f }, { 15.5f, 14.5f }, { -8.0f, 28.0f }, { 9.8f, 29.0f }
+                };
+                for (int t = 0; t < 7; ++t) {
+                    float dt = std::sqrt((px - trees[t][0])*(px - trees[t][0]) + (pz - trees[t][1])*(pz - trees[t][1]));
+                    if (dt < 2.0f) {
+                        float treeAO = 0.55f + 0.45f * (dt / 2.0f);
+                        ao = std::min(ao, treeAO);
+                    }
+                }
+
+                // F. Irregular Boulders Contact AO
+                const float rocks[7][2] = {
+                    { 6.2f, 14.8f }, { -6.8f, 14.5f }, { 12.8f, 6.5f },
+                    { 9.2f, 17.5f }, { -8.5f,  6.8f }, { -13.5f, 21.0f }, { 14.5f, 19.0f }
+                };
+                for (int r = 0; r < 7; ++r) {
+                    float dr = std::sqrt((px - rocks[r][0])*(px - rocks[r][0]) + (pz - rocks[r][1])*(pz - rocks[r][1]));
+                    if (dr < 1.4f) {
+                        float rockAO = 0.60f + 0.40f * (dr / 1.4f);
+                        ao = std::min(ao, rockAO);
+                    }
+                }
+
+                // G. Cemetery Tombstones AO
+                const float tombs[4][2] = {
+                    { 12.0f, 12.0f }, { 14.5f, 14.5f }, { 10.5f, 16.0f }, { 13.0f, 18.5f }
+                };
+                for (int m = 0; m < 4; ++m) {
+                    float dm = std::sqrt((px - tombs[m][0])*(px - tombs[m][0]) + (pz - tombs[m][1])*(pz - tombs[m][1]));
+                    if (dm < 1.2f) {
+                        float tombAO = 0.62f + 0.38f * (dm / 1.2f);
+                        ao = std::min(ao, tombAO);
+                    }
+                }
+
+                // H. Fence Line Contact AO
+                if (std::abs(px - (-15.0f)) < 1.1f && pz >= -4.0f && pz <= 25.0f) {
+                    float fenceAO = 0.68f + 0.32f * (std::abs(px + 15.0f) / 1.1f);
+                    ao = std::min(ao, fenceAO);
+                }
+
+                return ao;
             };
 
-            float w00 = calcWetness(x0, z0);
-            float w10 = calcWetness(x1, z0);
-            float w11 = calcWetness(x1, z1);
-            float w01 = calcWetness(x0, z1);
+            float w00 = calcGroundOcclusion(x0, z0);
+            float w10 = calcGroundOcclusion(x1, z0);
+            float w11 = calcGroundOcclusion(x1, z1);
+            float w01 = calcGroundOcclusion(x0, z1);
 
             // V00
             glNormal3f(nx00, ny00, nz00);
-            glColor4f(w00, w00, w00 * 1.05f, 1.0f);
+            glColor4f(w00, w00, w00 * 1.04f, 1.0f);
             glTexCoord2f(x0 * tileScale, z0 * tileScale);
             glVertex3f(x0, y00, z0);
 
             // V10
             glNormal3f(nx10, ny10, nz10);
-            glColor4f(w10, w10, w10 * 1.05f, 1.0f);
+            glColor4f(w10, w10, w10 * 1.04f, 1.0f);
             glTexCoord2f(x1 * tileScale, z0 * tileScale);
             glVertex3f(x1, y10, z0);
 
             // V11
             glNormal3f(nx11, ny11, nz11);
-            glColor4f(w11, w11, w11 * 1.05f, 1.0f);
+            glColor4f(w11, w11, w11 * 1.04f, 1.0f);
             glTexCoord2f(x1 * tileScale, z1 * tileScale);
             glVertex3f(x1, y11, z1);
 
             // V01
             glNormal3f(nx01, ny01, nz01);
-            glColor4f(w01, w01, w01 * 1.05f, 1.0f);
+            glColor4f(w01, w01, w01 * 1.04f, 1.0f);
             glTexCoord2f(x0 * tileScale, z1 * tileScale);
             glVertex3f(x0, y01, z1);
         }
@@ -2669,12 +2832,12 @@ void drawHouse() {
     // ------------------------------------------------------------------------
     // STONE FOUNDATION & GRIMY WATER-TABLE BASE
     // ------------------------------------------------------------------------
-    // Main foundation base
+    // Main foundation base (extended downward to penetrate terrain dips)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
     glPushMatrix();
-    glTranslatef(-1.0f, 0.4f, -1.0f);
-    drawBox(17.5f, 0.8f, 13.5f, 5.0f, 1.0f);
+    glTranslatef(-1.0f, 0.25f, -1.0f);
+    drawBox(17.6f, 1.30f, 13.6f, 5.0f, 1.0f);
     glPopMatrix();
 
     // Weathered water-table trim band (divides stone base from wooden walls)
@@ -2745,12 +2908,12 @@ void drawHouse() {
     // ------------------------------------------------------------------------
     // DETAILED WOODEN PORCH (Individual Planks, Railings, Broken Balusters)
     // ------------------------------------------------------------------------
-    // Porch Foundation Frame
+    // Porch Foundation Frame (extended downward into ground)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
     glPushMatrix();
-    glTranslatef(-2.8f, 0.35f, 5.2f);
-    drawBox(6.6f, 0.7f, 4.1f, 2.0f, 0.8f);
+    glTranslatef(-2.8f, 0.25f, 5.2f);
+    drawBox(6.6f, 1.10f, 4.1f, 2.0f, 0.8f);
     glPopMatrix();
 
     // Individual Porch Floor Planks with visible thickness & gaps
@@ -2770,12 +2933,12 @@ void drawHouse() {
         glPopMatrix();
     }
 
-    // Porch Steps (3 thick risers & treads)
+    // Porch Steps (3 thick risers & treads, Step 1 deeply grounded)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
     glPushMatrix();
-    glTranslatef(-2.8f, 0.18f, 7.7f);
-    drawBox(3.2f, 0.18f, 0.85f, 1.0f, 0.5f); // Step 1
+    glTranslatef(-2.8f, 0.09f, 7.7f);
+    drawBox(3.2f, 0.36f, 0.85f, 1.0f, 0.5f); // Step 1 (penetrates terrain)
     glTranslatef(0.0f, 0.18f, -0.45f);
     drawBox(3.0f, 0.18f, 0.85f, 1.0f, 0.5f); // Step 2
     glTranslatef(0.0f, 0.18f, -0.45f);
@@ -3201,6 +3364,20 @@ void drawHouse() {
     glTranslatef(-1.4f, 0.0f, 0.0f);
     drawCylinder(0.05f, 0.04f, 0.45f, 6, 0.5f, 1.0f);
     glPopMatrix();
+
+    // ------------------------------------------------------------------------
+    // GOSSAMER COBWEBS IN EERIE HOUSE CORNERS & BALCONIES
+    // ------------------------------------------------------------------------
+    // 1. Porch Left Eave Corner (Between upper beam and left post)
+    drawCobweb(-5.75f, 4.25f, 6.75f, 0.75f, 0.0f, 0.0f, 0.0f);
+    // 2. Porch Right Eave Corner (Between upper beam and right post)
+    drawCobweb(0.15f, 4.25f, 6.75f, 0.70f, 0.0f, 90.0f, 0.0f);
+    // 3. Porch Railing Junction with House Wall
+    drawCobweb(-5.95f, 1.55f, 3.4f, 0.55f, 0.0f, -45.0f, 0.0f);
+    // 4. Broken Window Frame Corner (Right wall boarded window)
+    drawCobweb(2.6f, 3.6f, 5.30f, 0.60f, 0.0f, 0.0f, 0.0f);
+    // 5. Attic Steeple Spire Balcony Corner
+    drawCobweb(-6.2f, 9.8f, 1.8f, 0.85f, 0.0f, 45.0f, 0.0f);
 }
 
 // 5. Hanging Porch Bulb with Dynamic Point Light
@@ -3982,10 +4159,10 @@ void drawFenceAndYardProps() {
         float rot = std::sin(i * 1.4f) * 8.0f;
 
         glPushMatrix();
-        glTranslatef(x, y + 0.8f, z);
+        glTranslatef(x, y + 0.75f, z);
         glRotatef(rot, 0.0f, 0.0f, 1.0f);
-        drawBox(0.14f, 1.6f, 0.12f, 0.5f, 1.0f);
-        glTranslatef(0.0f, 0.9f, 0.0f);
+        drawBox(0.14f, 1.9f, 0.12f, 0.5f, 1.2f); // Deepened post penetrating ground
+        glTranslatef(0.0f, 0.95f, 0.0f);
         drawPrismRoof(0.16f, 0.18f, 0.14f, 0.5f, 0.5f);
         glPopMatrix();
     }
@@ -4002,9 +4179,9 @@ void drawFenceAndYardProps() {
     for (int i = 0; i < 4; ++i) {
         float y = getTerrainHeight(tombstonePos[i][0], tombstonePos[i][2]);
         glPushMatrix();
-        glTranslatef(tombstonePos[i][0], y + 0.65f, tombstonePos[i][2]);
+        glTranslatef(tombstonePos[i][0], y + 0.55f, tombstonePos[i][2]);
         glRotatef(std::sin(i * 2.1f) * 12.0f, 0.0f, 1.0f, 0.0f);
-        drawBox(0.7f, 1.3f, 0.22f, 1.0f, 1.0f);
+        drawBox(0.7f, 1.4f, 0.22f, 1.0f, 1.0f); // Embedded into soil
         glPopMatrix();
     }
 }
