@@ -668,62 +668,63 @@ void initOpenGL() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.020f, 0.035f, 0.055f, 1.0f);
+    glClearColor(0.012f, 0.018f, 0.032f, 1.0f);
 
-    float globalAmbient[] = { 0.08f, 0.10f, 0.15f, 1.0f };
+    // Deep, moody midnight global ambient (keeps shadows deep and mysterious)
+    float globalAmbient[] = { 0.025f, 0.035f, 0.055f, 1.0f };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
-    // Fog
-    float fogColor[4] = { 0.030f, 0.045f, 0.075f, 1.0f };
+    // Atmospheric Blue-Midnight Fog (matches horizon & sky)
+    float fogColor[4] = { 0.016f, 0.026f, 0.044f, 1.0f };
     glFogi(GL_FOG_MODE, GL_EXP2);
     glFogfv(GL_FOG_COLOR, fogColor);
-    glFogf(GL_FOG_DENSITY, 0.020f);
+    glFogf(GL_FOG_DENSITY, 0.022f);
     glHint(GL_FOG_HINT, GL_NICEST);
     if (g_fogEnabled) glEnable(GL_FOG); else glDisable(GL_FOG);
 
-    // Light 0: Point Light
-    float pDiffuse[]   = { 1.0f, 0.82f, 0.35f, 1.0f };
+    // Light 0: Point Light (Warm Golden Porch Bulb with distance attenuation)
+    float pDiffuse[]   = { 1.0f, 0.78f, 0.32f, 1.0f };
     float pSpecular[]  = { 1.0f, 0.85f, 0.40f, 1.0f };
-    float pAmbient[]   = { 0.08f, 0.05f, 0.01f, 1.0f };
+    float pAmbient[]   = { 0.012f, 0.008f, 0.002f, 1.0f };
     glLightfv(GL_LIGHT0, GL_DIFFUSE,  pDiffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, pSpecular);
     glLightfv(GL_LIGHT0, GL_AMBIENT,  pAmbient);
     glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION,  1.0f);
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,    0.12f);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.03f);
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,    0.14f);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.035f);
 
-    // Light 1: Directional Moonlight
-    float mDiffuse[]   = { 0.35f, 0.48f, 0.72f, 1.0f };
-    float mSpecular[]  = { 0.50f, 0.62f, 0.88f, 1.0f };
-    float mAmbient[]   = { 0.06f, 0.08f, 0.14f, 1.0f };
+    // Light 1: Directional Moonlight (Cool silvery-blue base illumination)
+    float mDiffuse[]   = { 0.28f, 0.38f, 0.58f, 1.0f };
+    float mSpecular[]  = { 0.42f, 0.55f, 0.78f, 1.0f };
+    float mAmbient[]   = { 0.02f, 0.03f, 0.05f, 1.0f };
     glLightfv(GL_LIGHT1, GL_DIFFUSE,  mDiffuse);
     glLightfv(GL_LIGHT1, GL_SPECULAR, mSpecular);
     glLightfv(GL_LIGHT1, GL_AMBIENT,  mAmbient);
 
-    // Light 2: Spot Light
-    float fDiffuse[]   = { 0.95f, 0.98f, 1.00f, 1.0f };
+    // Light 2: Spot Light (First-Person Flashlight with soft organic falloff)
+    float fDiffuse[]   = { 0.95f, 0.96f, 0.92f, 1.0f };
     float fSpecular[]  = { 1.00f, 1.00f, 1.00f, 1.0f };
     float fAmbient[]   = { 0.00f, 0.00f, 0.00f, 1.0f };
     glLightfv(GL_LIGHT2, GL_DIFFUSE,  fDiffuse);
     glLightfv(GL_LIGHT2, GL_SPECULAR, fSpecular);
     glLightfv(GL_LIGHT2, GL_AMBIENT,  fAmbient);
-    glLightf(GL_LIGHT2, GL_SPOT_CUTOFF,   18.5f);
-    glLightf(GL_LIGHT2, GL_SPOT_EXPONENT, 28.0f);
+    glLightf(GL_LIGHT2, GL_SPOT_CUTOFF,   22.0f); // Wide natural cone
+    glLightf(GL_LIGHT2, GL_SPOT_EXPONENT, 16.0f); // Soft Gaussian-like radial edge falloff
     glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION,  1.0f);
-    glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION,    0.04f);
-    glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.006f);
+    glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION,    0.035f);
+    glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.005f);
 
-    // Light 3: Area Light Emulation
-    float wDiffuse[]   = { 0.95f, 0.65f, 0.20f, 1.0f };
-    float wSpecular[]  = { 0.70f, 0.45f, 0.15f, 1.0f };
-    float wAmbient[]   = { 0.25f, 0.15f, 0.04f, 1.0f };
+    // Light 3: Area Light Emulation (Warm Amber Window Interior Glow)
+    float wDiffuse[]   = { 0.85f, 0.55f, 0.15f, 1.0f };
+    float wSpecular[]  = { 0.55f, 0.35f, 0.10f, 1.0f };
+    float wAmbient[]   = { 0.08f, 0.05f, 0.01f, 1.0f };
     glLightfv(GL_LIGHT3, GL_DIFFUSE,  wDiffuse);
     glLightfv(GL_LIGHT3, GL_SPECULAR, wSpecular);
     glLightfv(GL_LIGHT3, GL_AMBIENT,  wAmbient);
     glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION,  1.0f);
-    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,    0.07f);
-    glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.012f);
+    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,    0.08f);
+    glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.015f);
 
     glEnable(GL_LIGHTING);
     initAllTextures();
@@ -1120,15 +1121,17 @@ void drawSteepleSpire(float baseRadius, float height, int facets, float tileU = 
 
 void drawBillboardHalo(float x, float y, float z, float radius, float r, float g, float b, float maxAlpha) {
     bindTexture(TEX_NONE);
-    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glDisable(GL_LIGHTING);
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous bloom
 
     glPushMatrix();
     glTranslatef(x, y, z);
 
+    // Billboarding: Extract camera orientation to keep halo billboarded towards screen
     float modelview[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
     modelview[0] = 1.0f; modelview[1] = 0.0f; modelview[2] = 0.0f;
@@ -1136,15 +1139,31 @@ void drawBillboardHalo(float x, float y, float z, float radius, float r, float g
     modelview[8] = 0.0f; modelview[9] = 0.0f; modelview[10] = 1.0f;
     glLoadMatrixf(modelview);
 
-    int rings = 7;
-    int segments = 24;
+    int segments = 28;
+    float coreRadius = radius * 0.18f;
+
+    // 1. Intense Overbright Core Glare Disc (Hotspot)
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 1.0f, 1.0f, maxAlpha * 0.92f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i <= segments; ++i) {
+        float theta = 2.0f * (float)M_PI * (float)i / segments;
+        glColor4f(r * 1.05f, g * 1.05f, b * 1.05f, maxAlpha * 0.45f);
+        glVertex3f(coreRadius * std::cos(theta), coreRadius * std::sin(theta), 0.0f);
+    }
+    glEnd();
+
+    // 2. Multi-tier Soft Gaussian Bloom Rings (Smooth cubic falloff)
+    int rings = 9;
     for (int ring = 0; ring < rings; ++ring) {
-        float r0 = radius * ((float)ring / rings);
-        float r1 = radius * ((float)(ring + 1) / rings);
-        float a0 = maxAlpha * (1.0f - (float)ring / rings);
-        float a1 = maxAlpha * (1.0f - (float)(ring + 1) / rings);
-        a0 = a0 * a0;
-        a1 = a1 * a1;
+        float t0 = (float)ring / rings;
+        float t1 = (float)(ring + 1) / rings;
+        float r0 = coreRadius + (radius - coreRadius) * t0;
+        float r1 = coreRadius + (radius - coreRadius) * t1;
+
+        // Smooth cubic Gaussian decay curve
+        float a0 = maxAlpha * (1.0f - t0) * (1.0f - t0) * (1.0f - t0);
+        float a1 = maxAlpha * (1.0f - t1) * (1.0f - t1) * (1.0f - t1);
 
         glBegin(GL_QUAD_STRIP);
         for (int i = 0; i <= segments; ++i) {
@@ -1162,6 +1181,106 @@ void drawBillboardHalo(float x, float y, float z, float radius, float r, float g
     }
 
     glPopMatrix();
+    glPopAttrib();
+}
+
+// Volumetric Flashlight Beam Cone & Drifting Dust Motes in the Fog
+void drawVolumetricFlashlightBeam(float posX, float posY, float posZ, float dirX, float dirY, float dirZ) {
+    if (!g_light2SpotOn) return;
+
+    bindTexture(TEX_NONE);
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive soft volumetric glow
+
+    // Forward direction vector
+    float fLen = std::sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+    if (fLen < 0.0001f) { glPopAttrib(); return; }
+    float fx = dirX / fLen;
+    float fy = dirY / fLen;
+    float fz = dirZ / fLen;
+
+    // Right and Up orthogonal coordinate vectors
+    float ux = 0.0f, uy = 1.0f, uz = 0.0f;
+    if (std::abs(fy) > 0.95f) { ux = 1.0f; uy = 0.0f; uz = 0.0f; }
+    float rx = fy * uz - fz * uy;
+    float ry = fz * ux - fx * uz;
+    float rz = fx * uy - fy * ux;
+    float rLen = std::sqrt(rx * rx + ry * ry + rz * rz);
+    rx /= rLen; ry /= rLen; rz /= rLen;
+
+    ux = ry * fz - rz * fy;
+    uy = rz * fx - rx * fz;
+    uz = rx * fy - ry * fx;
+
+    // Multi-segment soft translucent beam cone
+    int slices = 18;
+    int rings = 8;
+    float maxDist = 16.0f;
+    float spreadAngle = 21.5f * (float)M_PI / 180.0f; // matches spot cutoff
+    float tanSpread = std::tan(spreadAngle);
+
+    for (int ring = 0; ring < rings; ++ring) {
+        float d0 = 0.35f + maxDist * ((float)ring / rings);
+        float d1 = 0.35f + maxDist * ((float)(ring + 1) / rings);
+        float coneR0 = d0 * tanSpread;
+        float coneR1 = d1 * tanSpread;
+
+        float t0 = (float)ring / rings;
+        float t1 = (float)(ring + 1) / rings;
+        float a0 = 0.032f * (1.0f - t0 * t0);
+        float a1 = 0.032f * (1.0f - t1 * t1);
+
+        glBegin(GL_QUAD_STRIP);
+        for (int i = 0; i <= slices; ++i) {
+            float theta = 2.0f * (float)M_PI * (float)i / slices;
+            float ct = std::cos(theta);
+            float st = std::sin(theta);
+
+            float cx1 = posX + fx * d1 + (rx * ct + ux * st) * coneR1;
+            float cy1 = posY + fy * d1 + (ry * ct + uy * st) * coneR1;
+            float cz1 = posZ + fz * d1 + (rz * ct + uz * st) * coneR1;
+
+            float cx0 = posX + fx * d0 + (rx * ct + ux * st) * coneR0;
+            float cy0 = posY + fy * d0 + (ry * ct + uy * st) * coneR0;
+            float cz0 = posZ + fz * d0 + (rz * ct + uz * st) * coneR0;
+
+            glColor4f(0.85f, 0.90f, 0.98f, a1);
+            glVertex3f(cx1, cy1, cz1);
+
+            glColor4f(0.85f, 0.90f, 0.98f, a0);
+            glVertex3f(cx0, cy0, cz0);
+        }
+        glEnd();
+    }
+
+    // Floating dust motes illuminated in the beam
+    glPointSize(2.4f);
+    glBegin(GL_POINTS);
+    for (int i = 0; i < 28; ++i) {
+        float seed = (float)i * 137.5f;
+        float speed = 0.12f + 0.08f * std::sin(seed * 0.3f);
+        float drift = std::fmod(g_time * speed + seed, 12.0f) + 0.6f;
+
+        float spread = drift * tanSpread * 0.65f;
+        float angle = seed + g_time * 0.25f;
+        float dr = std::sin(seed * 1.7f) * spread;
+
+        float mx = posX + fx * drift + (rx * std::cos(angle) + ux * std::sin(angle)) * dr;
+        float my = posY + fy * drift + (ry * std::cos(angle) + uy * std::sin(angle)) * dr + 0.05f * std::sin(g_time + seed);
+        float mz = posZ + fz * drift + (rz * std::cos(angle) + uz * std::sin(angle)) * dr;
+
+        float moteAlpha = (0.28f + 0.22f * std::sin(g_time * 3.5f + seed)) * (1.0f - drift / 13.0f);
+        if (moteAlpha > 0.0f) {
+            glColor4f(0.95f, 0.96f, 0.90f, moteAlpha);
+            glVertex3f(mx, my, mz);
+        }
+    }
+    glEnd();
+
     glPopAttrib();
 }
 
@@ -2746,7 +2865,9 @@ void drawHouse() {
     drawBox(2.85f, 0.10f, 0.12f);
     drawBox(0.10f, 2.25f, 0.12f);
     glPopMatrix();
-    drawBillboardHalo(3.2f, 3.2f, 5.5f, 3.2f, 1.0f, 0.70f, 0.20f, 0.50f);
+    if (g_light3AreaOn) {
+        drawBillboardHalo(3.2f, 3.2f, 5.5f, 3.8f, 1.0f, 0.68f, 0.20f, 0.55f);
+    }
 
     // Boarded-Up Wooden Planks Nailed Across Parlor Window (Decay detail!)
     applyMaterial(MAT_DARK_WOOD);
@@ -2792,7 +2913,9 @@ void drawHouse() {
         drawBox(1.35f, 0.08f, 0.10f);
         drawBox(0.08f, 1.85f, 0.10f);
         glPopMatrix();
-        drawBillboardHalo(leftWinX[i], 3.2f, 5.0f, 1.8f, 1.0f, 0.65f, 0.18f, 0.35f);
+        if (g_light3AreaOn) {
+            drawBillboardHalo(leftWinX[i], 3.2f, 5.0f, 2.0f, 1.0f, 0.62f, 0.18f, 0.38f);
+        }
     }
 
     // 3. Second Floor Attic Window (with projecting sill)
@@ -2813,7 +2936,9 @@ void drawHouse() {
     drawBox(1.65f, 0.08f, 0.10f);
     drawBox(0.08f, 1.65f, 0.10f);
     glPopMatrix();
-    drawBillboardHalo(-2.8f, 6.6f, 4.7f, 2.0f, 1.0f, 0.65f, 0.18f, 0.35f);
+    if (g_light3AreaOn) {
+        drawBillboardHalo(-2.8f, 6.6f, 4.7f, 2.2f, 1.0f, 0.62f, 0.18f, 0.38f);
+    }
 
     // 4. Tower Arched Window (with projecting frame)
     applyMaterial(MAT_DARK_WOOD);
@@ -2833,7 +2958,9 @@ void drawHouse() {
     drawBox(1.05f, 0.08f, 0.10f);
     drawBox(0.08f, 1.55f, 0.10f);
     glPopMatrix();
-    drawBillboardHalo(1.2f, 9.5f, 3.6f, 1.8f, 1.0f, 0.65f, 0.18f, 0.40f);
+    if (g_light3AreaOn) {
+        drawBillboardHalo(1.2f, 9.5f, 3.6f, 2.0f, 1.0f, 0.62f, 0.18f, 0.40f);
+    }
 
     // ------------------------------------------------------------------------
     // BROKEN FURNITURE ON PORCH
@@ -3113,6 +3240,8 @@ void drawRustedCar(float x, float z, float rotY) {
     glTranslatef(0.0f, 0.0f, 0.04f);
     applyMaterial(MAT_CAR_GLASS);
     drawSphere(0.145f, 12, 10);
+    // Soft specular lens flare halo
+    drawBillboardHalo(0.0f, 0.0f, 0.08f, 0.45f, 0.85f, 0.92f, 1.0f, 0.35f);
     glPopMatrix();
 
     // 2. Right Headlight (Broken/Abandoned: dented chrome rim, shattered shards, exposed bulb!)
@@ -3133,6 +3262,7 @@ void drawRustedCar(float x, float z, float rotY) {
     bindTexture(TEX_NONE);
     glTranslatef(0.0f, 0.0f, 0.025f);
     drawSphere(0.035f, 8, 6);
+    drawBillboardHalo(0.0f, 0.0f, 0.02f, 0.22f, 1.0f, 0.70f, 0.25f, 0.30f);
     // Broken Glass Shards on rim edge
     applyMaterial(MAT_CAR_GLASS);
     glTranslatef(0.08f, -0.06f, 0.01f);
@@ -3780,10 +3910,11 @@ void render3DScene() {
         float pPos[4] = { g_bulbCurX, g_bulbCurY, g_bulbCurZ, 1.0f };
         glLightfv(GL_LIGHT0, GL_POSITION, pPos);
 
+        // Warm golden pool of light from porch bulb
         float pDiff[4] = { 
             1.0f * g_bulbFlickerFactor, 
-            0.82f * g_bulbFlickerFactor, 
-            0.35f * g_bulbFlickerFactor, 
+            0.78f * g_bulbFlickerFactor, 
+            0.32f * g_bulbFlickerFactor, 
             1.0f 
         };
         glLightfv(GL_LIGHT0, GL_DIFFUSE, pDiff);
@@ -3798,21 +3929,21 @@ void render3DScene() {
         glDisable(GL_LIGHT1);
     }
 
+    float radYaw   = g_cam.yaw * (float)M_PI / 180.0f;
+    float radPitch = g_cam.pitch * (float)M_PI / 180.0f;
+    float fx = std::cos(radYaw) * std::cos(radPitch);
+    float fy = std::sin(radPitch);
+    float fz = std::sin(radYaw) * std::cos(radPitch);
+
+    float rx = -std::sin(radYaw);
+    float rz =  std::cos(radYaw);
+
+    float flashPosX = g_cam.x + rx * 0.25f;
+    float flashPosY = g_cam.y - 0.15f;
+    float flashPosZ = g_cam.z + rz * 0.25f;
+
     if (g_light2SpotOn) {
         glEnable(GL_LIGHT2);
-        float radYaw   = g_cam.yaw * (float)M_PI / 180.0f;
-        float radPitch = g_cam.pitch * (float)M_PI / 180.0f;
-        float fx = std::cos(radYaw) * std::cos(radPitch);
-        float fy = std::sin(radPitch);
-        float fz = std::sin(radYaw) * std::cos(radPitch);
-
-        float rx = -std::sin(radYaw);
-        float rz =  std::cos(radYaw);
-
-        float flashPosX = g_cam.x + rx * 0.25f;
-        float flashPosY = g_cam.y - 0.15f;
-        float flashPosZ = g_cam.z + rz * 0.25f;
-
         float flashPos[4] = { flashPosX, flashPosY, flashPosZ, 1.0f };
         float flashDir[3] = { fx, fy, fz };
 
@@ -3844,6 +3975,11 @@ void render3DScene() {
 
     // 3. RENDER SHADOWS
     renderPlanarShadows();
+
+    // 4. VOLUMETRIC FLASHLIGHT BEAM & DUST MOTES
+    if (g_light2SpotOn) {
+        drawVolumetricFlashlightBeam(flashPosX, flashPosY, flashPosZ, fx, fy, fz);
+    }
 }
 
 // ============================================================================
@@ -3880,6 +4016,25 @@ void drawUIPanel(float x, float y, float w, float h, float r, float g, float b, 
     glVertex2f(x + w, y);
     glVertex2f(x + w, y + h);
     glVertex2f(x,     y + h);
+    glEnd();
+}
+
+void drawCinematicColorGrade() {
+    bindTexture(TEX_NONE);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    float w = (float)g_windowWidth;
+    float h = (float)g_windowHeight;
+
+    // Subtle cool blue-grey color cast for a cohesive cinematic night grade
+    glBegin(GL_QUADS);
+    glColor4f(0.035f, 0.065f, 0.135f, 0.13f);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(w,    0.0f);
+    glVertex2f(w,    h);
+    glVertex2f(0.0f, h);
     glEnd();
 }
 
@@ -3973,6 +4128,7 @@ void renderSceneHUD() {
     float w = (float)g_windowWidth;
     float h = (float)g_windowHeight;
 
+    drawCinematicColorGrade();
     drawScreenVignette();
 
     // Crosshair (+)
