@@ -3263,12 +3263,13 @@ void drawAllTrees() {
 
 // Helper to draw realistic Gothic windows with dark sills, casings, cross muntins, and warm amber glass
 void drawHouseWindow(float x, float y, float z, float width, float height, bool hasArch = true, bool hasCrossMuntin = true) {
+    (void)hasArch;
     glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT);
 
     // 1. Dark outer wooden sill / casing
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
     glPushMatrix();
     glTranslatef(x, y - height * 0.5f, z + 0.04f);
     drawBox(width + 0.25f, 0.10f, 0.18f); // Sill ledge
@@ -3276,25 +3277,32 @@ void drawHouseWindow(float x, float y, float z, float width, float height, bool 
     drawBox(width + 0.20f, 0.08f, 0.14f); // Top drip cap
     glPopMatrix();
 
-    // 2. Glowing Amber Glass Pane (Emissive warm interior light)
+    // 2. Glowing Amber Glass Pane with warm radiant center hotspot
     glDisable(GL_LIGHTING);
     bindTexture(TEX_NONE);
-    glColor4f(1.0f, 0.74f, 0.26f, 1.0f);
     glPushMatrix();
     glTranslatef(x, y, z + 0.02f);
+
+    // Outer warm amber / orange edge
+    glColor4f(0.95f, 0.58f, 0.18f, 1.0f);
     drawBox(width, height, 0.04f);
+
+    // Inner bright warm cream / yellow luminous core
+    glColor4f(1.0f, 0.88f, 0.48f, 1.0f);
+    drawBox(width * 0.72f, height * 0.72f, 0.045f);
+
     glPopMatrix();
     glEnable(GL_LIGHTING);
 
     // 3. Dark Wooden Cross Muntins / Glazing Bars
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
     if (hasCrossMuntin) {
         glPushMatrix();
-        glTranslatef(x, y, z + 0.02f);
-        drawBox(width + 0.02f, 0.06f, 0.08f); // Horizontal bar
-        drawBox(0.06f, height + 0.02f, 0.08f); // Vertical bar
+        glTranslatef(x, y, z + 0.025f);
+        drawBox(width + 0.02f, 0.06f, 0.06f); // Horizontal bar
+        drawBox(0.06f, height + 0.02f, 0.06f); // Vertical bar
         glPopMatrix();
     }
 
