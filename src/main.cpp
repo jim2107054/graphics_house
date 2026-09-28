@@ -254,20 +254,20 @@ void initFallingLeaves() {
         float rChoice = (float)(rand() % 100) / 100.0f;
         float ox, oz;
         if (rChoice < 0.50f) {
-            ox = 5.5f + ((float)(rand() % 45) / 10.0f);   // 5.5 to 10.0 (Right foreground tree canopy)
-            oz = 15.5f + ((float)(rand() % 45) / 10.0f);  // 15.5 to 20.0
+            ox = 5.0f + ((float)(rand() % 35) / 10.0f);   // Right foreground natural tree canopy
+            oz = 13.5f + ((float)(rand() % 30) / 10.0f);  // 13.5 to 16.5
         } else if (rChoice < 0.85f) {
-            ox = -9.5f + ((float)(rand() % 45) / 10.0f); // -9.5 to -5.0 (Left foreground tree canopy)
-            oz = 18.5f + ((float)(rand() % 45) / 10.0f);  // 18.5 to 23.0
+            ox = -7.5f + ((float)(rand() % 30) / 10.0f); // Left foreground natural tree canopy
+            oz = 13.5f + ((float)(rand() % 30) / 10.0f);  // 13.5 to 16.5
         } else {
-            ox = -2.0f + ((float)(rand() % 40) / 10.0f);   // -2.0 to 2.0 (Path drift)
-            oz = 12.0f + ((float)(rand() % 80) / 10.0f);
+            ox = -2.0f + ((float)(rand() % 40) / 10.0f);   // Path drift
+            oz = 10.0f + ((float)(rand() % 60) / 10.0f);
         }
 
         g_fallingLeaves[i].originX = ox;
         g_fallingLeaves[i].originZ = oz;
         g_fallingLeaves[i].x = ox;
-        g_fallingLeaves[i].y = 2.0f + ((float)(rand() % 120) / 10.0f); // 2.0m to 14.0m
+        g_fallingLeaves[i].y = 1.8f + ((float)(rand() % 30) / 10.0f); // 1.8m to 4.8m (natural tree canopy height)
         g_fallingLeaves[i].z = oz;
         g_fallingLeaves[i].vy = 0.40f + ((float)(rand() % 40) / 100.0f); // 0.40 to 0.80 m/s slow flutter drift
         g_fallingLeaves[i].rotX = (float)(rand() % 360);
@@ -887,6 +887,38 @@ const Material MAT_BARK = {
     { 0.04f, 0.04f, 0.06f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     4.0f
+};
+
+const Material MAT_FOLIAGE_DARK = {
+    { 0.10f, 0.16f, 0.10f, 1.0f },
+    { 0.18f, 0.32f, 0.18f, 1.0f },
+    { 0.03f, 0.05f, 0.03f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    12.0f
+};
+
+const Material MAT_FOLIAGE_LUSH = {
+    { 0.12f, 0.20f, 0.12f, 1.0f },
+    { 0.22f, 0.44f, 0.24f, 1.0f },
+    { 0.04f, 0.06f, 0.04f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    14.0f
+};
+
+const Material MAT_FOLIAGE_AUTUMN = {
+    { 0.14f, 0.10f, 0.05f, 1.0f },
+    { 0.38f, 0.26f, 0.10f, 1.0f },
+    { 0.04f, 0.04f, 0.03f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    10.0f
+};
+
+const Material MAT_PINE_NEEDLES = {
+    { 0.09f, 0.16f, 0.10f, 1.0f },
+    { 0.16f, 0.34f, 0.18f, 1.0f },
+    { 0.02f, 0.04f, 0.02f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    8.0f
 };
 
 // ============================================================================
@@ -1928,11 +1960,19 @@ void drawFallenLeaf(float x, float z, float size, float rotY, float pitch, float
 
 // Dynamic falling & fluttering leaves system update
 void updateFallingLeaves(float dt) {
+    // Wind direction: Right → Left (negative X) with slight forward drift
+    const float windSpeedX = -1.0f;  // m/s lateral wind drift
+    const float windSpeedZ = -0.15f; // Slight forward drift
+
     for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
         FallingLeafParticle& l = g_fallingLeaves[i];
         l.y -= l.vy * dt;
 
-        // Fluttering wind sway
+        // Apply wind drift to origin tracking
+        l.originX += windSpeedX * dt * (0.8f + 0.4f * std::sin(g_time * 0.5f + l.swayPhase));
+        l.originZ += windSpeedZ * dt;
+
+        // Fluttering sway oscillation (relative to drifting origin)
         float swayTime = g_time * l.swayFreq + l.swayPhase;
         l.x = l.originX + std::sin(swayTime) * l.swayAmp;
         l.z = l.originZ + std::cos(swayTime * 0.8f) * (l.swayAmp * 0.65f);
@@ -1942,21 +1982,21 @@ void updateFallingLeaves(float dt) {
         l.rotY += l.rotSpeedY * dt;
         l.rotZ += l.rotSpeedZ * dt;
 
-        // Check ground landing
+        // Check ground landing OR drifted too far left
         float ground = getTerrainHeight(l.x, l.z) + 0.04f;
-        if (l.y <= ground) {
-            // Respawn in the upper canopy
-            l.y = 12.0f + ((float)(rand() % 45) / 10.0f); // 12.0m to 16.5m
+        if (l.y <= ground || l.originX < -20.0f) {
+            // Respawn in the upper canopy of natural trees on the RIGHT side (wind source)
+            l.y = 3.6f + ((float)(rand() % 15) / 10.0f); // 3.6m to 5.1m (matching natural small tree height)
             float rChoice = (float)(rand() % 100) / 100.0f;
             if (rChoice < 0.60f) {
-                l.originX = 4.5f + ((float)(rand() % 80) / 10.0f);
-                l.originZ = 11.0f + ((float)(rand() % 90) / 10.0f);
+                l.originX = 5.0f + ((float)(rand() % 40) / 10.0f);
+                l.originZ = 13.0f + ((float)(rand() % 40) / 10.0f);
             } else if (rChoice < 0.90f) {
-                l.originX = -15.0f + ((float)(rand() % 120) / 10.0f);
-                l.originZ = 4.0f + ((float)(rand() % 140) / 10.0f);
+                l.originX = -7.0f + ((float)(rand() % 40) / 10.0f);
+                l.originZ = 13.0f + ((float)(rand() % 40) / 10.0f);
             } else {
-                l.originX = -2.5f + ((float)(rand() % 50) / 10.0f);
-                l.originZ = 8.0f + ((float)(rand() % 120) / 10.0f);
+                l.originX = -2.0f + ((float)(rand() % 40) / 10.0f);
+                l.originZ = 10.0f + ((float)(rand() % 60) / 10.0f);
             }
             l.x = l.originX;
             l.z = l.originZ;
@@ -2486,23 +2526,289 @@ void drawLeaningLamppost(float x, float z, float rotY, float leanAngle = 11.5f) 
     glPopMatrix();
 }
 
+// ----------------------------------------------------------------------------
+// OLD FURNITURE (Broken Chair & Table - Reference Panel 2)
+// ----------------------------------------------------------------------------
+void drawBrokenChair(float x, float z, float rotY, float tilt = 0.0f) {
+    float gy = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, gy, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    if (tilt != 0.0f) {
+        glRotatef(tilt, 0.0f, 0.0f, 1.0f);
+    }
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.32f, 0.28f, 0.24f, 1.0f);
+
+    // Seat plank
+    glPushMatrix();
+    glTranslatef(0.0f, 0.45f, 0.0f);
+    drawBox(0.48f, 0.04f, 0.48f);
+    glPopMatrix();
+
+    // 4 Legs (Front-left leg is broken shorter)
+    glPushMatrix();
+    glTranslatef(-0.19f, 0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f); // Back-left
+    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.45f, 0.045f); // Back-right
+    glTranslatef( 0.0f,  0.0f,   0.38f);  drawBox(0.045f, 0.45f, 0.045f); // Front-right
+    glTranslatef(-0.38f, 0.10f,  0.0f);   drawBox(0.045f, 0.25f, 0.045f); // Front-left (broken short)
+    glPopMatrix();
+
+    // Backrest vertical posts
+    glPushMatrix();
+    glTranslatef(-0.19f, 0.72f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.52f, 0.045f);
+    // Backrest top rail
+    glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
+    // Backrest middle horizontal slat
+    glTranslatef( 0.0f, -0.16f,  0.0f);   drawBox(0.42f, 0.05f, 0.035f);
+    // Vertical center spindle (crooked/broken)
+    glTranslatef(-0.06f, -0.14f, 0.0f);   glRotatef(12.0f, 0.0f, 0.0f, 1.0f); drawBox(0.03f, 0.24f, 0.03f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void drawWoodenTable(float x, float z, float rotY, float tilt = 0.0f) {
+    float gy = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, gy, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    if (tilt != 0.0f) {
+        glRotatef(tilt, 1.0f, 0.0f, 0.0f);
+    }
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.30f, 0.26f, 0.22f, 1.0f);
+
+    // Tabletop slab
+    glPushMatrix();
+    glTranslatef(0.0f, 0.72f, 0.0f);
+    drawBox(1.10f, 0.05f, 0.65f);
+    // Apron frame under top
+    glTranslatef(0.0f, -0.04f, 0.0f);
+    drawBox(1.02f, 0.07f, 0.58f);
+    glPopMatrix();
+
+    // 4 Sturdy Legs
+    glPushMatrix();
+    glTranslatef(-0.48f, 0.35f, -0.26f); drawBox(0.06f, 0.70f, 0.06f);
+    glTranslatef( 0.96f, 0.0f,   0.0f);   drawBox(0.06f, 0.70f, 0.06f);
+    glTranslatef( 0.0f,  0.0f,   0.52f);  drawBox(0.06f, 0.70f, 0.06f);
+    glTranslatef(-0.96f, 0.0f,   0.0f);   drawBox(0.06f, 0.70f, 0.06f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void drawOldFurniture() {
+    // 1. On the Porch (Under the roof near the warm glowing bulb)
+    drawWoodenTable(-2.2f + g_houseShiftX, 4.2f + g_houseShiftZ, -12.0f);
+    drawBrokenChair(-3.3f + g_houseShiftX, 4.0f + g_houseShiftZ,  22.0f, 4.0f);
+    drawBrokenChair(-1.3f + g_houseShiftX, 4.2f + g_houseShiftZ, -60.0f, 0.0f);
+
+    // 2. Inside the House (Visible through open doorway and windows)
+    drawWoodenTable(-5.5f + g_houseShiftX, 1.5f + g_houseShiftZ,  15.0f);
+    drawBrokenChair(-4.5f + g_houseShiftX, 1.8f + g_houseShiftZ,  45.0f);
+    drawBrokenChair(-6.8f + g_houseShiftX, 1.2f + g_houseShiftZ, -30.0f);
+}
+
+// ----------------------------------------------------------------------------
+// SIGN BOARD ("ABANDONED HOUSE" - Reference Panel 11)
+// ----------------------------------------------------------------------------
+void drawSignBoard(float x, float z, float rotY) {
+    float gy = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, gy, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(-3.5f, 0.0f, 0.0f, 1.0f); // Slight weathered lean
+
+    // Vertical wooden post
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.90f, 0.0f);
+    drawCylinder(0.07f, 0.06f, 1.80f, 8, 1.0f, 2.0f);
+    glPopMatrix();
+
+    // Signboard plank
+    glPushMatrix();
+    glTranslatef(0.0f, 1.45f, 0.06f);
+    drawBox(1.50f, 0.50f, 0.06f, 2.0f, 1.0f);
+
+    // Weathered board border / text bars
+    glTranslatef(0.0f, 0.0f, 0.035f);
+    applyMaterial(MAT_DARK_WOOD);
+    glColor4f(0.18f, 0.15f, 0.12f, 1.0f);
+    drawBox(1.25f, 0.06f, 0.02f);
+    glTranslatef(0.0f, -0.14f, 0.0f);
+    drawBox(1.05f, 0.06f, 0.02f);
+
+    glPopMatrix();
+    glPopMatrix();
+}
+
+// ----------------------------------------------------------------------------
+// UTILITY / TELEPHONE POLE (Reference Panel 10)
+// ----------------------------------------------------------------------------
+void drawTelephonePole(float x, float z, float rotY) {
+    float gy = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, gy, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(2.8f, 0.0f, 0.0f, 1.0f); // Weathered slight lean
+
+    // Main tall pole
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.30f, 0.27f, 0.23f, 1.0f);
+    drawCylinder(0.16f, 0.11f, 7.5f, 10, 1.0f, 4.0f);
+
+    // Horizontal crossarm near top
+    glPushMatrix();
+    glTranslatef(0.0f, 6.8f, 0.0f);
+    drawBox(2.2f, 0.15f, 0.14f, 1.5f, 0.5f);
+
+    // Diagonal support struts
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(-0.6f, -0.35f, 0.0f);
+    glRotatef(-35.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.05f, 0.85f, 0.04f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.6f, -0.35f, 0.0f);
+    glRotatef(35.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.05f, 0.85f, 0.04f);
+    glPopMatrix();
+
+    // 4 Glass / ceramic insulator pegs on top of crossarm
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.65f, 0.70f, 0.75f, 1.0f);
+    float insX[4] = { -0.90f, -0.35f, 0.35f, 0.90f };
+    for (int p = 0; p < 4; ++p) {
+        glPushMatrix();
+        glTranslatef(insX[p], 0.08f, 0.0f);
+        drawCylinder(0.04f, 0.025f, 0.16f, 6);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// ----------------------------------------------------------------------------
+// BROKEN WOODEN FENCE (Reference Panel 9 & 13)
+// ----------------------------------------------------------------------------
+void drawBrokenFence() {
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
+
+    // Left perimeter fence line (Along x ≈ -13.5)
+    for (int i = 0; i < 8; ++i) {
+        float z = 18.0f - i * 2.2f;
+        float x = -13.5f + (float)(i % 2) * 0.25f;
+        float y = getTerrainHeight(x, z);
+        float rot = std::sin((float)i * 1.6f) * 10.0f;
+
+        glPushMatrix();
+        glTranslatef(x, y + 0.65f, z);
+        glRotatef(rot, 0.0f, 0.0f, 1.0f);
+        // Post
+        drawBox(0.12f, 1.40f, 0.12f, 0.5f, 1.0f);
+
+        // Horizontal crossboards connecting posts (some broken / missing)
+        if (i < 7 && i != 3) {
+            glPushMatrix();
+            glTranslatef(0.0f, 0.25f, -1.1f);
+            if (i == 4) glRotatef(18.0f, 1.0f, 0.0f, 0.0f); // Sagging broken board
+            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glTranslatef(0.0f, -0.50f, 0.0f);
+            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glPopMatrix();
+        }
+        glPopMatrix();
+    }
+
+    // Right perimeter fence line (Near car & cemetery, Along x ≈ 12.0)
+    for (int i = 0; i < 6; ++i) {
+        float z = 17.0f - i * 2.2f;
+        float x = 12.0f + (float)(i % 2) * 0.20f;
+        float y = getTerrainHeight(x, z);
+        float rot = std::cos((float)i * 1.8f) * 8.0f;
+
+        glPushMatrix();
+        glTranslatef(x, y + 0.60f, z);
+        glRotatef(rot, 0.0f, 0.0f, 1.0f);
+        drawBox(0.12f, 1.30f, 0.12f, 0.5f, 1.0f);
+
+        if (i < 5 && i != 2) {
+            glPushMatrix();
+            glTranslatef(0.0f, 0.20f, -1.1f);
+            if (i == 1) glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
+            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glTranslatef(0.0f, -0.45f, 0.0f);
+            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glPopMatrix();
+        }
+        glPopMatrix();
+    }
+}
+
+// ----------------------------------------------------------------------------
+// SCATTERED LOW-POLY ROCKS (Reference Panel 4)
+// ----------------------------------------------------------------------------
+void drawScatteredRocks() {
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+
+    struct RockData {
+        float x, z;
+        float rx, ry, rz;
+        float rotY, rotX;
+        unsigned int seed;
+    };
+    static const RockData ROCKS[10] = {
+        { -2.8f, 17.5f, 0.38f, 0.28f, 0.35f,  25.0f, 12.0f, 501 }, // Left path entrance
+        {  3.2f, 17.0f, 0.42f, 0.32f, 0.38f, -40.0f,  8.0f, 502 }, // Right path entrance
+        { -5.5f, 13.5f, 0.65f, 0.48f, 0.58f,  15.0f, 18.0f, 503 }, // Left knoll boulder
+        {  6.2f, 13.8f, 0.55f, 0.40f, 0.50f,  65.0f, -10.0f, 504 }, // Right midground
+        { -1.8f,  9.5f, 0.30f, 0.22f, 0.28f, -20.0f,  5.0f, 505 }, // Along path
+        {  2.5f,  8.5f, 0.35f, 0.26f, 0.32f,  30.0f, 14.0f, 506 }, // Along path
+        {  6.5f,  6.8f, 0.52f, 0.38f, 0.48f, -50.0f,  9.0f, 507 }, // Beside car
+        {  9.8f,  5.2f, 0.44f, 0.30f, 0.40f,  10.0f, 12.0f, 508 }, // Behind car
+        { -7.8f,  6.0f, 0.48f, 0.35f, 0.42f,  45.0f, -8.0f, 509 }, // Near porch
+        { -12.0f, 9.0f, 0.60f, 0.45f, 0.55f, -30.0f, 15.0f, 510 }  // Left fence
+    };
+
+    for (int i = 0; i < 10; ++i) {
+        const auto& r = ROCKS[i];
+        drawIrregularRock(r.x, r.z, r.rx, r.ry, r.rz, r.rotY, r.rotX, r.seed, 0.55f);
+    }
+}
+
 // Complete Environmental Clutter & Props Master Function
 void drawEnvironmentalClutter() {
-    // 1. Irregular Moss-Tinted Boulders & Rocks (Partly sunk into terrain)
-    drawIrregularRock(  6.2f, 14.8f, 0.85f, 0.65f, 0.90f,  35.0f,  8.0f, 811, 0.75f); // Large foreground boulder
-    drawIrregularRock( -6.8f, 14.5f, 0.55f, 0.45f, 0.60f, -20.0f, -5.0f, 822, 0.65f); // Left puddle rock
-    drawIrregularRock( 12.8f,  6.5f, 0.70f, 0.50f, 0.75f,  50.0f, 10.0f, 833, 0.70f); // Car cluster rock
-    drawIrregularRock(  9.2f, 17.5f, 0.60f, 0.45f, 0.65f, -45.0f,  6.0f, 844, 0.60f); // Cemetery border rock
-    drawIrregularRock( -8.5f,  6.8f, 0.50f, 0.40f, 0.55f,  15.0f, -8.0f, 855, 0.80f); // Porch guard rock
-    drawIrregularRock(-13.5f, 21.0f, 0.75f, 0.55f, 0.80f,  75.0f,  5.0f, 866, 0.55f); // Distant left rock
-    drawIrregularRock( 14.5f, 19.0f, 0.65f, 0.48f, 0.70f, -30.0f, -6.0f, 877, 0.60f); // Distant right rock
+    // 1. Scattered Low-Poly Rocks
+    drawScatteredRocks();
 
-    // 2. Broken Wooden Crate
+    // 2. Broken Wooden Crates
     drawBrokenCrate(-6.2f, 11.5f, 22.0f, 6.0f);
+    drawBrokenCrate(-8.2f + g_houseShiftX, 4.2f + g_houseShiftZ, -35.0f, 4.0f);
+    drawBrokenCrate( 9.5f, 6.5f, 45.0f, 5.0f);
 
     // 3. Old Wooden Barrels
     drawOldBarrel(-4.8f, 5.2f, -15.0f, 0.0f);  // Upright near porch
     drawOldBarrel( 8.8f, 9.2f,  48.0f, 72.0f); // Tilted on side in mud near car
+    drawOldBarrel(-7.5f + g_houseShiftX, 4.0f + g_houseShiftZ, 20.0f, 0.0f);
 
     // 4. Fallen Fence Planks
     drawFallenPlank(-13.5f, 18.0f,  35.0f,  4.0f);
@@ -2523,6 +2829,12 @@ void drawEnvironmentalClutter() {
 
     // 8. Leaning Old Wrought Iron Lamppost
     drawLeaningLamppost(-3.8f, 19.2f, 25.0f, 11.5f);
+
+    // 9. Sign Board & Telephone Pole & Broken Fence & Furniture
+    drawSignBoard(-4.6f, 16.5f, 18.0f);
+    drawTelephonePole(10.8f, 5.8f, -12.0f);
+    drawBrokenFence();
+    drawOldFurniture();
 }
 
 // Tasteful 3D Wild Grass Clumps along distant yard boundaries (zero clutter on pathway)
@@ -2535,10 +2847,11 @@ void drawDenseGrassField() {
         float gx = rng.nextFloat(-25.0f, 25.0f);
         float gz = rng.nextFloat(-22.0f, 24.0f);
 
-        // Keep cobblestone pathway and porch clear
+        // Keep cobblestone walkway clear while flanking path edges with overgrown tufts
         if (gz >= -6.0f && gz <= 25.0f) {
             float roadX = getRoadCenterX(gz);
-            if (std::abs(gx - roadX) < 2.4f) continue;
+            float pathHalfW = (3.4f * (1.0f - 0.45f * ((23.5f - gz) / 27.0f))) * 0.5f;
+            if (std::abs(gx - roadX) < (pathHalfW + 0.15f)) continue;
         }
 
         // Avoid house footprint
@@ -2856,190 +3169,86 @@ void drawPumpkinArray() {
 }
 
 // ----------------------------------------------------------------------------
-// 3. ORGANIC BARE CREEPY TREES (Tapered Recursive Branches & Gnarled Roots)
+// 3. NATURAL ORGANIC TREES (Small, Compact, Lush Deciduous & Conifer Evergreens)
 // ----------------------------------------------------------------------------
 
-// Dead hanging moss / vine tendril with chained drooping segments (with wind sway)
-void drawDeadVine(float length, TreeRNG& rng) {
-    int segments = 3;
-    float segLen = length / segments;
-    float currentR = 0.024f;
-
-    // Gentle swaying of hanging vines in night wind
-    float vineWind = (std::sin(g_time * 1.2f) * 3.8f + std::sin(g_time * 2.1f) * 1.4f);
-
-    glPushMatrix();
-    glRotatef(vineWind, 1.0f, 0.0f, 0.0f);
-    for (int s = 0; s < segments; ++s) {
-        float nextR = currentR * 0.70f;
-        drawCylinder(currentR, nextR, segLen, 5, 0.5f, 0.5f);
-        glTranslatef(0.0f, segLen, 0.0f);
-        // Slight organic sway / gravity curve
-        glRotatef(rng.nextFloat(-8.0f, 8.0f), 1.0f, 0.0f, 0.0f);
-        glRotatef(rng.nextFloat(-8.0f, 8.0f), 0.0f, 0.0f, 1.0f);
-        currentR = nextR;
+// Volumetric organic multi-lobed foliage clump with soft leaf accents
+void drawNaturalFoliageCluster(float radius, TreeRNG& rng, int foliageType = 0) {
+    if (foliageType == 1) {
+        applyMaterial(MAT_FOLIAGE_DARK);
+    } else if (foliageType == 2) {
+        applyMaterial(MAT_FOLIAGE_AUTUMN);
+    } else {
+        applyMaterial(MAT_FOLIAGE_LUSH);
     }
-    glPopMatrix();
-}
-
-// Cluster of dense autumn / horror withered foliage on branches and twigs
-void drawLeafCluster(float scale, TreeRNG& rng) {
-    int numLeaves = 8 + (int)(rng.nextFloat(0.0f, 6.0f));
-    applyMaterial(MAT_FALLEN_LEAF);
     bindTexture(TEX_NONE);
 
-    for (int l = 0; l < numLeaves; ++l) {
-        float rotX = rng.nextFloat(-55.0f, 55.0f);
-        float rotY = (float)l * (360.0f / numLeaves) + rng.nextFloat(-20.0f, 20.0f);
-        float rotZ = rng.nextFloat(15.0f, 75.0f);
-        float lSize = scale * rng.nextFloat(0.22f, 0.38f);
+    // Central primary foliage mass (smooth shaded)
+    drawSphere(radius * 0.85f, 14, 10);
 
-        // Dark horror foliage tones: decayed withered brown, dark rust, gloomy charcoal-green
-        float tone = rng.nextFloat(0.0f, 1.0f);
-        float r, g, b;
-        if (tone < 0.35f) {
-            r = 0.22f; g = 0.14f; b = 0.08f; // Dark decayed brown
-        } else if (tone < 0.70f) {
-            r = 0.28f; g = 0.18f; b = 0.10f; // Muted dark rust
-        } else {
-            r = 0.18f; g = 0.15f; b = 0.10f; // Deep withered twig tone
-        }
+    // 5 interlocking satellite lobes around the perimeter for rich organic silhouettes
+    for (int i = 0; i < 5; ++i) {
+        float ang = (float)i * (2.0f * (float)M_PI / 5.0f) + rng.nextFloat(-0.25f, 0.25f);
+        float elev = rng.nextFloat(-0.18f, 0.25f);
+        float dist = radius * rng.nextFloat(0.32f, 0.48f);
+        float rSub = radius * rng.nextFloat(0.55f, 0.70f);
 
         glPushMatrix();
-        glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-        glRotatef(rotX, 1.0f, 0.0f, 0.0f);
-        glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
-        glTranslatef(0.0f, lSize * 0.35f, 0.0f);
-
-        glColor4f(r, g, b, 0.95f);
-        glBegin(GL_TRIANGLES);
-        glNormal3f(0.0f, 0.8f, 0.6f);
-        glVertex3f(0.0f, 0.0f, -lSize * 0.5f);
-        glVertex3f(-lSize * 0.32f, 0.0f, 0.0f);
-        glVertex3f(0.0f, lSize * 0.05f, lSize * 0.5f);
-
-        glVertex3f(0.0f, 0.0f, -lSize * 0.5f);
-        glVertex3f(0.0f, lSize * 0.05f, lSize * 0.5f);
-        glVertex3f(lSize * 0.32f, 0.0f, 0.0f);
-        glEnd();
-
+        glTranslatef(dist * std::cos(ang), dist * elev, dist * std::sin(ang));
+        drawSphere(rSub, 12, 8);
         glPopMatrix();
     }
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Outer subtle leaf accents to soften silhouette edges
+    int leafCards = 6;
+    for (int l = 0; l < leafCards; ++l) {
+        float la = (float)l * (2.0f * (float)M_PI / (float)leafCards) + rng.nextFloat(-0.3f, 0.3f);
+        float ld = radius * rng.nextFloat(0.70f, 0.92f);
+        float ly = radius * rng.nextFloat(-0.22f, 0.40f);
+        float ls = radius * rng.nextFloat(0.18f, 0.28f);
+
+        glPushMatrix();
+        glTranslatef(ld * std::cos(la), ly, ld * std::sin(la));
+        glRotatef(rng.nextFloat(0.0f, 360.0f), 0.0f, 1.0f, 0.0f);
+        glRotatef(rng.nextFloat(-25.0f, 25.0f), 1.0f, 0.0f, 0.0f);
+        glBegin(GL_TRIANGLES);
+        glNormal3f(0.0f, 0.8f, 0.6f);
+        glVertex3f(0.0f, 0.0f, -ls * 0.5f);
+        glVertex3f(-ls * 0.4f, 0.0f, ls * 0.2f);
+        glVertex3f(ls * 0.4f, ls * 0.2f, ls * 0.4f);
+        glEnd();
+        glPopMatrix();
+    }
+
+    // Restore bark material & texture
     applyMaterial(MAT_BARK);
     bindTexture(TEX_BARK);
 }
 
-// Recursive Tapered Bare Branch Drawing Function (Pure Gothic leafless silhouette)
-void drawOrganicBranch(float baseR, float topR, float len, int depth, int maxDepth, TreeRNG& rng) {
-    if (depth > maxDepth || baseR < 0.003f) return;
-
-    int subSegments = (depth == 0) ? 4 : 3;
-    float segLen = len / (float)subSegments;
-    float curR = baseR;
-    float deltaR = (baseR - topR) / (float)subSegments;
-
-    // Organic wind sway deflection increasing towards branch tips
-    float windPhase = g_time * 1.12f + (float)(rng.state & 0xFF) * 0.04f;
-    float windAmp = 0.50f * std::sin(windPhase) + 0.20f * std::sin(windPhase * 2.2f);
-    float branchSway = windAmp * (0.3f + depth * 0.5f);
-
-    glPushMatrix();
-    glRotatef(branchSway, 0.707f, 0.0f, 0.707f);
-
-    for (int s = 0; s < subSegments; ++s) {
-        float nextR = curR - deltaR;
-        if (nextR < 0.004f) nextR = 0.004f;
-
-        // Render tapered cylinder segment
-        int slices = (depth == 0) ? 8 : ((depth == 1) ? 6 : 4);
-        drawCylinder(curR, nextR, segLen, slices, 1.0f, 1.0f);
-
-        glTranslatef(0.0f, segLen, 0.0f);
-
-        // Organic bends between stacked segments
-        float maxBend = (depth == 0) ? 8.0f : 14.0f;
-        float bendX = rng.nextFloat(-maxBend, maxBend);
-        float bendZ = rng.nextFloat(-maxBend, maxBend);
-        glRotatef(bendX, 1.0f, 0.0f, 0.0f);
-        glRotatef(bendZ, 0.0f, 0.0f, 1.0f);
-
-        // Frequent lateral twigs along branch stems
-        if (depth >= 1 && rng.nextFloat(0.0f, 1.0f) > 0.30f) {
-            glPushMatrix();
-            float twigPitch = rng.nextFloat(35.0f, 70.0f);
-            float twigYaw   = rng.nextFloat(-180.0f, 180.0f);
-            glRotatef(twigYaw, 0.0f, 1.0f, 0.0f);
-            glRotatef(twigPitch, 1.0f, 0.0f, 0.0f);
-            float tLen = len * rng.nextFloat(0.35f, 0.55f);
-            drawCylinder(nextR * 0.60f, 0.003f, tLen, 4);
-            glPopMatrix();
-        }
-
-        curR = nextR;
-    }
-
-    if (depth == maxDepth) {
-        // Terminal crooked bare twigs
-        int numTwigs = (rng.nextFloat(0.0f, 1.0f) > 0.25f) ? 3 : 2;
-        for (int t = 0; t < numTwigs; ++t) {
-            glPushMatrix();
-            glRotatef(rng.nextFloat(-40.0f, 40.0f), 1.0f, 0.0f, 0.0f);
-            glRotatef(rng.nextFloat(0.0f, 360.0f), 0.0f, 1.0f, 0.0f);
-            float tipLen = len * rng.nextFloat(0.40f, 0.65f);
-            drawCylinder(topR * 0.70f, 0.003f, tipLen, 4);
-            glPopMatrix();
-        }
-        glPopMatrix();
-        return;
-    }
-
-    // Spawn 3 to 4 child branches
-    int numChildren = (depth == 0) ? 4 : (rng.nextFloat(0.0f, 1.0f) > 0.35f ? 3 : 2);
-    for (int i = 0; i < numChildren; ++i) {
-        glPushMatrix();
-        float branchAngle = rng.nextFloat(22.0f, 48.0f);
-        float azimuth = (float)i * (360.0f / numChildren) + rng.nextFloat(-25.0f, 25.0f);
-        glRotatef(azimuth, 0.0f, 1.0f, 0.0f);
-        glRotatef(branchAngle, 1.0f, 0.0f, 0.0f);
-
-        float childBaseR = topR * rng.nextFloat(0.60f, 0.80f);
-        float childTopR  = childBaseR * rng.nextFloat(0.30f, 0.45f);
-        float childLen   = len * rng.nextFloat(0.72f, 0.88f);
-
-        drawOrganicBranch(childBaseR, childTopR, childLen, depth + 1, maxDepth, rng);
-        glPopMatrix();
-    }
-
-    glPopMatrix();
-}
-
-// Gnarled flaring root arms spreading outward and sinking into the ground
+// Flaring root base anchoring trunk into terrain
 void drawRootFlare(float trunkR, TreeRNG& rng) {
-    int numRoots = 6;
+    int numRoots = 5;
     for (int i = 0; i < numRoots; ++i) {
-        float angle = (float)i * (360.0f / numRoots) + rng.nextFloat(-18.0f, 18.0f);
+        float angle = (float)i * (360.0f / (float)numRoots) + rng.nextFloat(-15.0f, 15.0f);
         glPushMatrix();
         glRotatef(angle, 0.0f, 1.0f, 0.0f);
-        glTranslatef(trunkR * 0.35f, 0.05f, 0.0f);
+        glTranslatef(trunkR * 0.30f, 0.03f, 0.0f);
 
-        // Root segment 1: Arching down from trunk
-        glRotatef(rng.nextFloat(55.0f, 70.0f), 0.0f, 0.0f, 1.0f);
-        float r1Len = trunkR * rng.nextFloat(1.1f, 1.5f);
-        drawCylinder(trunkR * 0.45f, trunkR * 0.25f, r1Len, 6, 1.0f, 1.0f);
+        glRotatef(rng.nextFloat(55.0f, 68.0f), 0.0f, 0.0f, 1.0f);
+        float r1Len = trunkR * rng.nextFloat(1.1f, 1.4f);
+        drawCylinder(trunkR * 0.45f, trunkR * 0.22f, r1Len, 6, 1.0f, 1.0f);
 
-        // Root segment 2: Sprawling flat along the terrain
         glTranslatef(0.0f, r1Len, 0.0f);
-        glRotatef(rng.nextFloat(20.0f, 35.0f), 0.0f, 0.0f, 1.0f);
-        float r2Len = trunkR * rng.nextFloat(1.2f, 1.8f);
-        drawCylinder(trunkR * 0.25f, trunkR * 0.08f, r2Len, 5, 1.0f, 1.0f);
+        glRotatef(rng.nextFloat(22.0f, 35.0f), 0.0f, 0.0f, 1.0f);
+        float r2Len = trunkR * rng.nextFloat(1.1f, 1.5f);
+        drawCylinder(trunkR * 0.22f, trunkR * 0.06f, r2Len, 5, 1.0f, 1.0f);
 
         glPopMatrix();
     }
 }
 
-// Complete Organic Creepy Tree with Bark Texture & Varied Brown-Grey Tone
-void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed, float colorTint = 1.0f) {
+// 1. Natural Organic Deciduous Tree (Small, compact, beautiful leafy canopy, 100% fully visible)
+void drawNaturalDeciduousTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed, int foliageType = 0, float colorTint = 1.0f) {
     TreeRNG rng(seed);
 
     float groundY = getTerrainHeight(x, z);
@@ -3047,213 +3256,224 @@ void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, fl
     glTranslatef(x, groundY, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 
-    // Subtle gentle trunk sway
-    float trunkWind = (0.60f * std::sin(g_time * 1.10f + seed * 0.05f) + 0.25f * std::sin(g_time * 2.1f)) * 0.40f;
-    glRotatef(trunkWind, 0.0f, 0.0f, 1.0f);
+    // Natural gentle wind sway in the night breeze
+    float treeWindPhase = g_time * 1.15f + (float)(seed % 100) * 0.08f;
+    float swayAmp = 0.55f;
+    float swayX = std::sin(treeWindPhase) * swayAmp;
+    float swayZ = std::cos(treeWindPhase * 0.9f) * (swayAmp * 0.6f);
+    glRotatef(swayX * 0.35f, 1.0f, 0.0f, 0.0f);
+    glRotatef(swayZ * 0.35f, 0.0f, 0.0f, 1.0f);
 
-    // Varied Brown-Grey Bark Tone Material
+    // Bark material with tone variations
     Material treeMat = MAT_BARK;
     treeMat.diffuse[0] *= colorTint;
     treeMat.diffuse[1] *= colorTint * 0.96f;
     treeMat.diffuse[2] *= colorTint * 0.92f;
-    treeMat.ambient[0] *= colorTint;
-    treeMat.ambient[1] *= colorTint * 0.96f;
-    treeMat.ambient[2] *= colorTint * 0.92f;
     applyMaterial(treeMat);
     bindTexture(TEX_BARK);
 
-    // Gnarled Roots
+    // Flared roots into terrain
     drawRootFlare(trunkRadius, rng);
 
-    // Recursive Tapered Trunk and Branches (4 depth levels with scaled proportions)
-    float trunkLen = height * 0.35f;
-    float topTrunkR = trunkRadius * 0.58f;
-    drawOrganicBranch(trunkRadius, topTrunkR, trunkLen, 0, 4, rng);
+    // Trunk segments with natural curvature
+    float seg1H = height * 0.16f;
+    float seg2H = height * 0.16f;
+    float seg3H = height * 0.14f;
 
-    glPopMatrix();
-}
+    float r0 = trunkRadius;
+    float r1 = trunkRadius * 0.85f;
+    float r2 = trunkRadius * 0.70f;
+    float r3 = trunkRadius * 0.55f;
 
-// Smooth cylinder without flat end caps (prevents joint rings in chained tree limbs)
-void drawSmoothCylinder(float baseRadius, float topRadius, float height, int slices, float tileU = 1.0f, float tileV = 1.0f) {
-    float angleStep = 2.0f * (float)M_PI / (float)slices;
-    float slope = (baseRadius - topRadius) / height;
+    // Segment 1 (Base)
+    drawCylinder(r0, r1, seg1H, 8, 1.0f, 1.0f);
+    glTranslatef(0.0f, seg1H, 0.0f);
 
-    glBegin(GL_QUAD_STRIP);
-    for (int i = 0; i <= slices; ++i) {
-        float a = i * angleStep;
-        float u = (float)i / slices * tileU;
-        float cosA = std::cos(a);
-        float sinA = std::sin(a);
+    // Segment 2 (Mid trunk with slight bend)
+    float bend1X = rng.nextFloat(-3.5f, 3.5f);
+    float bend1Z = rng.nextFloat(-3.5f, 3.5f);
+    glRotatef(bend1X, 1.0f, 0.0f, 0.0f);
+    glRotatef(bend1Z, 0.0f, 0.0f, 1.0f);
+    drawCylinder(r1, r2, seg2H, 8, 1.0f, 1.0f);
+    glTranslatef(0.0f, seg2H, 0.0f);
 
-        float nx = cosA;
-        float ny = slope;
-        float nz = sinA;
-        float len = std::sqrt(nx*nx + ny*ny + nz*nz);
-        glNormal3f(nx/len, ny/len, nz/len);
+    // Segment 3 (Upper trunk heading into main fork)
+    float bend2X = rng.nextFloat(-4.0f, 4.0f);
+    float bend2Z = rng.nextFloat(-4.0f, 4.0f);
+    glRotatef(bend2X, 1.0f, 0.0f, 0.0f);
+    glRotatef(bend2Z, 0.0f, 0.0f, 1.0f);
+    drawCylinder(r2, r3, seg3H, 7, 1.0f, 1.0f);
+    glTranslatef(0.0f, seg3H, 0.0f);
 
-        glTexCoord2f(u, 0.0f);
-        glVertex3f(baseRadius * cosA, 0.0f, baseRadius * sinA);
+    // Primary branch boughs (3 main natural limbs spreading outward and upward)
+    int numBoughs = 3 + (int)(rng.nextFloat(0.0f, 1.9f));
+    for (int b = 0; b < numBoughs; ++b) {
+        float azimuth = (float)b * (360.0f / (float)numBoughs) + rng.nextFloat(-18.0f, 18.0f);
+        float pitch = rng.nextFloat(30.0f, 45.0f);
+        float boughLen = height * rng.nextFloat(0.26f, 0.35f);
+        float boughBaseR = r3 * rng.nextFloat(0.65f, 0.80f);
+        float boughTopR = boughBaseR * 0.40f;
 
-        glTexCoord2f(u, tileV);
-        glVertex3f(topRadius * cosA, height, topRadius * sinA);
+        glPushMatrix();
+        glRotatef(azimuth, 0.0f, 1.0f, 0.0f);
+        glRotatef(pitch, 1.0f, 0.0f, 0.0f);
+
+        // Branch wind motion
+        glRotatef(swayX * (0.8f + (float)b * 0.2f), 1.0f, 0.0f, 0.0f);
+
+        drawCylinder(boughBaseR, boughTopR, boughLen, 6, 1.0f, 1.0f);
+        glTranslatef(0.0f, boughLen, 0.0f);
+
+        // Sub-branches
+        int numTwigs = 2;
+        for (int t = 0; t < numTwigs; ++t) {
+            float twigAz = (float)t * 180.0f + rng.nextFloat(-25.0f, 25.0f);
+            float twigPitch = rng.nextFloat(22.0f, 38.0f);
+            float twigLen = boughLen * rng.nextFloat(0.40f, 0.60f);
+
+            glPushMatrix();
+            glRotatef(twigAz, 0.0f, 1.0f, 0.0f);
+            glRotatef(twigPitch, 1.0f, 0.0f, 0.0f);
+            drawCylinder(boughTopR * 0.70f, 0.012f, twigLen, 4, 1.0f, 1.0f);
+            glTranslatef(0.0f, twigLen, 0.0f);
+
+            // Foliage cluster at tip of sub-branch
+            drawNaturalFoliageCluster(height * rng.nextFloat(0.16f, 0.22f), rng, foliageType);
+            glPopMatrix();
+        }
+
+        // Main bough foliage cluster
+        drawNaturalFoliageCluster(height * rng.nextFloat(0.20f, 0.26f), rng, foliageType);
+        glPopMatrix();
     }
-    glEnd();
-}
 
-// Helper function to draw a direct 3D tapered limb segment connecting two points
-void drawLimbSegment(float x1, float y1, float z1, float r1,
-                     float x2, float y2, float z2, float r2,
-                     int slices = 8) {
-    float dx = x2 - x1;
-    float dy = y2 - y1;
-    float dz = z2 - z1;
-    float len = std::sqrt(dx*dx + dy*dy + dz*dz);
-    if (len < 0.001f) return;
-
+    // Central crown top foliage dome
     glPushMatrix();
-    glTranslatef(x1, y1, z1);
+    glTranslatef(0.0f, height * 0.06f, 0.0f);
+    drawNaturalFoliageCluster(height * 0.28f, rng, foliageType);
+    glPopMatrix();
 
-    float yaw = std::atan2(dx, dz) * 180.0f / (float)M_PI;
-    float pitch = -std::asin(std::max(-1.0f, std::min(1.0f, dy / len))) * 180.0f / (float)M_PI;
-
-    glRotatef(yaw, 0.0f, 1.0f, 0.0f);
-    glRotatef(pitch + 90.0f, 1.0f, 0.0f, 0.0f); // align +Y with segment direction
-
-    drawSmoothCylinder(r1, r2, len, slices, 1.0f, 1.0f);
     glPopMatrix();
 }
 
-// Handcrafted Gothic Foreground Framing Tree (Massive right framing silhouette with sweeping upper-sky boughs)
-void drawGothicForegroundTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed) {
-    (void)height; (void)rotY;
+// 2. Natural Evergreen Conifer / Pine Tree (Small, elegant, tiered needle foliage, 100% fully visible)
+void drawNaturalPineTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed) {
     TreeRNG rng(seed);
 
-    float gy = getTerrainHeight(x, z);
+    float groundY = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 
-    // Subtle gentle night wind sway for the tree crown
-    float treeWindX = (0.035f * std::sin(g_time * 1.05f) + 0.015f * std::sin(g_time * 2.1f));
-    float treeWindZ = (0.025f * std::cos(g_time * 0.95f));
+    // Subtle pine tree wind sway
+    float treeWindPhase = g_time * 1.10f + (float)(seed % 100) * 0.08f;
+    float swayAmp = 0.45f;
+    float swayX = std::sin(treeWindPhase) * swayAmp;
+    float swayZ = std::cos(treeWindPhase * 0.85f) * (swayAmp * 0.5f);
+    glRotatef(swayX * 0.25f, 1.0f, 0.0f, 0.0f);
+    glRotatef(swayZ * 0.25f, 0.0f, 0.0f, 1.0f);
 
-    // Dark ancient bark material (dense silhouette tone with moonlight rim)
-    Material treeMat = MAT_BARK;
-    applyMaterial(treeMat);
+    // Bark material & trunk
+    applyMaterial(MAT_BARK);
     bindTexture(TEX_BARK);
-    glColor4f(0.58f, 0.52f, 0.48f, 1.0f);
+    drawRootFlare(trunkRadius, rng);
 
-    // 1. Massive Gnarled Roots at base anchoring firmly into the earth
-    int numRoots = 8;
-    for (int r = 0; r < numRoots; ++r) {
-        float ang = (float)r * (2.0f * (float)M_PI / (float)numRoots) + rng.nextFloat(-0.2f, 0.2f);
-        float rLen1 = trunkRadius * rng.nextFloat(1.1f, 1.5f);
-        float rLen2 = trunkRadius * rng.nextFloat(1.4f, 2.0f);
+    // Tapered trunk to tree top
+    drawCylinder(trunkRadius, trunkRadius * 0.15f, height * 0.92f, 8, 1.0f, 2.0f);
 
-        float rx0 = x, rz0 = z, ry0 = gy + 0.08f;
-        float rx1 = x + rLen1 * std::cos(ang);
-        float rz1 = z + rLen1 * std::sin(ang);
-        float ry1 = getTerrainHeight(rx1, rz1) + 0.05f;
+    // Tiered conical evergreen needle foliage layers
+    applyMaterial(MAT_PINE_NEEDLES);
+    bindTexture(TEX_NONE);
 
-        float rx2 = x + (rLen1 + rLen2) * std::cos(ang + 0.15f);
-        float rz2 = z + (rLen1 + rLen2) * std::sin(ang + 0.15f);
-        float ry2 = getTerrainHeight(rx2, rz2) + 0.02f;
+    struct PineTier {
+        float yFrac;
+        float baseRadiusFrac;
+        float coneHeightFrac;
+    };
+    static const PineTier TIERS[5] = {
+        { 0.26f, 0.34f, 0.24f },
+        { 0.42f, 0.28f, 0.22f },
+        { 0.56f, 0.22f, 0.20f },
+        { 0.70f, 0.16f, 0.18f },
+        { 0.82f, 0.11f, 0.16f }
+    };
 
-        drawLimbSegment(rx0, ry0, rz0, trunkRadius * 0.45f, rx1, ry1, rz1, trunkRadius * 0.24f, 6);
-        drawLimbSegment(rx1, ry1, rz1, trunkRadius * 0.24f, rx2, ry2, rz2, trunkRadius * 0.08f, 5);
+    for (int t = 0; t < 5; ++t) {
+        float tierY = height * TIERS[t].yFrac;
+        float tierBaseR = height * TIERS[t].baseRadiusFrac;
+        float tierConeH = height * TIERS[t].coneHeightFrac;
+
+        glPushMatrix();
+        glTranslatef(0.0f, tierY, 0.0f);
+
+        // Wind flex on higher tiers
+        float tierFlex = (float)(t + 1) * 0.18f;
+        glRotatef(swayX * tierFlex, 1.0f, 0.0f, 0.0f);
+        glRotatef(swayZ * tierFlex, 0.0f, 0.0f, 1.0f);
+
+        // Conical foliage tier
+        drawCylinder(tierBaseR, 0.005f, tierConeH, 10, 1.0f, 1.0f);
+
+        // Scalloped undergrowth needles
+        int subNeedles = 6;
+        for (int n = 0; n < subNeedles; ++n) {
+            float ang = (float)n * (360.0f / (float)subNeedles) + rng.nextFloat(-10.0f, 10.0f);
+            glPushMatrix();
+            glRotatef(ang, 0.0f, 1.0f, 0.0f);
+            glTranslatef(tierBaseR * 0.60f, 0.02f, 0.0f);
+            glRotatef(rng.nextFloat(40.0f, 55.0f), 0.0f, 0.0f, 1.0f);
+            drawSphere(tierBaseR * 0.20f, 8, 5);
+            glPopMatrix();
+        }
+
+        glPopMatrix();
     }
 
-    // 2. Trunk Segments (Rising along the right frame)
-    float p0x = x,          p0y = gy,          p0z = z;
-    float p1x = x - 0.35f,  p1y = gy + 1.20f,  p1z = z - 0.25f;
-    float p2x = x - 0.75f,  p2y = gy + 2.20f,  p2z = z - 0.55f;
-    float p3x = x - 1.20f + treeWindX, p3y = gy + 3.10f, p3z = z - 0.90f + treeWindZ;
+    // Reset material
+    applyMaterial(MAT_BARK);
+    bindTexture(TEX_BARK);
 
-    drawLimbSegment(p0x, p0y, p0z, trunkRadius,          p1x, p1y, p1z, trunkRadius * 0.86f, 10);
-    drawLimbSegment(p1x, p1y, p1z, trunkRadius * 0.86f,  p2x, p2y, p2z, trunkRadius * 0.72f, 10);
-    drawLimbSegment(p2x, p2y, p2z, trunkRadius * 0.72f,  p3x, p3y, p3z, trunkRadius * 0.58f, 8);
-
-    // Dead stump stubs on lower trunk
-    drawLimbSegment(p1x, p1y, p1z, trunkRadius * 0.30f, p1x + 0.55f, p1y + 0.25f, p1z + 0.15f, trunkRadius * 0.10f, 6);
-    drawLimbSegment(p2x, p2y, p2z, trunkRadius * 0.26f, p2x - 0.45f, p2y - 0.15f, p2z + 0.12f, trunkRadius * 0.08f, 6);
-
-    // 3. Primary Bough 1: UPPER RIGHT CROWN (Spreads densely into the top-right corner of the frame)
-    float c1x = p3x + 0.65f + treeWindX, c1y = gy + 3.70f, c1z = p3z - 0.30f + treeWindZ;
-    float c2x = c1x + 0.60f + treeWindX, c2y = gy + 4.10f, c2z = c1z - 0.35f + treeWindZ;
-    float c3x = c2x + 0.55f + treeWindX, c3y = gy + 4.40f, c3z = c2z - 0.35f + treeWindZ;
-
-    drawLimbSegment(p3x, p3y, p3z, trunkRadius * 0.48f, c1x, c1y, c1z, trunkRadius * 0.36f, 8);
-    drawLimbSegment(c1x, c1y, c1z, trunkRadius * 0.36f, c2x, c2y, c2z, trunkRadius * 0.25f, 7);
-    drawLimbSegment(c2x, c2y, c2z, trunkRadius * 0.25f, c3x, c3y, c3z, trunkRadius * 0.14f, 6);
-
-    // Spreading crown sub-branches and twigs in top-right
-    drawLimbSegment(c1x, c1y, c1z, 0.18f, c1x - 0.30f, c1y + 0.55f, c1z - 0.20f, 0.06f, 4);
-    drawLimbSegment(c1x - 0.30f, c1y + 0.55f, c1z - 0.20f, 0.06f, c1x - 0.45f, c1y + 0.90f, c1z - 0.25f, 0.02f, 3);
-    drawLimbSegment(c2x, c2y, c2z, 0.15f, c2x + 0.30f, c2y + 0.45f, c2z - 0.20f, 0.05f, 4);
-    drawLimbSegment(c2x, c2y, c2z, 0.14f, c2x - 0.35f, c2y + 0.40f, c2z - 0.15f, 0.04f, 4);
-    drawLimbSegment(c3x, c3y, c3z, 0.10f, c3x + 0.35f, c3y + 0.30f, c3z - 0.20f, 0.02f, 3);
-    drawLimbSegment(c3x, c3y, c3z, 0.10f, c3x - 0.25f, c3y + 0.35f, c3z - 0.15f, 0.02f, 3);
-
-    // 4. Primary Bough 2: UPPER SKY FRAMING BOUGH (Reaches across the upper sky to frame the top edge)
-    float a1x = p3x - 0.85f + treeWindX * 1.2f, a1y = gy + 3.45f, a1z = p3z - 0.40f + treeWindZ * 1.2f;
-    float a2x = a1x - 0.95f + treeWindX * 1.5f, a2y = gy + 3.65f, a2z = a1z - 0.45f + treeWindZ * 1.5f;
-    float a3x = a2x - 0.90f + treeWindX * 1.8f, a3y = gy + 3.75f, a3z = a2z - 0.40f + treeWindZ * 1.8f;
-    float a4x = a3x - 0.85f + treeWindX * 2.0f, a4y = gy + 3.65f, a4z = a3z - 0.35f + treeWindZ * 2.0f;
-
-    drawLimbSegment(p3x, p3y, p3z, trunkRadius * 0.44f, a1x, a1y, a1z, trunkRadius * 0.32f, 7);
-    drawLimbSegment(a1x, a1y, a1z, trunkRadius * 0.32f, a2x, a2y, a2z, trunkRadius * 0.22f, 6);
-    drawLimbSegment(a2x, a2y, a2z, trunkRadius * 0.22f, a3x, a3y, a3z, trunkRadius * 0.14f, 5);
-    drawLimbSegment(a3x, a3y, a3z, trunkRadius * 0.14f, a4x, a4y, a4z, trunkRadius * 0.08f, 4);
-
-    // Delicate drooping bare twigs along upper sky framing limb
-    drawLimbSegment(a1x, a1y, a1z, 0.12f, a1x - 0.25f, a1y - 0.55f, a1z - 0.10f, 0.04f, 3);
-    drawLimbSegment(a2x, a2y, a2z, 0.10f, a2x - 0.30f, a2y - 0.60f, a2z - 0.10f, 0.03f, 3);
-    drawLimbSegment(a2x, a2y, a2z, 0.09f, a2x + 0.20f, a2y + 0.45f, a2z - 0.15f, 0.03f, 3);
-    drawLimbSegment(a3x, a3y, a3z, 0.08f, a3x - 0.35f, a3y - 0.50f, a3z - 0.08f, 0.02f, 3);
-    drawLimbSegment(a4x, a4y, a4z, 0.06f, a4x - 0.45f, a4y - 0.40f, a4z - 0.15f, 0.02f, 3);
-
-    // 5. Primary Bough 3: MID-RIGHT SPRAWLING GNARLED LIMB
-    float m1x = p2x + 0.75f, m1y = gy + 2.70f, m1z = p2z - 0.20f;
-    float m2x = m1x + 0.60f, m2y = gy + 3.10f, m2z = m1z - 0.25f;
-
-    drawLimbSegment(p2x, p2y, p2z, trunkRadius * 0.36f, m1x, m1y, m1z, trunkRadius * 0.24f, 6);
-    drawLimbSegment(m1x, m1y, m1z, trunkRadius * 0.24f, m2x, m2y, m2z, trunkRadius * 0.12f, 5);
-    drawLimbSegment(m1x, m1y, m1z, 0.11f, m1x + 0.20f, m1y - 0.45f, m1z - 0.10f, 0.03f, 3);
-
-    // 6. Hanging Spanish Moss / Vines
-    glPushMatrix();
-    glTranslatef(p3x, p3y - 0.1f, p3z);
-    drawDeadVine(1.4f, rng);
-    glTranslatef(a1x - p3x + 0.2f, a1y - p3y - 0.2f, a1z - p3z);
-    drawDeadVine(1.1f, rng);
     glPopMatrix();
 }
 
-// Scatter Organic Creepy Trees across the scene matching exact Reference Framing
+// Compatibility wrapper for any legacy organic tree calls
+void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed, float colorTint = 1.0f) {
+    (void)trunkRadius;
+    drawNaturalDeciduousTree(x, z, 0.16f, std::min(height, 4.2f), rotY, seed, (seed % 2), colorTint);
+}
+
+// Compatibility wrapper for gothic foreground tree
+void drawGothicForegroundTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed) {
+    (void)trunkRadius; (void)height;
+    drawNaturalDeciduousTree(x, z, 0.16f, 3.8f, rotY, seed, 0, 1.0f);
+}
+
+// Scatter Natural Organic Trees across the entire landscape (Small, natural, 100% fully visible)
 void drawAllTrees() {
-    // 1. HUGE RIGHT FOREGROUND FRAMING TREE (Close to camera at ~5.5m distance, massive framing silhouette)
-    drawGothicForegroundTree(4.6f, 16.8f, 0.85f, 7.5f, 0.0f, 1001);
+    // 1. FRONT YARD & ENTRANCE TREES (Framing the entrance knolls, small and completely visible in full)
+    drawNaturalDeciduousTree(-4.8f, 15.5f, 0.15f, 3.4f,  25.0f, 1001, 0, 0.95f); // Front Left Lawn (In full view)
+    drawNaturalPineTree(     13.5f, 14.5f, 0.16f, 3.8f,  40.0f, 1002);         // Far Right Entrance Flank
+    drawNaturalDeciduousTree(15.5f, 16.5f, 0.14f, 3.4f, -30.0f, 1003, 1, 0.90f); // Cemetery Far Border
 
-    // 2. Left Foreground Framing Tree
-    drawOrganicCreepyTree( -7.8f, 18.0f, 0.48f,  9.5f,  32.0f, 4004, 0.88f);
+    // 2. MIDGROUND YARD & GRAVEYARD TREES
+    drawNaturalDeciduousTree( -7.8f, 12.5f, 0.15f, 3.4f, -15.0f, 1004, 1, 0.92f); // Graveyard Knoll
+    drawNaturalPineTree(     -11.5f, 10.0f, 0.16f, 3.7f,  30.0f, 1005);         // Left Fence Line
+    drawNaturalDeciduousTree(-13.5f,  5.5f, 0.17f, 3.9f,  48.0f, 1006, 0, 0.94f); // Left Manor Approach
+    drawNaturalDeciduousTree( 13.8f,  7.0f, 0.16f, 3.9f, -42.0f, 1007, 0, 0.95f); // Right Lawn behind car
+    drawNaturalPineTree(      16.0f,  9.5f, 0.16f, 3.8f,  55.0f, 1008);         // Far Right Manor Approach
 
-    // 3. Left Midground Tree
-    drawOrganicCreepyTree(-14.0f,  5.0f, 0.44f,  8.8f,  40.0f, 5005, 0.90f);
+    // 3. MANOR FLANKING TREES (Flanking the house on left and right)
+    drawNaturalDeciduousTree(-15.0f, -3.5f, 0.17f, 4.1f,  12.0f, 2001, 0, 0.90f); // Left House Flank
+    drawNaturalPineTree(      13.5f, -3.0f, 0.17f, 4.1f, -20.0f, 2002);         // Right House Flank
 
-    // 4. Right Midground Tree
-    drawOrganicCreepyTree( 13.0f,  4.0f, 0.44f,  8.8f, -22.0f, 6006, 0.90f);
-
-    // 5. Left House Rear Guard Tree (Behind left side of house)
-    drawOrganicCreepyTree(-18.0f, -12.0f, 0.46f, 9.2f,  35.0f, 2002, 0.88f);
-
-    // 6. Right Background Manor Tree (Behind house on right)
-    drawOrganicCreepyTree( 15.5f, -10.0f, 0.46f, 9.0f, -38.0f, 3003, 0.86f);
-
-    // 7. Background Haunted Forest Backdrop Trees (Creating dense forest horizon)
-    drawOrganicCreepyTree(-16.0f, -18.0f, 0.42f, 8.2f,  15.0f, 7007, 0.85f);
-    drawOrganicCreepyTree(-10.0f, -20.0f, 0.42f, 8.4f, -20.0f, 7010, 0.85f);
-    drawOrganicCreepyTree( -4.0f, -24.0f, 0.45f, 8.8f,  45.0f, 7020, 0.85f);
-    drawOrganicCreepyTree(  2.0f, -22.0f, 0.45f, 8.6f, -30.0f, 8008, 0.85f);
-    drawOrganicCreepyTree(  8.0f, -20.0f, 0.42f, 8.2f,  35.0f, 8012, 0.85f);
-    drawOrganicCreepyTree( 14.0f, -19.0f, 0.42f, 8.0f, -15.0f, 9009, 0.85f);
-    drawOrganicCreepyTree( 18.0f, -22.0f, 0.45f, 8.5f,  60.0f, 9015, 0.85f);
+    // 4. BACKGROUND FOREST HORIZON (Small natural trees on the ridge behind the mansion, creating a dense natural backdrop)
+    drawNaturalPineTree(     -12.5f, -14.0f, 0.16f, 4.0f,  15.0f, 3001);
+    drawNaturalDeciduousTree( -8.0f, -16.0f, 0.16f, 3.8f, -22.0f, 3002, 1, 0.88f);
+    drawNaturalPineTree(      -4.0f, -17.5f, 0.17f, 4.0f,  45.0f, 3003);
+    drawNaturalDeciduousTree(  0.0f, -18.5f, 0.17f, 3.9f, -28.0f, 3004, 0, 0.88f);
+    drawNaturalPineTree(       4.0f, -17.5f, 0.17f, 4.0f,  35.0f, 3005);
+    drawNaturalDeciduousTree(  8.0f, -16.0f, 0.16f, 3.8f, -15.0f, 3006, 1, 0.88f);
+    drawNaturalPineTree(      12.5f, -14.0f, 0.16f, 4.0f,  60.0f, 3007);
 }
 
 
@@ -3319,7 +3539,7 @@ void drawHouseInterior() {
     glPopMatrix();
 }
 
-// 4. Multi-Section Victorian Gothic Haunted House (Distant 3/4 Corner Perspective)
+// 4. Multi-Section Victorian Gothic Haunted House (Reference B Architectural Rebuild)
 void drawHouse() {
     glPushMatrix();
     glTranslatef(g_houseShiftX, 0.0f, g_houseShiftZ);
@@ -3330,223 +3550,515 @@ void drawHouse() {
     // ========================================================================
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
-    glColor4f(0.50f, 0.52f, 0.56f, 1.0f);
+    glColor4f(0.42f, 0.44f, 0.48f, 1.0f);
     glPushMatrix();
     glTranslatef(-2.0f, 0.4f, 0.5f);
     drawBox(17.5f, 1.2f, 10.5f, 5.0f, 1.0f);
     glPopMatrix();
+    // Stepped stone plinth / water-table band
+    glColor4f(0.38f, 0.40f, 0.44f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-2.0f, 0.92f, 0.5f);
+    drawBox(17.8f, 0.18f, 10.8f, 5.0f, 0.5f);
+    glPopMatrix();
 
-    // Water-table dark wood trim band
+    // Dark wood trim band above stone
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glColor4f(0.30f, 0.27f, 0.24f, 1.0f);
     glPushMatrix();
-    glTranslatef(-2.0f, 0.95f, 0.5f);
-    drawBox(17.8f, 0.15f, 10.8f, 5.0f, 0.5f);
+    glTranslatef(-2.0f, 1.04f, 0.5f);
+    drawBox(17.9f, 0.10f, 10.9f, 5.0f, 0.3f);
     glPopMatrix();
 
     drawHouseInterior();
 
     // ========================================================================
-    // 2. SECTION A: MAIN TWO-STORY RECTANGULAR BODY (Left & Center Section)
+    // 2. SECTION A: MAIN LEFT WING — TWO-STORY WITH STEEP GABLED ROOF
     // ========================================================================
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
-    glColor4f(0.42f, 0.40f, 0.38f, 1.0f);
+    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.8f, 3.8f, 0.5f);
     drawBox(8.5f, 5.6f, 8.8f, 3.0f, 2.0f);
     glPopMatrix();
 
+    // Half-timber decorative framing on left wing front facade
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.15f, 1.0f);
+    // Vertical timbers
+    glPushMatrix(); glTranslatef(-8.6f, 3.8f, 4.95f); drawBox(0.12f, 5.6f, 0.08f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-6.4f, 3.8f, 4.95f); drawBox(0.12f, 5.6f, 0.08f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-3.0f, 3.8f, 4.95f); drawBox(0.12f, 5.6f, 0.08f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-1.0f, 3.8f, 4.95f); drawBox(0.12f, 5.6f, 0.08f); glPopMatrix();
+    // Horizontal beam mid-story
+    glPushMatrix(); glTranslatef(-4.8f, 4.6f, 4.95f); drawBox(8.5f, 0.12f, 0.08f); glPopMatrix();
+    // Diagonal braces (decorative X pattern)
+    glPushMatrix(); glTranslatef(-7.5f, 5.5f, 4.96f); glRotatef(35.0f, 0.0f, 0.0f, 1.0f); drawBox(0.08f, 2.0f, 0.06f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-7.5f, 5.5f, 4.96f); glRotatef(-35.0f, 0.0f, 0.0f, 1.0f); drawBox(0.08f, 2.0f, 0.06f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-2.0f, 5.5f, 4.96f); glRotatef(35.0f, 0.0f, 0.0f, 1.0f); drawBox(0.08f, 2.0f, 0.06f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-2.0f, 5.5f, 4.96f); glRotatef(-35.0f, 0.0f, 0.0f, 1.0f); drawBox(0.08f, 2.0f, 0.06f); glPopMatrix();
+
     // Steep High Gabled Roof on Main Left Section
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
-    glColor4f(0.48f, 0.52f, 0.60f, 1.0f);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.8f, 6.6f, 0.5f);
     drawPrismRoof(9.2f, 4.8f, 9.4f, 3.5f, 3.0f);
     glPopMatrix();
 
+    // Roof ridge cap trim
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-4.8f, 11.38f, 0.5f);
+    drawBox(0.18f, 0.14f, 9.5f, 1.0f, 4.0f);
+    glPopMatrix();
+
     // Left Chimney Block (Rising on Left Roof Slope)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
-    glColor4f(0.50f, 0.52f, 0.56f, 1.0f);
+    glColor4f(0.45f, 0.47f, 0.52f, 1.0f);
     glPushMatrix();
     glTranslatef(-8.2f, 8.2f, -1.0f);
     drawBox(1.3f, 4.8f, 1.3f, 1.0f, 3.0f);
-    // Stepped Chimney Crown
+    // Chimney crown stepped corbels
     glTranslatef(0.0f, 2.45f, 0.0f);
     drawBox(1.6f, 0.22f, 1.6f, 1.0f, 0.5f);
+    glTranslatef(0.0f, 0.22f, 0.0f);
+    drawBox(1.45f, 0.12f, 1.45f, 1.0f, 0.3f);
     // Twin Clay Chimney Pots
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
-    glColor4f(0.70f, 0.60f, 0.50f, 1.0f);
+    glColor4f(0.62f, 0.52f, 0.42f, 1.0f);
     glTranslatef(-0.35f, 0.15f, 0.0f);
     drawCylinder(0.18f, 0.15f, 0.65f, 8);
     glTranslatef(0.70f, 0.0f, 0.0f);
     drawCylinder(0.18f, 0.15f, 0.65f, 8);
     glPopMatrix();
 
-    // Left Second-Floor Dormer with Peaked Roof
+    // Second chimney (right side of left wing)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.45f, 0.47f, 0.52f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-2.0f, 8.8f, 1.5f);
+    drawBox(1.0f, 3.8f, 1.0f, 1.0f, 2.5f);
+    glTranslatef(0.0f, 1.95f, 0.0f);
+    drawBox(1.25f, 0.18f, 1.25f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glColor4f(0.62f, 0.52f, 0.42f, 1.0f);
+    glTranslatef(0.0f, 0.12f, 0.0f);
+    drawCylinder(0.15f, 0.12f, 0.55f, 8);
+    glPopMatrix();
+
+    // Left Front Dormer with Peaked Roof
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
-    glColor4f(0.42f, 0.40f, 0.38f, 1.0f);
+    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
     glTranslatef(-5.2f, 6.8f, 4.2f);
     drawBox(2.2f, 2.0f, 2.0f, 1.0f, 1.0f);
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
-    glColor4f(0.48f, 0.52f, 0.60f, 1.0f);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
     glTranslatef(0.0f, 1.0f, 0.0f);
     drawPrismRoof(2.5f, 1.6f, 2.2f, 1.0f, 1.0f);
     glPopMatrix();
-    // Dormer Arched Window
     drawHouseWindow(-5.2f, 7.0f, 5.25f, 1.2f, 1.4f, true, true);
+
+    // Second Dormer (right side of left wing)
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_WALL);
+    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-3.2f, 6.8f, 4.2f);
+    drawBox(1.8f, 1.8f, 1.8f, 1.0f, 1.0f);
+    applyMaterial(MAT_ROOF_SHINGLE);
+    bindTexture(TEX_ROOF);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
+    glTranslatef(0.0f, 0.9f, 0.0f);
+    drawPrismRoof(2.1f, 1.3f, 2.0f, 1.0f, 1.0f);
+    glPopMatrix();
+    drawHouseWindow(-3.2f, 6.9f, 5.15f, 1.0f, 1.2f, true, true);
 
     // ========================================================================
     // 3. SECTION B: TALL CENTRAL GOTHIC TOWER (Silhouetted against Moon)
     // ========================================================================
-    // Tower Octagonal Body rising higher than main roof
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
-    glColor4f(0.42f, 0.40f, 0.38f, 1.0f);
+    glColor4f(0.36f, 0.34f, 0.32f, 1.0f);
     glPushMatrix();
     glTranslatef(1.2f, 0.9f, 2.2f);
     drawCylinder(2.2f, 1.9f, 9.2f, 8, 3.0f, 3.0f);
 
-    // Decorative Corbel Ledge / Balcony Ring
+    // Corbel ledge ring (decorative balcony)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
-    glColor4f(0.50f, 0.52f, 0.56f, 1.0f);
+    glColor4f(0.44f, 0.46f, 0.52f, 1.0f);
     glTranslatef(0.0f, 9.2f, 0.0f);
-    drawCylinder(2.45f, 2.05f, 0.45f, 8, 2.0f, 0.5f);
+    drawCylinder(2.50f, 2.10f, 0.50f, 8, 2.0f, 0.5f);
+    // Second thinner corbel ring
+    glTranslatef(0.0f, 0.50f, 0.0f);
+    drawCylinder(2.15f, 2.05f, 0.15f, 8, 1.5f, 0.3f);
 
-    // Tall Steep Pointed Cone-Shaped Turret Roof (Spire)
+    // Tall steep pointed turret spire
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
-    glColor4f(0.48f, 0.52f, 0.60f, 1.0f);
-    glTranslatef(0.0f, 0.45f, 0.0f);
+    glColor4f(0.35f, 0.38f, 0.46f, 1.0f);
+    glTranslatef(0.0f, 0.15f, 0.0f);
     drawSteepleSpire(2.05f, 9.5f, 8, 2.0f, 4.0f);
 
-    // Thin Iron Spike / Finial Needle cutting up into the moon
+    // Thin iron spike / finial needle
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
-    glColor4f(0.60f, 0.60f, 0.65f, 1.0f);
+    glColor4f(0.50f, 0.50f, 0.55f, 1.0f);
     glTranslatef(0.0f, 9.5f, 0.0f);
     drawCylinder(0.05f, 0.008f, 2.6f, 6);
-    // Spire cross finial
+    // Cross finial
     glTranslatef(0.0f, 1.3f, 0.0f);
     drawBox(0.42f, 0.04f, 0.04f);
     drawBox(0.04f, 0.04f, 0.42f);
+    // Decorative weather vane
+    glTranslatef(0.0f, 0.3f, 0.0f);
+    drawBox(0.55f, 0.03f, 0.03f);
     glPopMatrix();
 
-    // Tower Glowing Windows at Multiple Heights
-    drawHouseWindow(1.2f, 8.6f, 4.35f, 1.1f, 1.6f, true, true); // Upper tower window
-    drawHouseWindow(1.2f, 4.8f, 4.35f, 1.1f, 1.6f, true, true); // Lower tower window
+    // Tower narrow slit windows at multiple heights
+    drawHouseWindow(1.2f, 8.6f, 4.35f, 1.1f, 1.6f, true, true);
+    drawHouseWindow(1.2f, 4.8f, 4.35f, 1.1f, 1.6f, true, true);
+    drawHouseWindow(1.2f, 6.6f, 4.35f, 0.8f, 1.2f, true, false); // Small slit window
+
+    // Buttresses on tower sides
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.40f, 0.42f, 0.46f, 1.0f);
+    for (int bt = 0; bt < 4; ++bt) {
+        float angle = bt * 90.0f + 45.0f;
+        float rad = angle * (float)M_PI / 180.0f;
+        float bx = 1.2f + std::cos(rad) * 2.3f;
+        float bz = 2.2f + std::sin(rad) * 2.3f;
+        glPushMatrix();
+        glTranslatef(bx, 3.0f, bz);
+        glRotatef(-angle, 0.0f, 1.0f, 0.0f);
+        drawBox(0.35f, 5.0f, 0.65f, 0.5f, 2.5f);
+        // Buttress cap (angled top)
+        glTranslatef(0.0f, 2.5f, -0.10f);
+        glRotatef(15.0f, 1.0f, 0.0f, 0.0f);
+        drawBox(0.38f, 0.15f, 0.75f, 0.5f, 0.5f);
+        glPopMatrix();
+    }
 
     // ========================================================================
-    // 4. SECTION C: RIGHT SECTION WITH SMALLER SECOND PEAKED GABLE ROOF
+    // 4. SECTION C: RIGHT WING WITH LOWER PEAKED GABLE ROOF
     // ========================================================================
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
-    glColor4f(0.42f, 0.40f, 0.38f, 1.0f);
+    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
     glTranslatef(3.8f, 3.3f, 0.5f);
     drawBox(4.4f, 4.6f, 7.6f, 2.0f, 2.0f);
     glPopMatrix();
 
-    // Second Smaller Peaked Gable Roof
+    // Half-timber on right wing front
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.15f, 1.0f);
+    glPushMatrix(); glTranslatef(2.0f, 3.3f, 4.35f); drawBox(0.10f, 4.6f, 0.06f); glPopMatrix();
+    glPushMatrix(); glTranslatef(5.6f, 3.3f, 4.35f); drawBox(0.10f, 4.6f, 0.06f); glPopMatrix();
+    glPushMatrix(); glTranslatef(3.8f, 4.2f, 4.35f); drawBox(4.4f, 0.10f, 0.06f); glPopMatrix();
+
+    // Right wing peaked gable roof
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
-    glColor4f(0.48f, 0.52f, 0.60f, 1.0f);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
     glPushMatrix();
     glTranslatef(3.8f, 5.6f, 0.5f);
     drawPrismRoof(4.8f, 3.2f, 8.0f, 2.0f, 2.0f);
     glPopMatrix();
 
-    // Upper Cross-Shaped Window on Right Gable Peak
+    // Gable decorative barge boards (overhanging eaves trim)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
+    glPushMatrix();
+    glTranslatef(3.8f, 7.2f, 4.55f);
+    glRotatef(53.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.10f, 2.2f, 0.08f);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef(3.8f, 7.2f, 4.55f);
+    glRotatef(-53.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.10f, 2.2f, 0.08f);
+    glPopMatrix();
+
+    // Upper gable window (Gothic pointed style)
     drawHouseWindow(3.8f, 6.2f, 4.55f, 1.5f, 1.5f, false, true);
 
-    // Ground Floor Dual Windows on Right Wing
+    // Ground-floor right wing windows
     drawHouseWindow(2.6f, 2.6f, 4.35f, 1.2f, 1.6f, true, true);
     drawHouseWindow(4.8f, 2.6f, 4.35f, 1.2f, 1.6f, true, true);
 
+    // Side facade window on right wing
+    drawHouseWindow(6.05f, 3.2f, 2.5f, 1.0f, 1.4f, true, true);
+    drawHouseWindow(6.05f, 5.5f, 2.5f, 0.9f, 1.2f, true, false);
+
     // ========================================================================
-    // 5. SECTION D: GROUND-FLOOR PORCH & ENTRANCE WITH SUPPORT POSTS
+    // 5. SECTION D: GROUND-FLOOR PORCH & ENTRANCE WITH GOTHIC ARCHED DOORWAY
     // ========================================================================
-    // Porch Foundation & Deck Floor
+    // Porch foundation & deck floor
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glColor4f(0.30f, 0.27f, 0.25f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.6f, 0.72f, 4.2f);
     drawBox(6.2f, 0.16f, 3.4f, 2.5f, 0.5f);
     glPopMatrix();
 
-    // Porch Steps (Down to ground)
+    // Porch steps (three steps down to ground)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
-    glColor4f(0.50f, 0.52f, 0.56f, 1.0f);
+    glColor4f(0.44f, 0.46f, 0.50f, 1.0f);
     glPushMatrix();
-    glTranslatef(-4.6f, 0.18f, 6.2f);
-    drawBox(3.4f, 0.36f, 0.85f);
-    glTranslatef(0.0f, 0.18f, -0.42f);
-    drawBox(3.0f, 0.18f, 0.85f);
+    glTranslatef(-4.6f, 0.12f, 6.5f);
+    drawBox(3.4f, 0.24f, 0.65f);
+    glTranslatef(0.0f, 0.12f, -0.34f);
+    drawBox(3.2f, 0.12f, 0.65f);
+    glTranslatef(0.0f, 0.12f, -0.34f);
+    drawBox(3.0f, 0.18f, 0.65f);
     glPopMatrix();
 
-    // Porch Vertical Support Posts
-    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
-    float postX[3] = { -7.4f, -4.6f, -1.8f };
-    for (int p = 0; p < 3; ++p) {
+    // Porch columns (4 Gothic-style square posts with chamfered edges)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.44f, 0.46f, 0.50f, 1.0f);
+    float postX[4] = { -7.4f, -5.8f, -3.4f, -1.8f };
+    for (int p = 0; p < 4; ++p) {
         glPushMatrix();
         glTranslatef(postX[p], 0.80f, 5.7f);
-        drawBox(0.24f, 0.24f, 0.24f); // base
-        glTranslatef(0.0f, 0.12f, 0.0f);
-        drawCylinder(0.09f, 0.09f, 3.0f, 8); // column post
+        // Column pedestal
+        drawBox(0.30f, 0.30f, 0.30f);
+        glTranslatef(0.0f, 0.15f, 0.0f);
+        // Main column shaft
+        drawCylinder(0.11f, 0.09f, 3.0f, 8);
         glTranslatef(0.0f, 3.0f, 0.0f);
-        drawBox(0.26f, 0.16f, 0.26f); // top capital
+        // Decorative capital
+        drawBox(0.30f, 0.08f, 0.30f);
+        glTranslatef(0.0f, 0.08f, 0.0f);
+        drawBox(0.34f, 0.06f, 0.34f);
         glPopMatrix();
     }
 
-    // Porch Beam Header & Sloped Roof
+    // Porch beam header
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.6f, 3.95f, 5.7f);
-    drawBox(6.4f, 0.20f, 0.30f);
+    drawBox(6.4f, 0.24f, 0.35f);
+    // Decorative scalloped trim under beam
+    for (int sc = 0; sc < 7; ++sc) {
+        glPushMatrix();
+        glTranslatef(-3.0f + sc * 1.0f, -0.18f, 0.0f);
+        drawBox(0.08f, 0.14f, 0.08f);
+        glPopMatrix();
+    }
     glPopMatrix();
 
+    // Porch sloped overhang roof
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
-    glColor4f(0.48f, 0.52f, 0.60f, 1.0f);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.6f, 4.15f, 4.6f);
     glRotatef(18.0f, 1.0f, 0.0f, 0.0f);
     drawBox(6.6f, 0.18f, 2.8f, 2.5f, 1.5f);
     glPopMatrix();
 
-    // Open Glowing Doorway Entrance under Porch
+    // Gothic arched doorway entrance (warm glowing interior visible)
     applyMaterial(MAT_WINDOW_GLOW);
     bindTexture(TEX_NONE);
-    glColor4f(1.0f, 0.72f, 0.26f, 1.0f);
+    glColor4f(1.0f, 0.68f, 0.22f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.6f, 2.2f, 4.85f);
-    drawBox(1.5f, 2.6f, 0.05f); // Warm glowing open entrance foyer
+    drawBox(1.5f, 2.6f, 0.05f);
+    // Bright interior hotspot
+    glColor4f(1.0f, 0.85f, 0.40f, 1.0f);
+    drawBox(1.0f, 2.0f, 0.055f);
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
     glTranslatef(0.0f, 0.0f, 0.03f);
-    // Door Casing
-    glPushMatrix(); glTranslatef(-0.8f, 0.0f, 0.0f); drawBox(0.14f, 2.8f, 0.12f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.8f, 0.0f, 0.0f); drawBox(0.14f, 2.8f, 0.12f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.0f, 1.35f, 0.0f); drawBox(1.8f, 0.14f, 0.12f); glPopMatrix();
+    // Heavy door casing with Gothic pointed arch
+    glPushMatrix(); glTranslatef(-0.82f, 0.0f, 0.0f); drawBox(0.16f, 2.8f, 0.14f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.82f, 0.0f, 0.0f); drawBox(0.16f, 2.8f, 0.14f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 1.35f, 0.0f); drawBox(1.8f, 0.16f, 0.14f); glPopMatrix();
+    // Pointed arch peak above door
+    glPushMatrix();
+    glTranslatef(0.0f, 1.45f, 0.0f);
+    glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.12f, 0.65f, 0.10f);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef(0.0f, 1.45f, 0.0f);
+    glRotatef(-45.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.12f, 0.65f, 0.10f);
     glPopMatrix();
 
-    // Additional Main-Floor Windows under porch / left wing
+    // Broken ajar wooden panel door leaf (swung inward/ajar with crooked tilt)
+    glPushMatrix();
+    glTranslatef(-0.68f, -0.05f, 0.0f);
+    glRotatef(36.0f, 0.0f, 1.0f, 0.0f); // Ajar swing
+    glRotatef( 3.5f, 1.0f, 0.0f, 0.0f); // Crooked hang on hinge
+    glTranslatef(0.60f, 0.0f, 0.0f);
+    drawBox(1.20f, 2.45f, 0.06f, 1.0f, 2.0f);
+    // Door panels
+    glTranslatef(0.0f, 0.0f, 0.035f);
+    drawBox(1.02f, 1.02f, 0.02f);
+    glTranslatef(0.0f, -1.15f, 0.0f);
+    drawBox(1.02f, 0.90f, 0.02f);
+    // Rusted iron door handle
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glTranslatef(0.48f, 0.62f, 0.04f);
+    drawCylinder(0.02f, 0.02f, 0.08f, 6);
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // Main-floor windows under porch / left wing
     drawHouseWindow(-7.4f, 2.6f, 4.95f, 1.2f, 1.6f, true, true);
     drawHouseWindow(-1.8f, 2.6f, 4.95f, 1.2f, 1.6f, true, true);
 
+    // ========================================================================
+    // 6. ADDITIONAL ARCHITECTURAL DETAILS (Reference B Fidelity)
+    // ========================================================================
+
+    // Side facade windows on left wing
+    drawHouseWindow(-9.05f, 3.2f, 1.5f, 1.0f, 1.4f, true, true);
+    drawHouseWindow(-9.05f, 5.5f, 1.5f, 0.9f, 1.2f, true, false);
+    drawHouseWindow(-9.05f, 3.2f, -1.5f, 1.0f, 1.4f, true, true);
+
+    // Overhanging eaves / fascia boards on main sections
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
+    // Left wing eaves
+    glPushMatrix(); glTranslatef(-4.8f, 6.58f, 5.1f); drawBox(8.8f, 0.14f, 0.28f); glPopMatrix();
+    // Right wing eaves
+    glPushMatrix(); glTranslatef(3.8f, 5.58f, 4.5f); drawBox(4.6f, 0.12f, 0.24f); glPopMatrix();
+
+    // Corner quoins (decorative stone blocks at building corners)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.48f, 0.50f, 0.54f, 1.0f);
+    float quoinY[4] = { 1.4f, 2.6f, 3.8f, 5.0f };
+    // Left front corner
+    for (int q = 0; q < 4; ++q) {
+        glPushMatrix(); glTranslatef(-9.0f, quoinY[q], 4.95f); drawBox(0.25f, 0.35f, 0.18f); glPopMatrix();
+    }
+    // Right front corner
+    for (int q = 0; q < 4; ++q) {
+        glPushMatrix(); glTranslatef(6.0f, quoinY[q], 4.35f); drawBox(0.25f, 0.35f, 0.18f); glPopMatrix();
+    }
+
+    // Decorative lintel stones above main-floor windows
+    applyMaterial(MAT_STONE);
+    glColor4f(0.46f, 0.48f, 0.52f, 1.0f);
+    glPushMatrix(); glTranslatef(-7.4f, 3.55f, 4.98f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-1.8f, 3.55f, 4.98f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
+    glPushMatrix(); glTranslatef(2.6f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
+    glPushMatrix(); glTranslatef(4.8f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
+
+    // Small rear extension / lean-to (adds depth to silhouette from behind)
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_WALL);
+    glColor4f(0.35f, 0.33f, 0.30f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-6.5f, 2.5f, -3.0f);
+    drawBox(3.2f, 3.0f, 3.5f, 1.5f, 1.0f);
+    applyMaterial(MAT_ROOF_SHINGLE);
+    bindTexture(TEX_ROOF);
+    glColor4f(0.36f, 0.40f, 0.48f, 1.0f);
+    glTranslatef(0.0f, 1.5f, 0.0f);
+    drawPrismRoof(3.4f, 1.8f, 3.7f, 1.5f, 1.5f);
+    glPopMatrix();
+
     glPopMatrix(); // End House
+}
+
+// ============================================================================
+// GRAVEYARD CROSSES — OLD WEATHERED CEMETERY (Left Side of Mansion)
+// ============================================================================
+void drawGraveyardCrosses() {
+    struct GraveCross {
+        float x, z;
+        float scale;
+        float rotY;
+        float lean;    // tilt angle (degrees)
+        float leanDir; // tilt direction (degrees around Y)
+    };
+
+    static const GraveCross CROSSES[] = {
+        { -14.5f, -2.0f, 0.85f,  12.0f, 8.0f,  30.0f },
+        { -13.0f, -0.5f, 1.00f, -5.0f,  4.0f,  -20.0f },
+        { -15.8f,  0.8f, 0.70f,  25.0f, 12.0f, 60.0f },
+        { -12.5f,  1.8f, 0.90f, -18.0f, 6.0f,  -45.0f },
+        { -16.2f, -3.5f, 0.75f,  8.0f,  15.0f, 110.0f },
+        { -13.8f, -4.2f, 0.65f, -30.0f, 10.0f, -80.0f },
+        { -15.0f,  3.0f, 0.55f,  40.0f, 18.0f, 45.0f },
+    };
+    const int NUM_CROSSES = sizeof(CROSSES) / sizeof(CROSSES[0]);
+
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+
+    for (int i = 0; i < NUM_CROSSES; ++i) {
+        const GraveCross& gc = CROSSES[i];
+        float groundY = getTerrainHeight(gc.x, gc.z);
+
+        glPushMatrix();
+        glTranslatef(gc.x, groundY, gc.z);
+        glRotatef(gc.rotY, 0.0f, 1.0f, 0.0f);
+        // Apply weathered lean
+        glRotatef(gc.lean, std::sin(gc.leanDir * (float)M_PI / 180.0f), 0.0f,
+                  std::cos(gc.leanDir * (float)M_PI / 180.0f));
+        glScalef(gc.scale, gc.scale, gc.scale);
+
+        // Slightly varied dark gray-brown stone color per cross
+        float tint = 0.90f + (float)(i % 4) * 0.03f;
+        glColor4f(0.38f * tint, 0.36f * tint, 0.33f * tint, 1.0f);
+
+        // Vertical post
+        drawBox(0.14f, 1.6f, 0.10f);
+
+        // Horizontal crossbar (slightly above center)
+        glPushMatrix();
+        glTranslatef(0.0f, 0.45f, 0.0f);
+        drawBox(0.75f, 0.12f, 0.10f);
+        glPopMatrix();
+
+        // Rough hewn top (slightly wider cap)
+        glPushMatrix();
+        glTranslatef(0.0f, 0.82f, 0.0f);
+        drawBox(0.18f, 0.06f, 0.12f);
+        glPopMatrix();
+
+        // Small mound of dirt at base
+        glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+        glPushMatrix();
+        glTranslatef(0.0f, -0.75f, 0.0f);
+        glScalef(0.6f, 0.18f, 0.45f);
+        drawSphere(1.0f, 6, 4);
+        glPopMatrix();
+
+        glPopMatrix();
+    }
 }
 
 // 5. Hanging Porch Bulb with Dynamic Point Light
@@ -4383,21 +4895,68 @@ void drawMoonAndStars() {
     glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glDisable(GL_LIGHTING);
 
-    // 1. Distant Twinkling Stars in Dark Sky
-    glPointSize(1.8f);
+    // 1. Cinematic Atmospheric Sky Gradient Backdrop (Navy Zenith -> Mid Teal -> Horizon Desaturated Blue)
+    glDepthMask(GL_FALSE);
+    glDisable(GL_FOG);
+    glDisable(GL_TEXTURE_2D);
+
+    glPushMatrix();
+    float skyZ = -70.0f;
+    float skyW = 180.0f;
+    float skyBottom = -15.0f;
+    float skyMid    =  16.0f;
+    float skyTop    =  60.0f;
+
+    float flash = g_lightning.flashIntensity;
+
+    // Horizon: Slightly lighter desaturated blue-gray (blends seamlessly into fog)
+    float horR = 0.07f + 0.22f * flash;
+    float horG = 0.13f + 0.25f * flash;
+    float horB = 0.19f + 0.35f * flash;
+
+    // Mid-sky: Dark teal-blue
+    float midR = 0.04f + 0.20f * flash;
+    float midG = 0.08f + 0.22f * flash;
+    float midB = 0.14f + 0.32f * flash;
+
+    // Upper Zenith: Deep navy blue
+    float topR = 0.02f + 0.18f * flash;
+    float topG = 0.035f + 0.20f * flash;
+    float topB = 0.075f + 0.28f * flash;
+
+    glBegin(GL_QUAD_STRIP);
+    glColor4f(horR, horG, horB, 1.0f);
+    glVertex3f(-skyW, skyBottom, skyZ);
+    glVertex3f( skyW, skyBottom, skyZ);
+
+    glColor4f(midR, midG, midB, 1.0f);
+    glVertex3f(-skyW, skyMid,    skyZ);
+    glVertex3f( skyW, skyMid,    skyZ);
+
+    glColor4f(topR, topG, topB, 1.0f);
+    glVertex3f(-skyW, skyTop,    skyZ);
+    glVertex3f( skyW, skyTop,    skyZ);
+    glEnd();
+    glPopMatrix();
+
+    // 2. Subtle Faint Distant Stars in Upper Dark Sky (Non-distracting, high above horizon)
+    glPointSize(1.2f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBegin(GL_POINTS);
     for (size_t i = 0; i < g_stars.size(); ++i) {
-        float b = g_stars[i].brightness * (0.8f + 0.2f * std::sin(g_time * 3.0f + (float)i));
-        glColor4f(0.85f * b, 0.92f * b, 1.0f * b, 0.95f);
+        if (g_stars[i].y < 22.0f) continue; // Keep lower sky completely clear for moon & silhouettes
+        float b = g_stars[i].brightness * 0.35f * (0.85f + 0.15f * std::sin(g_time * 2.5f + (float)i));
+        glColor4f(0.70f * b, 0.82f * b, 0.95f * b, 0.40f * b);
         glVertex3f(g_stars[i].x, g_stars[i].y, g_stars[i].z);
     }
     glEnd();
 
-    // 2. Giant Luminous Moon (Oversized cinematic full moon placed behind Gothic tower)
-    float moonX =   0.8f;
-    float moonY =  22.5f; // Screen Y ≈ 0.26
-    float moonZ = -45.0f; // Screen X ≈ 0.54
-    float moonRadius = 11.2f;
+    // 3. Giant Luminous Moon (Elevated higher in the night sky behind the house)
+    float moonX =   2.5f;
+    float moonY =  29.5f; // Elevated higher in the sky behind the house
+    float moonZ = -52.0f; // Screen X ≈ 0.54
+    float moonRadius = 10.8f;
 
     // 2.1 Soft Luminous Atmospheric Halo Disc behind the Moon
     glDepthMask(GL_FALSE);
@@ -4604,34 +5163,55 @@ void drawBat(float x, float y, float z, float roll, float flapAngle, float scale
 
 void drawAllBats() {
     // ------------------------------------------------------------------------
-    // FLOCK OF 5 BATS CROSSING THE MOON (Reference Composition)
+    // FLOCK OF NOCTURNAL BATS FLYING IN FRONT OF THE HOUSE: RIGHT → LEFT
+    // Bats sweep across the scene in front of the house (z ≈ 11.5 - 14.5m),
+    // fly completely out of the scene on the left, and then reappear after a pause
+    // from the right side.
     // ------------------------------------------------------------------------
-    float flockTime = g_time * 0.35f;
 
     struct BatFlockMember {
-        float ox, oy;
-        float scale;
-        float roll;
-        float flapPhase;
+        float xOffset;     // Horizontal spread in flock
+        float baseY;       // Base flight height
+        float baseZ;       // Depth in front of house (in front of z=7.0 house)
+        float scale;       // World-space scale
+        float flapPhase;   // Wing flap phase offset
     };
     static const BatFlockMember BATS[5] = {
-        {  3.2f,  3.5f, 1.55f, -16.0f, 0.0f }, // Alpha Lead Bat (upper right quadrant of moon)
-        { -2.4f,  4.8f, 1.25f,  -8.0f, 2.4f }, // Upper Left quadrant of moon
-        {  6.2f,  4.2f, 1.10f, -22.0f, 1.2f }, // High Right Sky edge
-        {  4.5f,  0.8f, 1.30f, -18.0f, 3.6f }, // Mid Right quadrant of moon
-        {  6.8f, -2.0f, 0.95f, -24.0f, 4.8f }  // Lower Right horizon
+        {  0.0f, 5.8f, 12.5f, 0.52f, 0.0f }, // Alpha leader bat
+        {  2.2f, 6.4f, 13.5f, 0.46f, 1.8f }, // Upper follower
+        {  1.6f, 5.0f, 11.8f, 0.44f, 3.2f }, // Lower follower
+        {  3.8f, 6.7f, 14.2f, 0.42f, 4.5f }, // High trailer
+        {  4.5f, 4.7f, 12.0f, 0.40f, 2.1f }  // Low trailer
     };
 
-    float moonX = 0.8f, moonY = 22.5f, moonZ = -44.7f;
+    float startX =  26.0f; // Well off-screen right
+    float endX   = -26.0f; // Well off-screen left
+    float totalDist = startX - endX;
 
-    for (int i = 0; i < 5; ++i) {
-        const BatFlockMember& b = BATS[i];
-        float bx = moonX + b.ox + std::sin(flockTime + b.flapPhase * 0.5f) * 0.5f;
-        float by = moonY + b.oy + 0.20f * std::cos(flockTime * 1.5f + b.flapPhase);
-        float bz = moonZ;
-        float flap = std::sin(g_time * 7.5f + b.flapPhase) * 32.0f;
+    float activeDuration = 10.5f; // Seconds to fly across the entire scene
+    float pauseDuration  =  5.5f; // Seconds of pause off-screen before returning
+    float cyclePeriod    = activeDuration + pauseDuration; // 16.0s total cycle
 
-        drawBat(bx, by, bz, b.roll, flap, b.scale);
+    float cycleTime = std::fmod(g_time, cyclePeriod);
+
+    // Only render while active in flight
+    if (cycleTime < activeDuration) {
+        float t = cycleTime / activeDuration;
+        float baseX = startX - t * totalDist;
+
+        for (int i = 0; i < 5; ++i) {
+            const BatFlockMember& b = BATS[i];
+            float bx = baseX + b.xOffset;
+            float by = b.baseY + 0.35f * std::sin(g_time * 2.5f + b.flapPhase);
+            float bz = b.baseZ;
+
+            // Banking roll in flight direction
+            float roll = -16.0f + 6.0f * std::sin(g_time * 1.8f + b.flapPhase);
+            // Dynamic wing flap
+            float flap = std::sin(g_time * 11.0f + b.flapPhase) * 34.0f;
+
+            drawBat(bx, by, bz, roll, flap, b.scale);
+        }
     }
 }
 
@@ -4782,6 +5362,8 @@ void buildShadowMatrix(float shadowMat[16], const float groundPlane[4], const fl
 void renderShadowCasters() {
     drawHouse();
     drawAllTrees();
+    drawRustedCar(8.2f, 6.8f, -22.0f);
+    drawTelephonePole(10.8f, 5.8f, -12.0f);
 }
 
 void renderBulbShadowCasters() {
@@ -4947,9 +5529,13 @@ void render3DScene() {
     drawMoonAndStars();
     drawGround();
     drawHouse();
+    drawRustedCar(8.2f, 6.8f, -22.0f);
+    drawEnvironmentalClutter();
+    drawGraveyardCrosses();
     drawHangingBulb();
     drawPumpkinArray();
     drawAllTrees();
+    drawFallingLeaves();
     drawGroundMist();
     drawAllBats();
 
