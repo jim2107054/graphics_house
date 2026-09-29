@@ -203,6 +203,7 @@ bool g_light0PointOn       = true;  // Porch Bulb
 bool g_light1DirectionalOn = true;  // Moonlight
 bool g_light2SpotOn        = false; // Flashlight (OFF by default to remove glare on player's side)
 bool g_light3AreaOn        = true;  // Window Glow
+bool g_pumpkinLightsOn     = true;  // Jack-o'-Lantern Candle Lights
 
 bool g_texturesEnabled     = true;  // Texture mapping switch
 bool g_fogEnabled          = true;
@@ -3414,7 +3415,7 @@ void drawGround() {
     drawGroundProps();
 }
 
-// 2. Carved Jack-o'-Lantern Pumpkins (Exact Reference Styling & Full Visibility)
+// 2. Carved Jack-o'-Lantern Pumpkins & Rustic Gourds (Lining Road & House Approach)
 void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceStyle) {
     float groundY = y + getTerrainHeight(x, z);
 
@@ -3457,112 +3458,298 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
     drawCylinder(0.065f, 0.035f, 0.28f, 8, 1.0f, 1.0f);
     glPopMatrix();
 
-    // 3. Glowing Carved Face (Eyes, Nose, Sinister Jagged Mouth - Strongly illuminated)
-    glDisable(GL_LIGHTING);
-    bindTexture(TEX_NONE);
-    glColor4f(1.0f, 0.75f, 0.20f, 1.0f);
+    // 3. Glowing Carved Face & Localized Ground Halo (if carved Jack-o'-Lantern)
+    if (faceStyle >= 0) {
+        // Individualized candle flame flicker with slight phase offset
+        float localFlicker = g_pumpkinFlicker * (0.88f + 0.12f * std::sin(g_time * 5.2f + x * 2.1f + z * 1.7f));
 
-    if (faceStyle == 0) {
-        // Classic jagged wicked grin
-        glBegin(GL_TRIANGLES);
-        // Left Eye (triangular slanted)
-        glNormal3f(-0.25f, 0.2f, 0.95f);
-        glVertex3f(-0.24f, 0.12f, 0.58f);
-        glVertex3f(-0.06f, 0.16f, 0.63f);
-        glVertex3f(-0.16f, 0.30f, 0.56f);
+        if (g_pumpkinLightsOn) {
+            // Glowing internal candle flame inside the pumpkin body cavity
+            glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT);
+            glDisable(GL_LIGHTING);
+            bindTexture(TEX_NONE);
+            glColor4f(1.0f * localFlicker, 0.95f * localFlicker, 0.50f * localFlicker, 1.0f);
+            glPushMatrix();
+            glTranslatef(0.0f, -0.05f, 0.05f);
+            glScalef(0.14f, 0.22f, 0.14f);
+            drawSphere(1.0f, 8, 8);
+            glPopMatrix();
+            glPopAttrib();
 
-        // Right Eye
-        glNormal3f(0.25f, 0.2f, 0.95f);
-        glVertex3f( 0.06f, 0.16f, 0.63f);
-        glVertex3f( 0.24f, 0.12f, 0.58f);
-        glVertex3f( 0.16f, 0.30f, 0.56f);
+            // Vibrant glowing carved face (fiery yellow-gold)
+            glDisable(GL_LIGHTING);
+            bindTexture(TEX_NONE);
+            glColor4f(1.0f * localFlicker, 0.86f * localFlicker, 0.22f * localFlicker, 1.0f);
+        } else {
+            // Unlit carved face (dark hollow inside)
+            glDisable(GL_LIGHTING);
+            bindTexture(TEX_NONE);
+            glColor4f(0.06f, 0.03f, 0.01f, 1.0f);
+        }
 
-        // Nose
-        glNormal3f(0.0f, 0.1f, 1.0f);
-        glVertex3f(-0.06f, 0.02f, 0.66f);
-        glVertex3f( 0.06f, 0.02f, 0.66f);
-        glVertex3f( 0.00f, 0.12f, 0.65f);
-        glEnd();
+        glPushMatrix();
+        glTranslatef(0.0f, 0.0f, 0.06f); // Slight forward projection to guarantee visibility over ribs
 
-        // Sinister toothy grin
-        glBegin(GL_TRIANGLE_FAN);
-        glNormal3f(0.0f, -0.2f, 0.98f);
-        glVertex3f( 0.00f, -0.10f, 0.65f);
-        glVertex3f(-0.38f, -0.01f, 0.46f);
-        glVertex3f(-0.28f, -0.16f, 0.58f);
-        glVertex3f(-0.18f, -0.05f, 0.63f);
-        glVertex3f(-0.09f, -0.18f, 0.65f);
-        glVertex3f( 0.00f, -0.06f, 0.66f);
-        glVertex3f( 0.09f, -0.18f, 0.65f);
-        glVertex3f( 0.18f, -0.05f, 0.63f);
-        glVertex3f( 0.28f, -0.16f, 0.58f);
-        glVertex3f( 0.38f, -0.01f, 0.46f);
-        glEnd();
-    } else {
-        // Angled menacing grin
-        glBegin(GL_TRIANGLES);
-        // Slanted eyes
-        glNormal3f(-0.35f, 0.2f, 0.93f);
-        glVertex3f(-0.22f, 0.14f, 0.59f);
-        glVertex3f(-0.08f, 0.20f, 0.63f);
-        glVertex3f(-0.20f, 0.28f, 0.57f);
+        if (faceStyle == 0) {
+            // Classic jagged wicked grin
+            glBegin(GL_TRIANGLES);
+            // Left Eye (triangular slanted)
+            glNormal3f(-0.25f, 0.2f, 0.95f);
+            glVertex3f(-0.24f, 0.12f, 0.58f);
+            glVertex3f(-0.06f, 0.16f, 0.63f);
+            glVertex3f(-0.16f, 0.30f, 0.56f);
 
-        glNormal3f(0.35f, 0.2f, 0.93f);
-        glVertex3f( 0.08f, 0.20f, 0.63f);
-        glVertex3f( 0.22f, 0.14f, 0.59f);
-        glVertex3f( 0.20f, 0.28f, 0.57f);
+            // Right Eye
+            glNormal3f(0.25f, 0.2f, 0.95f);
+            glVertex3f( 0.06f, 0.16f, 0.63f);
+            glVertex3f( 0.24f, 0.12f, 0.58f);
+            glVertex3f( 0.16f, 0.30f, 0.56f);
 
-        // Nose
-        glNormal3f(0.0f, 0.1f, 1.0f);
-        glVertex3f(-0.05f, 0.04f, 0.66f);
-        glVertex3f( 0.05f, 0.04f, 0.66f);
-        glVertex3f( 0.00f, 0.13f, 0.65f);
-        glEnd();
+            // Nose
+            glNormal3f(0.0f, 0.1f, 1.0f);
+            glVertex3f(-0.06f, 0.02f, 0.66f);
+            glVertex3f( 0.06f, 0.02f, 0.66f);
+            glVertex3f( 0.00f, 0.12f, 0.65f);
+            glEnd();
 
-        glBegin(GL_TRIANGLE_FAN);
-        glNormal3f(0.0f, -0.2f, 0.98f);
-        glVertex3f( 0.00f, -0.12f, 0.65f);
-        glVertex3f(-0.32f, -0.02f, 0.54f);
-        glVertex3f(-0.22f, -0.15f, 0.60f);
-        glVertex3f(-0.11f, -0.07f, 0.64f);
-        glVertex3f( 0.00f, -0.16f, 0.65f);
-        glVertex3f( 0.11f, -0.07f, 0.64f);
-        glVertex3f( 0.22f, -0.15f, 0.60f);
-        glVertex3f( 0.32f, -0.02f, 0.54f);
-        glEnd();
+            // Sinister toothy grin
+            glBegin(GL_TRIANGLE_FAN);
+            glNormal3f(0.0f, -0.2f, 0.98f);
+            glVertex3f( 0.00f, -0.10f, 0.65f);
+            glVertex3f(-0.38f, -0.01f, 0.46f);
+            glVertex3f(-0.28f, -0.16f, 0.58f);
+            glVertex3f(-0.18f, -0.05f, 0.63f);
+            glVertex3f(-0.09f, -0.18f, 0.65f);
+            glVertex3f( 0.00f, -0.06f, 0.66f);
+            glVertex3f( 0.09f, -0.18f, 0.65f);
+            glVertex3f( 0.18f, -0.05f, 0.63f);
+            glVertex3f( 0.28f, -0.16f, 0.58f);
+            glVertex3f( 0.38f, -0.01f, 0.46f);
+            glEnd();
+        } else if (faceStyle == 1) {
+            // Angled menacing grin
+            glBegin(GL_TRIANGLES);
+            // Slanted eyes
+            glNormal3f(-0.35f, 0.2f, 0.93f);
+            glVertex3f(-0.22f, 0.14f, 0.59f);
+            glVertex3f(-0.08f, 0.20f, 0.63f);
+            glVertex3f(-0.20f, 0.28f, 0.57f);
+
+            glNormal3f(0.35f, 0.2f, 0.93f);
+            glVertex3f( 0.08f, 0.20f, 0.63f);
+            glVertex3f( 0.22f, 0.14f, 0.59f);
+            glVertex3f( 0.20f, 0.28f, 0.57f);
+
+            // Nose
+            glNormal3f(0.0f, 0.1f, 1.0f);
+            glVertex3f(-0.05f, 0.04f, 0.66f);
+            glVertex3f( 0.05f, 0.04f, 0.66f);
+            glVertex3f( 0.00f, 0.13f, 0.65f);
+            glEnd();
+
+            glBegin(GL_TRIANGLE_FAN);
+            glNormal3f(0.0f, -0.2f, 0.98f);
+            glVertex3f( 0.00f, -0.12f, 0.65f);
+            glVertex3f(-0.32f, -0.02f, 0.54f);
+            glVertex3f(-0.22f, -0.15f, 0.60f);
+            glVertex3f(-0.11f, -0.07f, 0.64f);
+            glVertex3f( 0.00f, -0.16f, 0.65f);
+            glVertex3f( 0.11f, -0.07f, 0.64f);
+            glVertex3f( 0.22f, -0.15f, 0.60f);
+            glVertex3f( 0.32f, -0.02f, 0.54f);
+            glEnd();
+        } else if (faceStyle == 2) {
+            // Screaming / haunting ghost face ("O" mouth + tall slanted eyes)
+            glBegin(GL_TRIANGLES);
+            // Left Eye
+            glNormal3f(-0.25f, 0.2f, 0.95f);
+            glVertex3f(-0.24f, 0.10f, 0.58f);
+            glVertex3f(-0.06f, 0.14f, 0.63f);
+            glVertex3f(-0.15f, 0.32f, 0.56f);
+
+            // Right Eye
+            glNormal3f(0.25f, 0.2f, 0.95f);
+            glVertex3f( 0.06f, 0.14f, 0.63f);
+            glVertex3f( 0.24f, 0.10f, 0.58f);
+            glVertex3f( 0.15f, 0.32f, 0.56f);
+
+            // Small triangular nose
+            glNormal3f(0.0f, 0.1f, 1.0f);
+            glVertex3f(-0.04f, 0.03f, 0.66f);
+            glVertex3f( 0.04f, 0.03f, 0.66f);
+            glVertex3f( 0.00f, 0.11f, 0.65f);
+            glEnd();
+
+            // Large hollow tall screaming "O" mouth
+            glBegin(GL_TRIANGLE_FAN);
+            glNormal3f(0.0f, -0.1f, 0.99f);
+            glVertex3f(0.00f, -0.12f, 0.65f);
+            int mSegs = 12;
+            for (int m = 0; m <= mSegs; ++m) {
+                float ang = (float)m * (2.0f * (float)M_PI / (float)mSegs);
+                glVertex3f(0.14f * std::cos(ang), -0.12f + 0.15f * std::sin(ang), 0.64f);
+            }
+            glEnd();
+        } else if (faceStyle == 3) {
+            // Vampire fangs & sinister eyes
+            glBegin(GL_TRIANGLES);
+            glNormal3f(-0.35f, 0.2f, 0.93f);
+            glVertex3f(-0.25f, 0.20f, 0.58f);
+            glVertex3f(-0.08f, 0.14f, 0.63f);
+            glVertex3f(-0.19f, 0.29f, 0.57f);
+
+            glNormal3f(0.35f, 0.2f, 0.93f);
+            glVertex3f( 0.08f, 0.14f, 0.63f);
+            glVertex3f( 0.25f, 0.20f, 0.58f);
+            glVertex3f( 0.19f, 0.29f, 0.57f);
+
+            // Center nose
+            glNormal3f(0.0f, 0.1f, 1.0f);
+            glVertex3f(-0.05f, 0.04f, 0.66f);
+            glVertex3f( 0.05f, 0.04f, 0.66f);
+            glVertex3f( 0.00f, 0.13f, 0.65f);
+
+            // Left upper fang
+            glVertex3f(-0.16f, -0.04f, 0.64f);
+            glVertex3f(-0.08f, -0.04f, 0.65f);
+            glVertex3f(-0.12f, -0.18f, 0.64f);
+
+            // Right upper fang
+            glVertex3f( 0.08f, -0.04f, 0.65f);
+            glVertex3f( 0.16f, -0.04f, 0.64f);
+            glVertex3f( 0.12f, -0.18f, 0.64f);
+            glEnd();
+
+            // Wide mouth slit
+            glBegin(GL_TRIANGLE_FAN);
+            glNormal3f(0.0f, -0.2f, 0.98f);
+            glVertex3f( 0.00f, -0.08f, 0.65f);
+            glVertex3f(-0.34f, -0.02f, 0.52f);
+            glVertex3f(-0.22f, -0.13f, 0.60f);
+            glVertex3f( 0.00f, -0.15f, 0.65f);
+            glVertex3f( 0.22f, -0.13f, 0.60f);
+            glVertex3f( 0.34f, -0.02f, 0.52f);
+            glEnd();
+        } else if (faceStyle == 4) {
+            // Crescent smirk
+            glBegin(GL_TRIANGLES);
+            glNormal3f(-0.25f, 0.2f, 0.95f);
+            glVertex3f(-0.22f, 0.15f, 0.60f);
+            glVertex3f(-0.06f, 0.19f, 0.63f);
+            glVertex3f(-0.14f, 0.27f, 0.58f);
+
+            glNormal3f(0.25f, 0.2f, 0.95f);
+            glVertex3f( 0.06f, 0.19f, 0.63f);
+            glVertex3f( 0.22f, 0.15f, 0.60f);
+            glVertex3f( 0.14f, 0.27f, 0.58f);
+
+            glNormal3f(0.0f, 0.1f, 1.0f);
+            glVertex3f(-0.05f, 0.05f, 0.66f);
+            glVertex3f( 0.05f, 0.05f, 0.66f);
+            glVertex3f( 0.00f, 0.13f, 0.65f);
+            glEnd();
+
+            glBegin(GL_TRIANGLE_FAN);
+            glNormal3f(0.0f, -0.2f, 0.98f);
+            glVertex3f( 0.00f, -0.08f, 0.65f);
+            glVertex3f(-0.30f,  0.02f, 0.55f);
+            glVertex3f(-0.20f, -0.12f, 0.61f);
+            glVertex3f(-0.08f, -0.18f, 0.64f);
+            glVertex3f( 0.08f, -0.18f, 0.64f);
+            glVertex3f( 0.22f, -0.10f, 0.60f);
+            glVertex3f( 0.32f,  0.06f, 0.53f);
+            glEnd();
+        }
+        glPopMatrix();
+        glEnable(GL_LIGHTING);
+
+        // 4. Localized Warm Radiant Ground Light Halos under Pumpkin
+        if (g_pumpkinLightsOn) {
+            glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
+            glDisable(GL_LIGHTING);
+            glDepthMask(GL_FALSE);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+            // Wide soft outer ground glow
+            glBegin(GL_TRIANGLE_FAN);
+            glColor4f(1.0f, 0.55f, 0.08f, 0.38f * localFlicker);
+            glVertex3f(0.0f, -0.38f, 0.25f);
+            int haloSegs = 16;
+            float haloR = 1.30f;
+            for (int h = 0; h <= haloSegs; ++h) {
+                float ang = (float)h * (2.0f * (float)M_PI / (float)haloSegs);
+                glColor4f(1.0f, 0.35f, 0.02f, 0.0f);
+                glVertex3f(haloR * std::cos(ang), -0.38f, 0.25f + haloR * std::sin(ang) * 0.85f);
+            }
+            glEnd();
+
+            // Intense inner warm spot
+            glBegin(GL_TRIANGLE_FAN);
+            glColor4f(1.0f, 0.78f, 0.22f, 0.55f * localFlicker);
+            glVertex3f(0.0f, -0.38f, 0.25f);
+            float innerR = 0.55f;
+            for (int h = 0; h <= haloSegs; ++h) {
+                float ang = (float)h * (2.0f * (float)M_PI / (float)haloSegs);
+                glColor4f(1.0f, 0.50f, 0.08f, 0.0f);
+                glVertex3f(innerR * std::cos(ang), -0.38f, 0.25f + innerR * std::sin(ang) * 0.85f);
+            }
+            glEnd();
+            glPopAttrib();
+        }
     }
-    glEnable(GL_LIGHTING);
-
-    // 4. Localized Warm Ground Light Halo under Pumpkin
-    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT);
-    glDisable(GL_LIGHTING);
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
-    glBegin(GL_TRIANGLE_FAN);
-    glColor4f(1.0f, 0.60f, 0.12f, 0.28f * g_pumpkinFlicker);
-    glVertex3f(0.0f, -0.38f, 0.2f);
-    int haloSegs = 14;
-    float haloR = 0.95f;
-    for (int h = 0; h <= haloSegs; ++h) {
-        float ang = (float)h * (2.0f * (float)M_PI / (float)haloSegs);
-        glColor4f(1.0f, 0.45f, 0.05f, 0.0f);
-        glVertex3f(haloR * std::cos(ang), -0.38f, 0.2f + haloR * std::sin(ang) * 0.8f);
-    }
-    glEnd();
-    glPopAttrib();
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 }
 
-// Master Array of Halloween Jack-o'-Lanterns (Tastefully placed at porch corners & fence)
+// Master Array of Halloween Jack-o'-Lanterns (Lining the Road towards the house, yard & porch)
 void drawPumpkinArray() {
-    // Subtle, atmospheric pumpkins on porch deck corners & near sign
-    drawPumpkin(-6.8f, 0.40f, 5.6f, 0.42f,  35.0f, 0); // Left porch corner
-    drawPumpkin(-2.4f, 0.40f, 5.6f, 0.38f, -25.0f, 1); // Right porch corner
-    drawPumpkin(-5.5f, 0.00f, 16.2f, 0.45f, 18.0f, 0); // Beside Abandoned House sign
+    // ------------------------------------------------------------------------
+    // 1. Road Foreground / Camera Entrance (Z ~ 21.0 to 18.5)
+    // ------------------------------------------------------------------------
+    drawPumpkin(-1.02f, 0.0f, 20.5f, 0.46f,  35.0f, 0); // Left road entrance (large classic grin)
+    drawPumpkin(-1.45f, 0.0f, 20.8f, 0.28f,  60.0f, -1); // Left companion uncarved gourd
+    drawPumpkin( 2.53f, 0.0f, 19.2f, 0.42f, -40.0f, 1); // Right road entrance (menacing angled)
+
+    // ------------------------------------------------------------------------
+    // 2. Foreground to Mid-Way along Cobblestone Road (Z ~ 17.0 to 13.5)
+    // ------------------------------------------------------------------------
+    drawPumpkin(-5.50f, 0.0f, 16.2f, 0.46f,  18.0f, 0); // Beside Abandoned House sign
+    drawPumpkin(-5.90f, 0.0f, 16.5f, 0.26f,  45.0f, -1); // Gourd beside sign
+    drawPumpkin(-1.77f, 0.0f, 16.5f, 0.40f,  28.0f, 2); // Left road edge (ghost screaming face)
+    drawPumpkin( 1.42f, 0.0f, 14.8f, 0.44f, -35.0f, 3); // Right road edge (vampire fangs)
+    drawPumpkin( 1.78f, 0.0f, 14.5f, 0.26f, -70.0f, -1); // Right road edge companion gourd
+
+    // ------------------------------------------------------------------------
+    // 3. Mid-Way S-Curve along Cobblestone Road (Z ~ 12.5 to 7.5)
+    // ------------------------------------------------------------------------
+    drawPumpkin(-2.70f, 0.0f, 12.2f, 0.43f,  40.0f, 1); // Left curve edge (menacing grin)
+    drawPumpkin( 0.20f, 0.0f, 10.5f, 0.40f, -25.0f, 0); // Right curve edge (classic grin)
+    drawPumpkin(-3.39f, 0.0f,  8.5f, 0.43f,  32.0f, 4); // Left curve edge (crescent smirk)
+    drawPumpkin(-3.75f, 0.0f,  8.2f, 0.27f,  15.0f, -1); // Left companion gourd
+
+    // ------------------------------------------------------------------------
+    // 4. Approach to Yard & Porch Walkway (Z ~ 6.5 to 2.5)
+    // ------------------------------------------------------------------------
+    drawPumpkin(-0.66f, 0.0f,  6.2f, 0.41f, -35.0f, 2); // Right walkway edge (screaming)
+    drawPumpkin(-3.91f, 0.0f,  4.2f, 0.45f,  24.0f, 3); // Left walkway edge (vampire fangs)
+    drawPumpkin(-1.26f, 0.0f,  2.8f, 0.38f, -20.0f, 0); // Right walkway edge (classic grin)
+
+    // ------------------------------------------------------------------------
+    // 5. Porch Steps & House Approach (Z ~ 1.0 to -3.0)
+    // ------------------------------------------------------------------------
+    drawPumpkin(-4.08f, 0.0f,  0.8f, 0.42f,  20.0f, 1); // Left steps approach (menacing)
+    drawPumpkin(-1.54f, 0.0f, -0.5f, 0.39f, -18.0f, 4); // Right steps approach (smirk)
+    drawPumpkin(-4.20f, 0.0f, -2.2f, 0.40f,  25.0f, 0); // Left base porch step threshold
+    drawPumpkin(-1.65f, 0.0f, -2.2f, 0.38f, -25.0f, 2); // Right base porch step threshold
+    drawPumpkin(-1.35f, 0.0f, -2.5f, 0.25f, -45.0f, -1); // Small gourd near steps
+
+    // ------------------------------------------------------------------------
+    // 6. Porch Deck Corners
+    // ------------------------------------------------------------------------
+    drawPumpkin(-6.80f, 0.40f, 5.6f, 0.42f,  35.0f, 0); // Left porch deck corner
+    drawPumpkin(-2.40f, 0.40f, 5.6f, 0.38f, -25.0f, 1); // Right porch deck corner
 }
 
 // ----------------------------------------------------------------------------
@@ -6785,36 +6972,42 @@ void renderSceneHUD() {
 
     // Left Panel: 4-Light Live Status Indicator Card
     drawUIPanel(20.0f, 65.0f, 450.0f, 195.0f, 0.03f, 0.04f, 0.07f, 0.82f);
-    drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & ATMOSPHERE STATUS [1, 2, 3, 4, 0, T]:", 0.9f, 0.85f, 0.6f);
+    drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & ATMOSPHERE STATUS [1, 2, 3, 4, 5, 0, T]:", 0.9f, 0.85f, 0.6f);
 
     if (g_light0PointOn) {
-        drawString2D(35.0f, 110.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ ON ] Warm Amber (Moving Shadow & Pool)", 0.2f, 1.0f, 0.3f);
+        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ ON ] Warm Amber (Moving Shadow & Pool)", 0.2f, 1.0f, 0.3f);
     } else {
-        drawString2D(35.0f, 110.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
+        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
     }
 
     if (g_light1DirectionalOn) {
-        drawString2D(35.0f, 132.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ ON ] Cool Silvery Blue (Shadows)", 0.4f, 0.8f, 1.0f);
+        drawString2D(35.0f, 128.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ ON ] Cool Silvery Blue (Shadows)", 0.4f, 0.8f, 1.0f);
     } else {
-        drawString2D(35.0f, 132.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ OFF ]", 0.7f, 0.2f, 0.2f);
+        drawString2D(35.0f, 128.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ OFF ]", 0.7f, 0.2f, 0.2f);
     }
 
     if (g_light2SpotOn) {
-        drawString2D(35.0f, 154.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ ON ] Focused 22 deg Soft Cone [F]", 1.0f, 1.0f, 0.4f);
+        drawString2D(35.0f, 148.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ ON ] Focused 22 deg Soft Cone [F]", 1.0f, 1.0f, 0.4f);
     } else {
-        drawString2D(35.0f, 154.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ OFF ] [F]", 0.7f, 0.2f, 0.2f);
+        drawString2D(35.0f, 148.0f, GLUT_BITMAP_HELVETICA_12, "[3] Spot Light (Flashlight)   : [ OFF ] [F]", 0.7f, 0.2f, 0.2f);
     }
 
     if (g_light3AreaOn) {
-        drawString2D(35.0f, 176.0f, GLUT_BITMAP_HELVETICA_12, "[4] Area Light Emul (Window)  : [ ON ] Soft Ambient Dispersion", 1.0f, 0.6f, 0.2f);
+        drawString2D(35.0f, 168.0f, GLUT_BITMAP_HELVETICA_12, "[4] Area Light Emul (Window)  : [ ON ] Soft Ambient Dispersion", 1.0f, 0.6f, 0.2f);
     } else {
-        drawString2D(35.0f, 176.0f, GLUT_BITMAP_HELVETICA_12, "[4] Area Light Emul (Window)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
+        drawString2D(35.0f, 168.0f, GLUT_BITMAP_HELVETICA_12, "[4] Area Light Emul (Window)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
+    }
+
+    if (g_pumpkinLightsOn) {
+        drawString2D(35.0f, 188.0f, GLUT_BITMAP_HELVETICA_12, "[5] Pumpkin Candles [K]       : [ ON ] Warm Flickering Glow & Ground Pools", 1.0f, 0.75f, 0.2f);
+    } else {
+        drawString2D(35.0f, 188.0f, GLUT_BITMAP_HELVETICA_12, "[5] Pumpkin Candles [K]       : [ OFF ] Extinguished", 0.7f, 0.2f, 0.2f);
     }
 
     if (g_texturesEnabled) {
-        drawString2D(35.0f, 198.0f, GLUT_BITMAP_HELVETICA_12, "[T] Texture Mapping (GL_MOD)  : [ ON ] Wood/Roof/Ground/Stone/Bark/Rust", 0.3f, 0.95f, 0.95f);
+        drawString2D(35.0f, 208.0f, GLUT_BITMAP_HELVETICA_12, "[T] Texture Mapping (GL_MOD)  : [ ON ] Wood/Roof/Ground/Stone/Bark/Rust", 0.3f, 0.95f, 0.95f);
     } else {
-        drawString2D(35.0f, 198.0f, GLUT_BITMAP_HELVETICA_12, "[T] Texture Mapping           : [ OFF ] Solid Phong Materials", 0.8f, 0.6f, 0.3f);
+        drawString2D(35.0f, 208.0f, GLUT_BITMAP_HELVETICA_12, "[T] Texture Mapping           : [ OFF ] Solid Phong Materials", 0.8f, 0.6f, 0.3f);
     }
 
 #ifdef _WIN32
@@ -6823,29 +7016,30 @@ void renderSceneHUD() {
              g_fogEnabled ? "ON" : "OFF",
              g_cinematicMode ? "ACTIVE" : "OFF",
              g_audioEnabled ? "ON" : "MUTED");
-    drawString2D(35.0f, 222.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
+    drawString2D(35.0f, 230.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
 #else
     char featStr[160];
     snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Tour: %s [C] | Lightning: [L]",
              g_fogEnabled ? "ON" : "OFF",
              g_cinematicMode ? "ACTIVE" : "OFF");
-    drawString2D(35.0f, 222.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
+    drawString2D(35.0f, 230.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
 #endif
 
     if (g_lightning.active) {
-        drawString2D(35.0f, 244.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
+        drawString2D(35.0f, 252.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
     }
 
     // Right Controls Cheat-Sheet
-    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 185.0f, 0.03f, 0.04f, 0.07f, 0.80f);
+    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 195.0f, 0.03f, 0.04f, 0.07f, 0.80f);
     drawString2D(w - 365.0f, 36.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS GUIDE:", 0.9f, 0.85f, 0.6f);
     drawString2D(w - 365.0f, 56.0f,  GLUT_BITMAP_HELVETICA_12, "W, A, S, D     : First-Person Walk / Strafe", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 76.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Move     : Look Around (Yaw / Pitch)", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 96.0f,  GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 116.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 0  : Toggle Individual/All Lights", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 134.0f, GLUT_BITMAP_HELVETICA_12, "L: Lightning Strike | M: Audio Mute", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 152.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | C: Tour | R: Reset View", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 170.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 116.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 134.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 152.0f, GLUT_BITMAP_HELVETICA_12, "L: Lightning Strike | M: Audio Mute", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 170.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | C: Tour | R: Reset View", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 188.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
 
     if (g_cinematicMode) {
         drawUIPanel(w * 0.5f - 240.0f, h - 65.0f, 480.0f, 45.0f, 0.08f, 0.03f, 0.02f, 0.90f);
@@ -7247,9 +7441,15 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
             g_light3AreaOn = !g_light3AreaOn;
             std::cout << "[LIGHT 3] Area Light (Window Glow)  : " << (g_light3AreaOn ? "ON" : "OFF") << std::endl;
             break;
+        case '5':
+        case 'k':
+        case 'K':
+            g_pumpkinLightsOn = !g_pumpkinLightsOn;
+            std::cout << "[LIGHT 4] Pumpkin Candles (Jack-o'-Lanterns) : " << (g_pumpkinLightsOn ? "ON (Glowing)" : "OFF (Extinguished)") << std::endl;
+            break;
         case '0': {
-            bool anyOn = g_light0PointOn || g_light1DirectionalOn || g_light2SpotOn || g_light3AreaOn;
-            g_light0PointOn = g_light1DirectionalOn = g_light2SpotOn = g_light3AreaOn = !anyOn;
+            bool anyOn = g_light0PointOn || g_light1DirectionalOn || g_light2SpotOn || g_light3AreaOn || g_pumpkinLightsOn;
+            g_light0PointOn = g_light1DirectionalOn = g_light2SpotOn = g_light3AreaOn = g_pumpkinLightsOn = !anyOn;
             std::cout << "[LIGHTS] Master Toggle : " << (!anyOn ? "ALL ON" : "ALL OFF") << std::endl;
             break;
         }
@@ -7440,6 +7640,7 @@ int main(int argc, char** argv) {
     std::cout << "  [2] Toggle Directional Light (Moonlight)                " << std::endl;
     std::cout << "  [3/F] Toggle Spot Light (Flashlight)                    " << std::endl;
     std::cout << "  [4] Toggle Area Light (Window Interior Glow)            " << std::endl;
+    std::cout << "  [5/K] Toggle Pumpkin Candle Lights                      " << std::endl;
     std::cout << "  [0] Master Toggle All Lights                            " << std::endl;
     std::cout << "  [T] Toggle Texture Mapping ON / OFF                     " << std::endl;
     std::cout << "  [G] Toggle Fog                                          " << std::endl;
