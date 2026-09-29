@@ -801,6 +801,14 @@ const Material MAT_RUSTY_METAL = {
     78.0f
 };
 
+const Material MAT_BLACK_IRON = {
+    { 0.08f, 0.08f, 0.08f, 1.0f },
+    { 0.18f, 0.18f, 0.18f, 1.0f },
+    { 0.45f, 0.45f, 0.45f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    45.0f
+};
+
 const Material MAT_CAR_GLASS = {
     { 0.06f, 0.08f, 0.12f, 0.88f },
     { 0.14f, 0.18f, 0.26f, 0.88f },
@@ -2625,146 +2633,550 @@ void drawOldFurniture() {
 }
 
 // ----------------------------------------------------------------------------
-// SIGN BOARD ("ABANDONED HOUSE" - Reference Panel 11)
+// 3D CARVED LETTERING HELPER (For Rustic Signboards & Inscriptions)
+// ----------------------------------------------------------------------------
+static void drawLetterStroke2D(float x1, float y1, float x2, float y2, float thick, float depth) {
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    float len = std::sqrt(dx * dx + dy * dy);
+    if (len < 0.0001f) return;
+    float nx = -dy / len * (thick * 0.5f);
+    float ny =  dx / len * (thick * 0.5f);
+
+    glBegin(GL_QUADS);
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(x1 - nx, y1 - ny, depth);
+    glVertex3f(x2 - nx, y2 - ny, depth);
+    glVertex3f(x2 + nx, y2 + ny, depth);
+    glVertex3f(x1 + nx, y1 + ny, depth);
+    glEnd();
+}
+
+static void drawSignChar(char c, float cx, float cy, float w, float h, float thick, float depth) {
+    float hw = w * 0.5f;
+    float hh = h * 0.5f;
+    switch (c) {
+        case 'A':
+            drawLetterStroke2D(cx - hw, cy - hh, cx, cy + hh, thick, depth);
+            drawLetterStroke2D(cx, cy + hh, cx + hw, cy - hh, thick, depth);
+            drawLetterStroke2D(cx - hw * 0.55f, cy - hh * 0.15f, cx + hw * 0.55f, cy - hh * 0.15f, thick, depth);
+            break;
+        case 'B':
+            drawLetterStroke2D(cx - hw, cy - hh, cx - hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh, cx + hw * 0.5f, cy + hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.5f, cy + hh, cx + hw, cy + hh * 0.5f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy + hh * 0.5f, cx + hw * 0.5f, cy, thick, depth);
+            drawLetterStroke2D(cx - hw, cy, cx + hw * 0.5f, cy, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.5f, cy, cx + hw, cy - hh * 0.5f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh * 0.5f, cx + hw * 0.5f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.5f, cy - hh, cx - hw, cy - hh, thick, depth);
+            break;
+        case 'N':
+            drawLetterStroke2D(cx - hw, cy - hh, cx - hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh, cx + hw, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh, cx + hw, cy + hh, thick, depth);
+            break;
+        case 'D':
+            drawLetterStroke2D(cx - hw, cy - hh, cx - hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh, cx + hw * 0.35f, cy + hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.35f, cy + hh, cx + hw, cy, thick, depth);
+            drawLetterStroke2D(cx + hw, cy, cx + hw * 0.35f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.35f, cy - hh, cx - hw, cy - hh, thick, depth);
+            break;
+        case 'O':
+            drawLetterStroke2D(cx - hw * 0.4f, cy + hh, cx + hw * 0.4f, cy + hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.4f, cy + hh, cx + hw, cy + hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy + hh * 0.4f, cx + hw, cy - hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh * 0.4f, cx + hw * 0.4f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.4f, cy - hh, cx - hw * 0.4f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx - hw * 0.4f, cy - hh, cx - hw, cy - hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx - hw, cy - hh * 0.4f, cx - hw, cy + hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh * 0.4f, cx - hw * 0.4f, cy + hh, thick, depth);
+            break;
+        case 'E':
+            drawLetterStroke2D(cx - hw, cy - hh, cx - hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh, cx + hw * 0.85f, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh * 0.05f, cx + hw * 0.6f, cy + hh * 0.05f, thick, depth);
+            drawLetterStroke2D(cx - hw, cy - hh, cx + hw * 0.85f, cy - hh, thick, depth);
+            break;
+        case 'H':
+            drawLetterStroke2D(cx - hw, cy - hh, cx - hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh, cx + hw, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw, cy, cx + hw, cy, thick, depth);
+            break;
+        case 'U':
+            drawLetterStroke2D(cx - hw, cy + hh, cx - hw, cy - hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx - hw, cy - hh * 0.4f, cx - hw * 0.4f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx - hw * 0.4f, cy - hh, cx + hw * 0.4f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.4f, cy - hh, cx + hw, cy - hh * 0.4f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh * 0.4f, cx + hw, cy + hh, thick, depth);
+            break;
+        case 'S':
+            drawLetterStroke2D(cx + hw * 0.8f, cy + hh, cx - hw * 0.4f, cy + hh, thick, depth);
+            drawLetterStroke2D(cx - hw * 0.4f, cy + hh, cx - hw, cy + hh * 0.6f, thick, depth);
+            drawLetterStroke2D(cx - hw, cy + hh * 0.6f, cx - hw * 0.4f, cy + hh * 0.1f, thick, depth);
+            drawLetterStroke2D(cx - hw * 0.4f, cy + hh * 0.1f, cx + hw * 0.4f, cy - hh * 0.1f, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.4f, cy - hh * 0.1f, cx + hw, cy - hh * 0.6f, thick, depth);
+            drawLetterStroke2D(cx + hw, cy - hh * 0.6f, cx + hw * 0.4f, cy - hh, thick, depth);
+            drawLetterStroke2D(cx + hw * 0.4f, cy - hh, cx - hw * 0.8f, cy - hh, thick, depth);
+            break;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// SIGN BOARD ("ABANDONED HOUSE" - Image 17 & 16)
 // ----------------------------------------------------------------------------
 void drawSignBoard(float x, float z, float rotY) {
     float gy = getTerrainHeight(x, z);
     glPushMatrix();
     glTranslatef(x, gy, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-    glRotatef(-3.5f, 0.0f, 0.0f, 1.0f); // Slight weathered lean
+    glRotatef(-2.8f, 0.0f, 0.0f, 1.0f); // Slight weathered crooked tilt
 
-    // Vertical wooden post
+    // 1. Vertical main wooden post with beveled top
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glColor4f(0.24f, 0.19f, 0.14f, 1.0f);
     glPushMatrix();
-    glTranslatef(0.0f, 0.90f, 0.0f);
-    drawCylinder(0.07f, 0.06f, 1.80f, 8, 1.0f, 2.0f);
+    glTranslatef(0.0f, 1.15f, 0.0f);
+    drawBox(0.18f, 2.30f, 0.18f, 0.5f, 2.0f);
+    // Pyramid weather cap on post top
+    glTranslatef(0.0f, 1.15f, 0.0f);
+    drawPrismRoof(0.20f, 0.12f, 0.20f, 0.5f, 0.5f);
     glPopMatrix();
 
-    // Signboard plank
+    // 2. Diagonal wooden support brace struts underneath the signboard
     glPushMatrix();
-    glTranslatef(0.0f, 1.45f, 0.06f);
-    drawBox(1.50f, 0.50f, 0.06f, 2.0f, 1.0f);
+    glTranslatef(-0.42f, 1.22f, 0.0f);
+    glRotatef(-42.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.09f, 0.75f, 0.09f, 0.5f, 1.0f);
+    glPopMatrix();
 
-    // Weathered board border / text bars
-    glTranslatef(0.0f, 0.0f, 0.035f);
+    glPushMatrix();
+    glTranslatef(0.42f, 1.22f, 0.0f);
+    glRotatef(42.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.09f, 0.75f, 0.09f, 0.5f, 1.0f);
+    glPopMatrix();
+
+    // 3. Wooden Sign Board Assembly (3 weathered horizontal planks with chipped irregular ends)
+    glPushMatrix();
+    glTranslatef(0.0f, 1.82f, 0.12f);
+
+    // Board Plank 1 (Top Plank)
+    glPushMatrix();
+    glTranslatef(-0.02f, 0.22f, 0.0f);
+    drawBox(1.92f, 0.22f, 0.065f, 2.0f, 0.5f);
+    glPopMatrix();
+
+    // Board Plank 2 (Middle Plank - slightly offset and chipped)
+    glPushMatrix();
+    glTranslatef(0.03f, 0.0f, 0.0f);
+    drawBox(1.96f, 0.21f, 0.065f, 2.0f, 0.5f);
+    glPopMatrix();
+
+    // Board Plank 3 (Bottom Plank)
+    glPushMatrix();
+    glTranslatef(-0.01f, -0.22f, 0.0f);
+    drawBox(1.88f, 0.22f, 0.065f, 2.0f, 0.5f);
+    glPopMatrix();
+
+    // Weathered edge chips & notches on the board silhouette
     applyMaterial(MAT_DARK_WOOD);
-    glColor4f(0.18f, 0.15f, 0.12f, 1.0f);
-    drawBox(1.25f, 0.06f, 0.02f);
-    glTranslatef(0.0f, -0.14f, 0.0f);
-    drawBox(1.05f, 0.06f, 0.02f);
-
+    bindTexture(TEX_WALL);
+    glPushMatrix();
+    glTranslatef(-0.96f, 0.12f, 0.0f);
+    glRotatef(25.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.08f, 0.14f, 0.07f);
     glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.97f, -0.15f, 0.0f);
+    glRotatef(-30.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.08f, 0.12f, 0.07f);
+    glPopMatrix();
+
+    // 4. Heavy Rustic Iron Corner Brackets & Bolt Caps (Image 17)
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    float bracketPositions[4][2] = {
+        { -0.85f,  0.26f },
+        {  0.85f,  0.26f },
+        { -0.85f, -0.26f },
+        {  0.85f, -0.26f }
+    };
+    for (int b = 0; b < 4; ++b) {
+        glPushMatrix();
+        glTranslatef(bracketPositions[b][0], bracketPositions[b][1], 0.038f);
+        drawBox(0.08f, 0.08f, 0.015f); // Square washer bracket
+        glTranslatef(0.0f, 0.0f, 0.010f);
+        drawCylinder(0.022f, 0.022f, 0.025f, 6); // Iron bolt head
+        glPopMatrix();
+    }
+
+    // 5. Inscribed Dark Weathered Typography: "ABANDONED" (Top Line) & "HOUSE" (Bottom Line)
+    applyMaterial(MAT_BLACK_IRON);
+    bindTexture(TEX_NONE);
+    glColor4f(0.08f, 0.06f, 0.05f, 1.0f); // Dark scorched / carved pigment
+
+    // Line 1: "ABANDONED"
+    const char* line1 = "ABANDONED";
+    float l1StartX = -0.74f;
+    float l1Spacing = 0.185f;
+    float l1CharW   = 0.125f;
+    float l1CharH   = 0.155f;
+    float l1StrokeT = 0.022f;
+    float l1Y       = 0.11f;
+    for (int c = 0; c < 9; ++c) {
+        drawSignChar(line1[c], l1StartX + c * l1Spacing, l1Y, l1CharW, l1CharH, l1StrokeT, 0.038f);
+    }
+
+    // Line 2: "HOUSE" (Centered, slightly larger)
+    const char* line2 = "HOUSE";
+    float l2StartX = -0.46f;
+    float l2Spacing = 0.23f;
+    float l2CharW   = 0.155f;
+    float l2CharH   = 0.18f;
+    float l2StrokeT = 0.026f;
+    float l2Y       = -0.12f;
+    for (int c = 0; c < 5; ++c) {
+        drawSignChar(line2[c], l2StartX + c * l2Spacing, l2Y, l2CharW, l2CharH, l2StrokeT, 0.038f);
+    }
+
+    glPopMatrix(); // End board assembly
+
+    // 6. Scattered base rocks & splinters at post foot
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glPushMatrix();
+    glTranslatef(0.18f, 0.08f, 0.14f);
+    drawBox(0.24f, 0.14f, 0.20f);
+    glTranslatef(-0.35f, 0.0f, -0.10f);
+    drawBox(0.18f, 0.10f, 0.16f);
+    glPopMatrix();
+
     glPopMatrix();
 }
 
 // ----------------------------------------------------------------------------
-// UTILITY / TELEPHONE POLE (Reference Panel 10)
+// UTILITY / ELECTRIC TELEPHONE POLE WITH SAGGING CABLES (Image 16)
 // ----------------------------------------------------------------------------
 void drawTelephonePole(float x, float z, float rotY) {
     float gy = getTerrainHeight(x, z);
     glPushMatrix();
     glTranslatef(x, gy, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-    glRotatef(2.8f, 0.0f, 0.0f, 1.0f); // Weathered slight lean
+    glRotatef(2.4f, 0.0f, 0.0f, 1.0f); // Weathered slight lean
 
-    // Main tall pole
+    // Main tall timber pole
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.30f, 0.27f, 0.23f, 1.0f);
-    drawCylinder(0.16f, 0.11f, 7.5f, 10, 1.0f, 4.0f);
-
-    // Horizontal crossarm near top
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
     glPushMatrix();
-    glTranslatef(0.0f, 6.8f, 0.0f);
-    drawBox(2.2f, 0.15f, 0.14f, 1.5f, 0.5f);
+    glTranslatef(0.0f, 4.2f, 0.0f);
+    drawBox(0.26f, 8.4f, 0.26f, 1.0f, 4.0f);
+    glPopMatrix();
 
-    // Diagonal support struts
+    // Horizontal crossarm near top (6.8m height)
+    glPushMatrix();
+    glTranslatef(0.0f, 7.2f, 0.0f);
+    drawBox(2.6f, 0.18f, 0.16f, 2.0f, 0.5f);
+
+    // Diagonal metal support struts
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
     glPushMatrix();
-    glTranslatef(-0.6f, -0.35f, 0.0f);
-    glRotatef(-35.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.05f, 0.85f, 0.04f);
+    glTranslatef(-0.75f, -0.42f, 0.0f);
+    glRotatef(-38.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.05f, 0.95f, 0.04f);
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(0.6f, -0.35f, 0.0f);
-    glRotatef(35.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.05f, 0.85f, 0.04f);
+    glTranslatef(0.75f, -0.42f, 0.0f);
+    glRotatef(38.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.05f, 0.95f, 0.04f);
     glPopMatrix();
 
-    // 4 Glass / ceramic insulator pegs on top of crossarm
+    // 4 Ceramic / glass electrical insulators with metal mounting pins
     applyMaterial(MAT_STONE);
     bindTexture(TEX_NONE);
-    glColor4f(0.65f, 0.70f, 0.75f, 1.0f);
-    float insX[4] = { -0.90f, -0.35f, 0.35f, 0.90f };
+    glColor4f(0.70f, 0.74f, 0.78f, 1.0f);
+    float insX[4] = { -1.10f, -0.45f, 0.45f, 1.10f };
     for (int p = 0; p < 4; ++p) {
         glPushMatrix();
-        glTranslatef(insX[p], 0.08f, 0.0f);
-        drawCylinder(0.04f, 0.025f, 0.16f, 6);
+        glTranslatef(insX[p], 0.10f, 0.0f);
+        drawCylinder(0.045f, 0.03f, 0.22f, 8);
+        glTranslatef(0.0f, 0.16f, 0.0f);
+        drawCylinder(0.055f, 0.04f, 0.08f, 8); // Flanged top cap
         glPopMatrix();
     }
+    glPopMatrix();
+
+    // Sagging electrical cables & loose dangling broken wire (Image 16)
+    bindTexture(TEX_NONE);
+    applyMaterial(MAT_BLACK_IRON);
+    glColor4f(0.12f, 0.12f, 0.12f, 1.0f);
+    glLineWidth(2.2f);
+
+    // Loose wire dangling from right insulator all the way down towards the ground
+    glBegin(GL_LINE_STRIP);
+    glVertex3f(1.10f, 7.35f, 0.0f);
+    glVertex3f(1.25f, 6.20f, 0.15f);
+    glVertex3f(1.40f, 4.50f, 0.35f);
+    glVertex3f(1.30f, 2.80f, 0.20f);
+    glVertex3f(1.45f, 1.20f, 0.40f);
+    glVertex3f(1.35f, 0.15f, 0.30f);
+    glEnd();
+
+    // Cross-catenary hanging loop under crossarm
+    glBegin(GL_LINE_STRIP);
+    glVertex3f(-1.10f, 7.35f, 0.0f);
+    glVertex3f(-0.60f, 6.60f, 0.10f);
+    glVertex3f(-0.10f, 6.45f, 0.15f);
+    glVertex3f( 0.45f, 7.35f, 0.0f);
+    glEnd();
+
+    glPopMatrix();
+}
+
+// ----------------------------------------------------------------------------
+// HIGH-FIDELITY BROKEN FENCE (Matching Reference Image 14)
+// Features: Staggered posts, split-rails, snapped/hanging pickets & ground debris
+// ----------------------------------------------------------------------------
+void drawDetailedBrokenFenceSection(float x, float z, float rotY) {
+    float gy = getTerrainHeight(x, z);
+    glPushMatrix();
+    glTranslatef(x, gy, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
+
+    // --- 1. VERTICAL POSTS ---
+    // Post A: Left main post (tall, slight forward lean)
+    glPushMatrix();
+    glTranslatef(-1.80f, 0.85f, 0.0f);
+    glRotatef(-3.5f, 1.0f, 0.0f, 0.0f);
+    glRotatef(4.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.18f, 1.70f, 0.18f, 0.5f, 1.5f);
+    // Notched split top
+    glTranslatef(0.0f, 0.85f, 0.0f);
+    drawPrismRoof(0.19f, 0.10f, 0.19f, 0.5f, 0.5f);
+    glPopMatrix();
+
+    // Post B: Middle post (medium height, tilted sideways)
+    glPushMatrix();
+    glTranslatef(0.10f, 0.78f, 0.02f);
+    glRotatef(6.5f, 0.0f, 0.0f, 1.0f);
+    glRotatef(-2.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.17f, 1.55f, 0.17f, 0.5f, 1.5f);
+    glPopMatrix();
+
+    // Post C: Right post (tall, cracked top)
+    glPushMatrix();
+    glTranslatef(1.85f, 0.92f, -0.04f);
+    glRotatef(-4.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.19f, 1.85f, 0.19f, 0.5f, 1.5f);
+    glPopMatrix();
+
+    // Post D & E: Corner perpendicular fence posts (Image 14 Right Angle)
+    glPushMatrix();
+    glTranslatef(2.65f, 0.98f, 0.85f);
+    glRotatef(3.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.18f, 1.95f, 0.18f, 0.5f, 1.5f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(2.70f, 0.72f, 2.10f);
+    glRotatef(-5.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.16f, 1.45f, 0.16f, 0.5f, 1.5f);
+    glPopMatrix();
+
+    // --- 2. HORIZONTAL SPLIT-RAIL CROSSBEAMS ---
+    // Upper Rail Left Segment (Intact span from Post A to Post B)
+    glPushMatrix();
+    glTranslatef(-0.85f, 1.18f, 0.09f);
+    glRotatef(-1.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.95f, 0.13f, 0.07f, 2.0f, 0.5f);
+    glPopMatrix();
+
+    // Lower Rail Left Segment (Intact span)
+    glPushMatrix();
+    glTranslatef(-0.85f, 0.55f, 0.09f);
+    glRotatef(-1.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.95f, 0.13f, 0.07f, 2.0f, 0.5f);
+    glPopMatrix();
+
+    // Upper Rail Right Segment (Snapped in middle, drooping downwards - Image 14)
+    glPushMatrix();
+    glTranslatef(0.95f, 1.05f, 0.09f);
+    glRotatef(-14.0f, 0.0f, 0.0f, 1.0f); // Snapped and sagging downward
+    drawBox(1.85f, 0.12f, 0.07f, 2.0f, 0.5f);
+    // Jagged fracture splinter end
+    glTranslatef(0.85f, 0.0f, 0.0f);
+    glRotatef(28.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.22f, 0.08f, 0.06f);
+    glPopMatrix();
+
+    // Lower Rail Right Segment (Broken splintered rail)
+    glPushMatrix();
+    glTranslatef(0.92f, 0.50f, 0.09f);
+    glRotatef(5.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.40f, 0.11f, 0.07f, 1.5f, 0.5f);
+    glPopMatrix();
+
+    // Corner Perpendicular Connecting Rails
+    glPushMatrix();
+    glTranslatef(2.68f, 1.10f, 1.48f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(6.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.35f, 0.12f, 0.07f, 1.5f, 0.5f);
+    glTranslatef(0.0f, -0.55f, 0.0f);
+    drawBox(1.35f, 0.12f, 0.07f, 1.5f, 0.5f);
+    glPopMatrix();
+
+    // --- 3. VERTICAL PICKETS / SLATS (Image 14 Broken, Snapped & Hanging States) ---
+    // Picket 1: Far left intact picket
+    glPushMatrix();
+    glTranslatef(-1.40f, 0.85f, 0.15f);
+    drawBox(0.12f, 1.15f, 0.035f, 0.5f, 1.0f);
+    glTranslatef(0.0f, 0.58f, 0.0f);
+    drawPrismRoof(0.13f, 0.10f, 0.04f); // Pointed picket top
+    glPopMatrix();
+
+    // Picket 2: Broken top picket (snapped jagged top)
+    glPushMatrix();
+    glTranslatef(-0.95f, 0.72f, 0.15f);
+    glRotatef(3.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.11f, 0.82f, 0.035f, 0.5f, 1.0f);
+    glPopMatrix();
+
+    // Picket 3: Short snapped stump
+    glPushMatrix();
+    glTranslatef(-0.48f, 0.42f, 0.15f);
+    drawBox(0.11f, 0.38f, 0.035f);
+    glPopMatrix();
+
+    // Picket 4: Hanging skewed picket attached only by upper nail (Image 14)
+    glPushMatrix();
+    glTranslatef(0.55f, 0.82f, 0.15f);
+    glRotatef(-28.0f, 0.0f, 0.0f, 1.0f); // Swinging sideways at sharp angle
+    drawBox(0.12f, 0.78f, 0.035f, 0.5f, 1.0f);
+    glPopMatrix();
+
+    // Picket 5: Broken bottom picket segment
+    glPushMatrix();
+    glTranslatef(1.35f, 0.75f, 0.15f);
+    glRotatef(12.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.11f, 0.65f, 0.035f);
+    glPopMatrix();
+
+    // Pickets on the corner perpendicular fence segment
+    glPushMatrix();
+    glTranslatef(2.72f, 0.82f, 1.45f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(-15.0f, 0.0f, 0.0f, 1.0f); // Hanging slanted picket
+    drawBox(0.11f, 0.85f, 0.035f);
+    glPopMatrix();
+
+    // --- 4. GROUND DEBRIS (Scattered broken plank chunks, rocks & splinters - Image 14) ---
+    // Fallen broken plank 1
+    glPushMatrix();
+    glTranslatef(-0.25f, 0.04f, 0.45f);
+    glRotatef(35.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(4.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.65f, 0.04f, 0.12f);
+    glPopMatrix();
+
+    // Fallen broken plank 2
+    glPushMatrix();
+    glTranslatef(0.85f, 0.04f, 0.38f);
+    glRotatef(-48.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.55f, 0.035f, 0.11f);
+    glPopMatrix();
+
+    // Fallen wood splinter chunk
+    glPushMatrix();
+    glTranslatef(1.70f, 0.03f, 0.60f);
+    glRotatef(75.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.38f, 0.03f, 0.08f);
+    glPopMatrix();
+
+    // Base stones & pebbles around fence posts
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glPushMatrix();
+    glTranslatef(-1.75f, 0.06f, 0.28f);
+    drawBox(0.28f, 0.12f, 0.22f);
+    glTranslatef(1.10f, -0.02f, 0.20f);
+    drawBox(0.20f, 0.09f, 0.18f);
+    glTranslatef(1.45f, 0.03f, 0.15f);
+    drawBox(0.32f, 0.14f, 0.24f);
     glPopMatrix();
 
     glPopMatrix();
 }
 
 // ----------------------------------------------------------------------------
-// BROKEN WOODEN FENCE (Reference Panel 9 & 13)
+// BROKEN WOODEN FENCE MASTER FUNCTION
 // ----------------------------------------------------------------------------
 void drawBrokenFence() {
+    // 1. Featured Detailed Broken Fence Section (Foreground / Path flank - Image 14)
+    drawDetailedBrokenFenceSection(-6.2f, 15.2f, -16.0f);
+
+    // 2. Secondary Broken Fence Section along Entrance Approach
+    drawDetailedBrokenFenceSection(7.8f, 17.2f, 24.0f);
+
+    // 3. Left perimeter fence line (Along property boundary x ≈ -13.5)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
 
-    // Left perimeter fence line (Along x ≈ -13.5)
-    for (int i = 0; i < 8; ++i) {
-        float z = 18.0f - i * 2.2f;
+    for (int i = 0; i < 9; ++i) {
+        float z = 19.5f - i * 2.3f;
         float x = -13.5f + (float)(i % 2) * 0.25f;
         float y = getTerrainHeight(x, z);
-        float rot = std::sin((float)i * 1.6f) * 10.0f;
+        float rot = std::sin((float)i * 1.6f) * 11.0f;
 
         glPushMatrix();
-        glTranslatef(x, y + 0.65f, z);
+        glTranslatef(x, y + 0.70f, z);
         glRotatef(rot, 0.0f, 0.0f, 1.0f);
         // Post
-        drawBox(0.12f, 1.40f, 0.12f, 0.5f, 1.0f);
+        drawBox(0.14f, 1.50f, 0.14f, 0.5f, 1.0f);
 
-        // Horizontal crossboards connecting posts (some broken / missing)
-        if (i < 7 && i != 3) {
+        // Horizontal crossboards connecting posts (some broken / missing / sagging)
+        if (i < 8 && i != 3 && i != 6) {
             glPushMatrix();
-            glTranslatef(0.0f, 0.25f, -1.1f);
-            if (i == 4) glRotatef(18.0f, 1.0f, 0.0f, 0.0f); // Sagging broken board
-            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
-            glTranslatef(0.0f, -0.50f, 0.0f);
-            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glTranslatef(0.0f, 0.28f, -1.15f);
+            if (i == 4) glRotatef(19.0f, 1.0f, 0.0f, 0.0f); // Sagging broken board
+            drawBox(0.07f, 0.13f, 2.3f, 0.5f, 2.0f);
+            glTranslatef(0.0f, -0.55f, 0.0f);
+            if (i == 1) glRotatef(-14.0f, 1.0f, 0.0f, 0.0f);
+            drawBox(0.07f, 0.13f, 2.3f, 0.5f, 2.0f);
             glPopMatrix();
         }
         glPopMatrix();
     }
 
-    // Right perimeter fence line (Near car & cemetery, Along x ≈ 12.0)
-    for (int i = 0; i < 6; ++i) {
-        float z = 17.0f - i * 2.2f;
-        float x = 12.0f + (float)(i % 2) * 0.20f;
+    // 4. Right perimeter fence line (Near cemetery & car, Along x ≈ 12.5)
+    for (int i = 0; i < 7; ++i) {
+        float z = 18.0f - i * 2.3f;
+        float x = 12.5f + (float)(i % 2) * 0.20f;
         float y = getTerrainHeight(x, z);
-        float rot = std::cos((float)i * 1.8f) * 8.0f;
+        float rot = std::cos((float)i * 1.8f) * 9.0f;
 
         glPushMatrix();
-        glTranslatef(x, y + 0.60f, z);
+        glTranslatef(x, y + 0.65f, z);
         glRotatef(rot, 0.0f, 0.0f, 1.0f);
-        drawBox(0.12f, 1.30f, 0.12f, 0.5f, 1.0f);
+        drawBox(0.14f, 1.40f, 0.14f, 0.5f, 1.0f);
 
-        if (i < 5 && i != 2) {
+        if (i < 6 && i != 2 && i != 5) {
             glPushMatrix();
-            glTranslatef(0.0f, 0.20f, -1.1f);
-            if (i == 1) glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
-            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
-            glTranslatef(0.0f, -0.45f, 0.0f);
-            drawBox(0.06f, 0.12f, 2.2f, 0.5f, 2.0f);
+            glTranslatef(0.0f, 0.25f, -1.15f);
+            if (i == 1) glRotatef(-16.0f, 1.0f, 0.0f, 0.0f);
+            drawBox(0.07f, 0.13f, 2.3f, 0.5f, 2.0f);
+            glTranslatef(0.0f, -0.50f, 0.0f);
+            drawBox(0.07f, 0.13f, 2.3f, 0.5f, 2.0f);
             glPopMatrix();
         }
         glPopMatrix();
