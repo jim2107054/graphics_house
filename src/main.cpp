@@ -881,6 +881,14 @@ const Material MAT_MOON = {
     35.0f
 };
 
+const Material MAT_GHOST_SPECTRAL = {
+    { 0.45f, 0.75f, 0.95f, 0.60f },
+    { 0.75f, 0.90f, 1.00f, 0.60f },
+    { 0.95f, 1.00f, 1.00f, 0.60f },
+    { 0.55f, 0.88f, 1.00f, 0.60f },
+    50.0f
+};
+
 const Material MAT_BARK = {
     { 0.08f, 0.08f, 0.10f, 1.0f },
     { 0.18f, 0.18f, 0.22f, 1.0f },
@@ -3137,35 +3145,12 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
     glPopMatrix();
 }
 
-// Master Array of Halloween Jack-o'-Lanterns (Guiding perspective trail from foreground to house)
+// Master Array of Halloween Jack-o'-Lanterns (Tastefully placed at porch corners & fence)
 void drawPumpkinArray() {
-    // 1. LARGE PROMINENT FOREGROUND PUMPKINS (Closest to camera: 1.8 - 3.8m)
-    drawPumpkin( 2.25f, 0.0f, 19.0f, 0.64f, -30.0f, 0); // Bottom right-center
-    drawPumpkin(-0.55f, 0.0f, 19.8f, 0.66f,  26.0f, 1); // Bottom left-center
-    drawPumpkin( 0.35f, 0.0f, 18.2f, 0.58f, -15.0f, 0); // Foreground mid-left
-    drawPumpkin( 1.85f, 0.0f, 17.5f, 0.54f,  20.0f, 1); // Foreground mid-right
-
-    // 2. MIDGROUND TRAIL (Lining both sides of curving stone pathway: 4 - 12m)
-    // Right side of path
-    drawPumpkin(getRoadCenterX(15.5f) + 1.65f, 0.0f, 15.5f, 0.48f, -25.0f, 0);
-    drawPumpkin(getRoadCenterX(12.5f) + 1.50f, 0.0f, 12.5f, 0.44f,  18.0f, 1);
-    drawPumpkin(getRoadCenterX( 9.5f) + 1.40f, 0.0f,  9.5f, 0.40f, -20.0f, 0);
-    drawPumpkin(getRoadCenterX( 6.5f) + 1.30f, 0.0f,  6.5f, 0.36f,  22.0f, 1);
-    drawPumpkin(getRoadCenterX( 3.5f) + 1.20f, 0.0f,  3.5f, 0.34f, -15.0f, 0);
-    drawPumpkin(getRoadCenterX( 0.5f) + 1.10f, 0.0f,  0.5f, 0.31f,  20.0f, 1);
-
-    // Left side of path
-    drawPumpkin(getRoadCenterX(16.5f) - 1.70f, 0.0f, 16.5f, 0.50f,  28.0f, 1);
-    drawPumpkin(getRoadCenterX(13.5f) - 1.55f, 0.0f, 13.5f, 0.45f, -18.0f, 0);
-    drawPumpkin(getRoadCenterX(10.5f) - 1.45f, 0.0f, 10.5f, 0.41f,  25.0f, 1);
-    drawPumpkin(getRoadCenterX( 7.5f) - 1.35f, 0.0f,  7.5f, 0.37f, -22.0f, 0);
-    drawPumpkin(getRoadCenterX( 4.5f) - 1.25f, 0.0f,  4.5f, 0.34f,  15.0f, 1);
-    drawPumpkin(getRoadCenterX( 1.5f) - 1.15f, 0.0f,  1.5f, 0.32f, -20.0f, 0);
-
-    // 3. DISTANT PUMPKINS (Leading directly up to mansion porch steps: 12 - 20m)
-    drawPumpkin(getRoadCenterX(-1.0f) + 1.05f, 0.0f, -1.0f, 0.29f,  10.0f, 0);
-    drawPumpkin(getRoadCenterX(-2.2f) - 1.05f, 0.0f, -2.2f, 0.27f, -15.0f, 1);
-    drawPumpkin(getRoadCenterX(-3.5f) + 0.90f, 0.0f, -3.5f, 0.25f,   5.0f, 0);
+    // Subtle, atmospheric pumpkins on porch deck corners & near sign
+    drawPumpkin(-6.8f, 0.40f, 5.6f, 0.42f,  35.0f, 0); // Left porch corner
+    drawPumpkin(-2.4f, 0.40f, 5.6f, 0.38f, -25.0f, 1); // Right porch corner
+    drawPumpkin(-5.5f, 0.00f, 16.2f, 0.45f, 18.0f, 0); // Beside Abandoned House sign
 }
 
 // ----------------------------------------------------------------------------
@@ -3529,21 +3514,398 @@ void drawHouseWindow(float x, float y, float z, float width, float height, bool 
     glPopAttrib();
 }
 
+// ----------------------------------------------------------------------------
+// HAUNTED INTERIOR COBWEBS (Delicate Radial Web Lines)
+// ----------------------------------------------------------------------------
+void drawCobweb(float x, float y, float z, float size, float rotY = 0.0f) {
+    bindTexture(TEX_NONE);
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    glColor4f(0.85f, 0.88f, 0.95f, 0.42f);
+    glLineWidth(1.0f);
+
+    int numRadials = 6;
+    int numRings = 5;
+
+    // Radial spokes
+    glBegin(GL_LINES);
+    for (int r = 0; r < numRadials; ++r) {
+        float angle = (float)r * ((float)M_PI * 0.5f / (float)(numRadials - 1));
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(size * std::cos(angle), -size * std::sin(angle), 0.0f);
+    }
+    glEnd();
+
+    // Concentric web swags
+    glBegin(GL_LINE_STRIP);
+    for (int ring = 1; ring <= numRings; ++ring) {
+        float rDist = size * ((float)ring / (float)numRings);
+        for (int r = 0; r < numRadials; ++r) {
+            float angle = (float)r * ((float)M_PI * 0.5f / (float)(numRadials - 1));
+            float sag = (r > 0 && r < numRadials - 1) ? 0.92f : 1.0f;
+            glVertex3f(rDist * std::cos(angle) * sag, -rDist * std::sin(angle) * sag, 0.0f);
+        }
+    }
+    glEnd();
+
+    glPopMatrix();
+    glPopAttrib();
+}
+
+// ----------------------------------------------------------------------------
+// ETHEREAL HAUNTED GHOST APPARITION (Panel 2 - Floating Spectral Phantom)
+// ----------------------------------------------------------------------------
+void drawHauntedGhost(float x, float y, float z, float rotY = 0.0f) {
+    float floatBob = 0.08f * std::sin(g_time * 2.2f);
+    float swayX    = 0.05f * std::sin(g_time * 1.4f);
+    float waveFolds = std::sin(g_time * 3.5f);
+
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_LIGHTING); // Unlit emissive spectral glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous glow
+    bindTexture(TEX_NONE);
+
+    glPushMatrix();
+    glTranslatef(x + swayX, y + floatBob, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    // 1. Ethereal Spectral Aura (Outer soft glowing halo)
+    float auraPulse = 0.30f + 0.12f * std::sin(g_time * 2.8f);
+    glColor4f(0.25f, 0.70f, 1.0f, auraPulse);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.55f, 0.0f);
+    glScalef(0.70f, 1.15f, 0.70f);
+    drawSphere(1.0f, 12, 8);
+    glPopMatrix();
+
+    // 2. Ghostly Hood / Head
+    glColor4f(0.82f, 0.94f, 1.0f, 0.80f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.92f, 0.0f);
+    drawSphere(0.25f, 14, 10);
+    // Flowing cowl / cowl rim
+    glTranslatef(0.0f, -0.06f, 0.04f);
+    drawCylinder(0.25f, 0.30f, 0.18f, 10);
+    glPopMatrix();
+
+    // 3. Eerie Glowing Spectral Eyes (Intense cyan-white piercing gaze)
+    glColor4f(0.35f, 1.0f, 1.0f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.07f, 0.95f, 0.22f);
+    drawSphere(0.040f, 8, 6);
+    glTranslatef(0.14f, 0.0f, 0.0f);
+    drawSphere(0.040f, 8, 6);
+    glPopMatrix();
+
+    // 4. Ghost Body / Tapered Flowing Shroud
+    glColor4f(0.72f, 0.88f, 1.0f, 0.70f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.25f, 0.0f);
+    // Upper torso
+    drawCylinder(0.26f, 0.36f, 0.65f, 12);
+    // Lower flowing drapery / wispy trailing vapor
+    glTranslatef(0.0f, -0.38f, 0.0f);
+    glRotatef(waveFolds * 6.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.36f, 0.12f, 0.42f, 10);
+    glPopMatrix();
+
+    // 5. Floating Spectral Arms (Reaching forward)
+    glColor4f(0.68f, 0.85f, 0.98f, 0.60f);
+    // Left arm
+    glPushMatrix();
+    glTranslatef(-0.28f, 0.68f, 0.10f);
+    glRotatef(-30.0f + 6.0f * waveFolds, 0.0f, 0.0f, 1.0f);
+    glRotatef( 35.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.065f, 0.030f, 0.45f, 8);
+    glPopMatrix();
+    // Right arm
+    glPushMatrix();
+    glTranslatef(0.28f, 0.68f, 0.10f);
+    glRotatef(30.0f - 6.0f * waveFolds, 0.0f, 0.0f, 1.0f);
+    glRotatef(35.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.065f, 0.030f, 0.45f, 8);
+    glPopMatrix();
+
+    glPopMatrix();
+    glPopAttrib();
+}
+
+// ----------------------------------------------------------------------------
+// HAUNTED HOUSE INTERIOR (Panel 2: Dilapidated Room, Ghost, Furniture, Candle, Stairs)
+// ----------------------------------------------------------------------------
 void drawHouseInterior() {
-    // Walk-in interior floor and foyer for seamless entrance through the porch doorway
+    // 1. Weathered, Peeling Floorboards
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
     glPushMatrix();
-    glTranslatef(-2.0f, 0.74f, 0.5f);
-    drawBox(16.5f, 0.08f, 9.5f, 4.0f, 3.0f);
+    glTranslatef(-4.8f, 0.74f, 0.5f);
+    drawBox(8.2f, 0.08f, 8.4f, 4.0f, 3.0f);
     glPopMatrix();
+
+    // 2. Interior Walls (Weathered, water-stained rotting wallpaper)
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_WALL);
+    glColor4f(0.32f, 0.30f, 0.28f, 1.0f);
+    // Left wall inner face
+    glPushMatrix();
+    glTranslatef(-8.85f, 2.45f, 0.5f);
+    drawBox(0.06f, 3.4f, 8.4f, 2.0f, 1.5f);
+    glPopMatrix();
+    // Right partition inner face
+    glPushMatrix();
+    glTranslatef(-0.75f, 2.45f, 0.5f);
+    drawBox(0.06f, 3.4f, 8.4f, 2.0f, 1.5f);
+    glPopMatrix();
+    // Back wall inner face
+    glPushMatrix();
+    glTranslatef(-4.8f, 2.45f, -3.70f);
+    drawBox(8.2f, 3.4f, 0.06f, 2.5f, 1.5f);
+    glPopMatrix();
+
+    // 3. Hallway Partition Wall & Gothic Doorway Opening (Back of room)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.20f, 0.17f, 1.0f);
+    // Left hallway partition
+    glPushMatrix();
+    glTranslatef(-6.85f, 2.45f, -1.20f);
+    drawBox(4.0f, 3.4f, 0.08f, 1.5f, 1.5f);
+    glPopMatrix();
+    // Right hallway partition
+    glPushMatrix();
+    glTranslatef(-2.45f, 2.45f, -1.20f);
+    drawBox(3.3f, 3.4f, 0.08f, 1.5f, 1.5f);
+    glPopMatrix();
+    // Lintel above hallway door (high archway)
+    glPushMatrix();
+    glTranslatef(-4.6f, 3.85f, -1.20f);
+    drawBox(1.8f, 0.65f, 0.08f);
+    glPopMatrix();
+    // Doorway trim casing
+    glPushMatrix();
+    glTranslatef(-4.6f, 2.2f, -1.16f);
+    glPushMatrix(); glTranslatef(-0.85f, 0.0f, 0.0f); drawBox(0.10f, 3.1f, 0.10f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.85f, 0.0f, 0.0f); drawBox(0.10f, 3.1f, 0.10f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 1.55f, 0.0f); drawBox(1.8f, 0.10f, 0.10f); glPopMatrix();
+    glPopMatrix();
+
+    // 4. FLOATING SPECTRAL GHOST (In back hallway doorway)
+    drawHauntedGhost(-4.6f, 1.35f, -2.5f, 0.0f);
+
+    // 5. Heavy Exposed Dark Ceiling Timber Beams
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.20f, 0.17f, 0.14f, 1.0f);
+    float beamZs[4] = { 3.5f, 1.5f, -0.5f, -2.5f };
+    for (int b = 0; b < 4; ++b) {
+        glPushMatrix();
+        glTranslatef(-4.8f, 4.08f, beamZs[b]);
+        drawBox(8.2f, 0.22f, 0.20f, 2.5f, 0.2f);
+        glPopMatrix();
+    }
+
+    // 6. Interior Hanging Flickering Incandescent Bulb
+    float intBulbFlicker = 0.85f + 0.15f * std::sin(g_time * 7.5f) * std::cos(g_time * 13.0f);
+    glPushMatrix();
+    glTranslatef(-4.6f, 4.16f, 1.7f);
+    // Wire
+    bindTexture(TEX_NONE);
+    glDisable(GL_LIGHTING);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, -0.95f, 0.0f);
+    glEnd();
+    glEnable(GL_LIGHTING);
+    // Socket
+    glTranslatef(0.0f, -0.95f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.045f, 0.04f, 0.08f, 8);
+    // Bulb glass & glowing filament
+    glTranslatef(0.0f, -0.06f, 0.0f);
+    applyMaterial(MAT_BULB_EMISSIVE);
+    bindTexture(TEX_NONE);
+    glColor4f(1.0f, 0.82f, 0.35f, 1.0f);
+    drawSphere(0.085f, 10, 8);
+    glPopMatrix();
+
+    // 7. Dilapidated Wooden Dining Table (Center Room)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-4.8f, 0.74f, 1.7f);
+    // Tabletop
+    glTranslatef(0.0f, 0.72f, 0.0f);
+    drawBox(1.50f, 0.06f, 0.85f);
+    // Apron
+    glTranslatef(0.0f, -0.04f, 0.0f);
+    drawBox(1.40f, 0.08f, 0.75f);
+    // 4 Sturdy Legs
+    glTranslatef(-0.65f, -0.34f, -0.32f); drawBox(0.07f, 0.68f, 0.07f);
+    glTranslatef( 1.30f,  0.0f,   0.0f);  drawBox(0.07f, 0.68f, 0.07f);
+    glTranslatef( 0.0f,   0.0f,   0.64f); drawBox(0.07f, 0.68f, 0.07f);
+    glTranslatef(-1.30f,  0.0f,   0.0f);  drawBox(0.07f, 0.68f, 0.07f);
+    glPopMatrix();
+
+    // 8. Melting Wax Candle & Dusty Wine Bottle on Table
+    glPushMatrix();
+    glTranslatef(-4.55f, 1.50f, 1.55f);
+    // Brass candle holder base
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.55f, 0.45f, 0.25f, 1.0f);
+    drawCylinder(0.065f, 0.045f, 0.03f, 8);
+    // White wax candle column with melted wax drips
+    glColor4f(0.92f, 0.90f, 0.82f, 1.0f);
+    glTranslatef(0.0f, 0.03f, 0.0f);
+    drawCylinder(0.022f, 0.020f, 0.12f, 6);
+    // Candle flame (flickering orange-yellow teardrop)
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.12f, 0.0f);
+    glColor4f(1.0f, 0.65f, 0.15f, 0.95f * intBulbFlicker);
+    drawSphere(0.025f, 6, 6);
+    glColor4f(1.0f, 0.92f, 0.45f, 1.0f);
+    drawSphere(0.012f, 6, 6);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // Tabletop warm glowing light pool
+    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glPushMatrix();
+    glTranslatef(-4.8f, 1.505f, 1.7f);
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(1.0f, 0.72f, 0.25f, 0.42f * intBulbFlicker);
+    glVertex3f(0.0f, 0.005f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float th = 2.0f * (float)M_PI * (float)i / 16.0f;
+        glColor4f(1.0f, 0.55f, 0.10f, 0.0f);
+        glVertex3f(0.85f * std::cos(th), 0.005f, 0.55f * std::sin(th));
+    }
+    glEnd();
+    glPopMatrix();
+    glPopAttrib();
+
+    // Dusty Wine Bottle on table
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_NONE);
+    glColor4f(0.18f, 0.25f, 0.16f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-5.15f, 1.50f, 1.85f);
+    drawCylinder(0.042f, 0.042f, 0.20f, 8);
+    glTranslatef(0.0f, 0.20f, 0.0f);
+    drawCylinder(0.042f, 0.016f, 0.05f, 8);
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawCylinder(0.016f, 0.016f, 0.08f, 8);
+    glPopMatrix();
+
+    // 9. Broken Chairs around Dining Table
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.30f, 0.26f, 0.22f, 1.0f);
+    // Chair 1 (Tilted backward / broken leg)
+    glPushMatrix();
+    glTranslatef(-3.75f, 0.74f, 1.65f);
+    glRotatef(-75.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef( 16.0f, 0.0f, 0.0f, 1.0f);
+    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.04f, 0.48f);
+    glPushMatrix();
+    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef( 0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef( 0.0f,   0.0f,    0.38f); drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef(-0.38f,  0.10f,   0.0f);  drawBox(0.045f, 0.25f, 0.045f);
+    glPopMatrix();
+    glTranslatef(-0.19f, 0.26f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
+    glPopMatrix();
+
+    // Chair 2 (Upright on opposite side)
+    glPushMatrix();
+    glTranslatef(-5.85f, 0.74f, 1.85f);
+    glRotatef(85.0f, 0.0f, 1.0f, 0.0f);
+    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.04f, 0.48f);
+    glPushMatrix();
+    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef( 0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef( 0.0f,   0.0f,    0.38f); drawBox(0.045f, 0.45f, 0.045f);
+    glTranslatef(-0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
+    glPopMatrix();
+    glTranslatef(-0.19f, 0.26f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
+    glPopMatrix();
+
+    // 10. Dilapidated Wooden Staircase (Ascending into upper darkness along right wall)
+    int numSteps = 8;
+    float stepWidth = 1.10f;
+    float stepDepth = 0.42f;
+    float stepHeight = 0.28f;
+    for (int s = 0; s < numSteps; ++s) {
+        float sy = 0.74f + (float)s * stepHeight;
+        float sz = 3.2f - (float)s * stepDepth;
+        float sx = -1.45f;
+
+        glPushMatrix();
+        glTranslatef(sx, sy + stepHeight * 0.5f, sz);
+        drawBox(stepWidth, stepHeight, stepDepth, 0.8f, 0.5f);
+        glTranslatef(-stepWidth * 0.45f, stepHeight * 0.5f + 0.40f, 0.0f);
+        drawBox(0.04f, 0.80f, 0.04f);
+        glPopMatrix();
+    }
+    // Handrail
+    glPushMatrix();
+    glTranslatef(-1.45f - stepWidth * 0.45f, 0.74f + (float)numSteps * 0.5f * stepHeight + 0.80f, 3.2f - (float)numSteps * 0.5f * stepDepth);
+    glRotatef(-34.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.06f, 0.08f, 3.8f);
+    glPopMatrix();
+
+    // 11. Creepy Vintage Portrait Painting on Left Interior Wall
+    glPushMatrix();
+    glTranslatef(-8.78f, 2.40f, 1.60f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef( 3.5f, 0.0f, 0.0f, 1.0f);
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    glColor4f(0.22f, 0.18f, 0.12f, 1.0f);
+    drawBox(0.85f, 1.15f, 0.04f);
+    glTranslatef(0.0f, 0.0f, 0.022f);
+    glColor4f(0.10f, 0.09f, 0.08f, 1.0f);
+    drawBox(0.70f, 1.00f, 0.01f);
+    glColor4f(0.85f, 0.35f, 0.15f, 0.65f * intBulbFlicker);
+    glPushMatrix(); glTranslatef(-0.06f, 0.15f, 0.01f); drawSphere(0.015f, 6, 4); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.06f, 0.15f, 0.01f); drawSphere(0.015f, 6, 4); glPopMatrix();
+    glPopMatrix();
+
+    // 12. Corner Cobwebs in Ceiling Corners
+    drawCobweb(-8.75f, 4.10f,  4.65f, 0.95f,   0.0f);
+    drawCobweb(-0.85f, 4.10f,  4.65f, 0.85f,  90.0f);
+    drawCobweb(-8.75f, 4.10f, -3.65f, 1.10f, -90.0f);
+    drawCobweb(-4.60f, 3.50f, -1.15f, 0.65f,   0.0f);
 }
 
 // 4. Multi-Section Victorian Gothic Haunted House (Reference B Architectural Rebuild)
 void drawHouse() {
     glPushMatrix();
     glTranslatef(g_houseShiftX, 0.0f, g_houseShiftZ);
-    glRotatef(g_houseRotY, 0.0f, 1.0f, 0.0f); // 3/4 corner perspective showing front and side facades
+    glRotatef(g_houseRotY, 0.0f, 1.0f, 0.0f);
 
     // ========================================================================
     // 1. HEAVY STONE FOUNDATION & BASE PLATFORM
@@ -3571,17 +3933,58 @@ void drawHouse() {
     drawBox(17.9f, 0.10f, 10.9f, 5.0f, 0.3f);
     glPopMatrix();
 
+    // Render Full Walk-in Haunted Interior (Dilapidated room, Ghost, Furniture, Candle, Stairs)
     drawHouseInterior();
 
     // ========================================================================
-    // 2. SECTION A: MAIN LEFT WING — TWO-STORY WITH STEEP GABLED ROOF
+    // 2. SECTION A: MAIN LEFT WING (Hollow Room with Doorway Opening)
     // ========================================================================
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
+
+    // Left outer side wall
     glPushMatrix();
-    glTranslatef(-4.8f, 3.8f, 0.5f);
-    drawBox(8.5f, 5.6f, 8.8f, 3.0f, 2.0f);
+    glTranslatef(-8.95f, 3.8f, 0.5f);
+    drawBox(0.24f, 5.6f, 8.8f, 1.0f, 2.0f);
+    glPopMatrix();
+
+    // Right interior partition wall (separating wing from central tower)
+    glPushMatrix();
+    glTranslatef(-0.65f, 3.8f, 0.5f);
+    drawBox(0.24f, 5.6f, 8.8f, 1.0f, 2.0f);
+    glPopMatrix();
+
+    // Back wall
+    glPushMatrix();
+    glTranslatef(-4.8f, 3.8f, -3.78f);
+    drawBox(8.5f, 5.6f, 0.24f, 3.0f, 2.0f);
+    glPopMatrix();
+
+    // Front wall: Left panel (from left edge to door frame)
+    glPushMatrix();
+    glTranslatef(-7.15f, 3.8f, 4.78f);
+    drawBox(3.6f, 5.6f, 0.24f, 1.5f, 2.0f);
+    glPopMatrix();
+
+    // Front wall: Right panel (from door frame to right edge)
+    glPushMatrix();
+    glTranslatef(-2.25f, 3.8f, 4.78f);
+    drawBox(3.2f, 5.6f, 0.24f, 1.5f, 2.0f);
+    glPopMatrix();
+
+    // Front wall: Top lintel wall above doorway
+    glPushMatrix();
+    glTranslatef(-4.6f, 5.55f, 4.78f);
+    drawBox(1.8f, 2.1f, 0.24f, 0.8f, 0.8f);
+    glPopMatrix();
+
+    // Second-floor ceiling slab dividing ground haunted room from upper level
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glPushMatrix();
+    glTranslatef(-4.8f, 4.20f, 0.5f);
+    drawBox(8.5f, 0.18f, 8.8f, 2.0f, 2.0f);
     glPopMatrix();
 
     // Half-timber decorative framing on left wing front facade
@@ -3703,7 +4106,6 @@ void drawHouse() {
     glColor4f(0.44f, 0.46f, 0.52f, 1.0f);
     glTranslatef(0.0f, 9.2f, 0.0f);
     drawCylinder(2.50f, 2.10f, 0.50f, 8, 2.0f, 0.5f);
-    // Second thinner corbel ring
     glTranslatef(0.0f, 0.50f, 0.0f);
     drawCylinder(2.15f, 2.05f, 0.15f, 8, 1.5f, 0.3f);
 
@@ -3732,7 +4134,7 @@ void drawHouse() {
     // Tower narrow slit windows at multiple heights
     drawHouseWindow(1.2f, 8.6f, 4.35f, 1.1f, 1.6f, true, true);
     drawHouseWindow(1.2f, 4.8f, 4.35f, 1.1f, 1.6f, true, true);
-    drawHouseWindow(1.2f, 6.6f, 4.35f, 0.8f, 1.2f, true, false); // Small slit window
+    drawHouseWindow(1.2f, 6.6f, 4.35f, 0.8f, 1.2f, true, false);
 
     // Buttresses on tower sides
     applyMaterial(MAT_STONE);
@@ -3747,7 +4149,6 @@ void drawHouse() {
         glTranslatef(bx, 3.0f, bz);
         glRotatef(-angle, 0.0f, 1.0f, 0.0f);
         drawBox(0.35f, 5.0f, 0.65f, 0.5f, 2.5f);
-        // Buttress cap (angled top)
         glTranslatef(0.0f, 2.5f, -0.10f);
         glRotatef(15.0f, 1.0f, 0.0f, 0.0f);
         drawBox(0.38f, 0.15f, 0.75f, 0.5f, 0.5f);
@@ -3782,7 +4183,7 @@ void drawHouse() {
     drawPrismRoof(4.8f, 3.2f, 8.0f, 2.0f, 2.0f);
     glPopMatrix();
 
-    // Gable decorative barge boards (overhanging eaves trim)
+    // Gable decorative barge boards
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
@@ -3797,7 +4198,7 @@ void drawHouse() {
     drawBox(0.10f, 2.2f, 0.08f);
     glPopMatrix();
 
-    // Upper gable window (Gothic pointed style)
+    // Upper gable window
     drawHouseWindow(3.8f, 6.2f, 4.55f, 1.5f, 1.5f, false, true);
 
     // Ground-floor right wing windows
@@ -3841,13 +4242,10 @@ void drawHouse() {
     for (int p = 0; p < 4; ++p) {
         glPushMatrix();
         glTranslatef(postX[p], 0.80f, 5.7f);
-        // Column pedestal
         drawBox(0.30f, 0.30f, 0.30f);
         glTranslatef(0.0f, 0.15f, 0.0f);
-        // Main column shaft
         drawCylinder(0.11f, 0.09f, 3.0f, 8);
         glTranslatef(0.0f, 3.0f, 0.0f);
-        // Decorative capital
         drawBox(0.30f, 0.08f, 0.30f);
         glTranslatef(0.0f, 0.08f, 0.0f);
         drawBox(0.34f, 0.06f, 0.34f);
@@ -3861,7 +4259,6 @@ void drawHouse() {
     glPushMatrix();
     glTranslatef(-4.6f, 3.95f, 5.7f);
     drawBox(6.4f, 0.24f, 0.35f);
-    // Decorative scalloped trim under beam
     for (int sc = 0; sc < 7; ++sc) {
         glPushMatrix();
         glTranslatef(-3.0f + sc * 1.0f, -0.18f, 0.0f);
@@ -3880,20 +4277,12 @@ void drawHouse() {
     drawBox(6.6f, 0.18f, 2.8f, 2.5f, 1.5f);
     glPopMatrix();
 
-    // Gothic arched doorway entrance (warm glowing interior visible)
-    applyMaterial(MAT_WINDOW_GLOW);
-    bindTexture(TEX_NONE);
-    glColor4f(1.0f, 0.68f, 0.22f, 1.0f);
-    glPushMatrix();
-    glTranslatef(-4.6f, 2.2f, 4.85f);
-    drawBox(1.5f, 2.6f, 0.05f);
-    // Bright interior hotspot
-    glColor4f(1.0f, 0.85f, 0.40f, 1.0f);
-    drawBox(1.0f, 2.0f, 0.055f);
+    // Gothic arched doorway entrance (Open door showing haunted walk-in interior)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
-    glTranslatef(0.0f, 0.0f, 0.03f);
+    glPushMatrix();
+    glTranslatef(-4.6f, 2.2f, 4.85f);
     // Heavy door casing with Gothic pointed arch
     glPushMatrix(); glTranslatef(-0.82f, 0.0f, 0.0f); drawBox(0.16f, 2.8f, 0.14f); glPopMatrix();
     glPushMatrix(); glTranslatef( 0.82f, 0.0f, 0.0f); drawBox(0.16f, 2.8f, 0.14f); glPopMatrix();
@@ -3913,8 +4302,8 @@ void drawHouse() {
     // Broken ajar wooden panel door leaf (swung inward/ajar with crooked tilt)
     glPushMatrix();
     glTranslatef(-0.68f, -0.05f, 0.0f);
-    glRotatef(36.0f, 0.0f, 1.0f, 0.0f); // Ajar swing
-    glRotatef( 3.5f, 1.0f, 0.0f, 0.0f); // Crooked hang on hinge
+    glRotatef(42.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef( 3.5f, 1.0f, 0.0f, 0.0f);
     glTranslatef(0.60f, 0.0f, 0.0f);
     drawBox(1.20f, 2.45f, 0.06f, 1.0f, 2.0f);
     // Door panels
@@ -3938,7 +4327,6 @@ void drawHouse() {
     // ========================================================================
     // 6. ADDITIONAL ARCHITECTURAL DETAILS (Reference B Fidelity)
     // ========================================================================
-
     // Side facade windows on left wing
     drawHouseWindow(-9.05f, 3.2f, 1.5f, 1.0f, 1.4f, true, true);
     drawHouseWindow(-9.05f, 5.5f, 1.5f, 0.9f, 1.2f, true, false);
@@ -3958,11 +4346,9 @@ void drawHouse() {
     bindTexture(TEX_STONE);
     glColor4f(0.48f, 0.50f, 0.54f, 1.0f);
     float quoinY[4] = { 1.4f, 2.6f, 3.8f, 5.0f };
-    // Left front corner
     for (int q = 0; q < 4; ++q) {
         glPushMatrix(); glTranslatef(-9.0f, quoinY[q], 4.95f); drawBox(0.25f, 0.35f, 0.18f); glPopMatrix();
     }
-    // Right front corner
     for (int q = 0; q < 4; ++q) {
         glPushMatrix(); glTranslatef(6.0f, quoinY[q], 4.35f); drawBox(0.25f, 0.35f, 0.18f); glPopMatrix();
     }
@@ -3975,7 +4361,7 @@ void drawHouse() {
     glPushMatrix(); glTranslatef(2.6f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
     glPushMatrix(); glTranslatef(4.8f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
 
-    // Small rear extension / lean-to (adds depth to silhouette from behind)
+    // Small rear extension / lean-to
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.35f, 0.33f, 0.30f, 1.0f);
@@ -3992,73 +4378,329 @@ void drawHouse() {
     glPopMatrix(); // End House
 }
 
-// ============================================================================
-// GRAVEYARD CROSSES — OLD WEATHERED CEMETERY (Left Side of Mansion)
-// ============================================================================
-void drawGraveyardCrosses() {
-    struct GraveCross {
-        float x, z;
-        float scale;
-        float rotY;
-        float lean;    // tilt angle (degrees)
-        float leanDir; // tilt direction (degrees around Y)
-    };
+// ----------------------------------------------------------------------------
+// INDIVIDUAL GRAVE / TOMBSTONE STYLES (Reference Panel 12)
+// ----------------------------------------------------------------------------
 
-    static const GraveCross CROSSES[] = {
-        { -14.5f, -2.0f, 0.85f,  12.0f, 8.0f,  30.0f },
-        { -13.0f, -0.5f, 1.00f, -5.0f,  4.0f,  -20.0f },
-        { -15.8f,  0.8f, 0.70f,  25.0f, 12.0f, 60.0f },
-        { -12.5f,  1.8f, 0.90f, -18.0f, 6.0f,  -45.0f },
-        { -16.2f, -3.5f, 0.75f,  8.0f,  15.0f, 110.0f },
-        { -13.8f, -4.2f, 0.65f, -30.0f, 10.0f, -80.0f },
-        { -15.0f,  3.0f, 0.55f,  40.0f, 18.0f, 45.0f },
-    };
-    const int NUM_CROSSES = sizeof(CROSSES) / sizeof(CROSSES[0]);
+// 1. Gothic Arched Headstone with Carved Relief Cross & Beveled Edge
+void drawArchedHeadstone(float x, float z, float scale, float rotY, float lean, float leanDir, int stoneType = 0) {
+    float groundY = getTerrainHeight(x, z);
+
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(lean, std::sin(leanDir * (float)M_PI / 180.0f), 0.0f,
+                   std::cos(leanDir * (float)M_PI / 180.0f));
+    glScalef(scale, scale, scale);
 
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
 
-    for (int i = 0; i < NUM_CROSSES; ++i) {
-        const GraveCross& gc = CROSSES[i];
-        float groundY = getTerrainHeight(gc.x, gc.z);
+    float tint = (stoneType == 1) ? 0.88f : (stoneType == 2) ? 1.05f : 0.96f;
+    glColor4f(0.42f * tint, 0.44f * tint, 0.48f * tint, 1.0f);
 
-        glPushMatrix();
-        glTranslatef(gc.x, groundY, gc.z);
-        glRotatef(gc.rotY, 0.0f, 1.0f, 0.0f);
-        // Apply weathered lean
-        glRotatef(gc.lean, std::sin(gc.leanDir * (float)M_PI / 180.0f), 0.0f,
-                  std::cos(gc.leanDir * (float)M_PI / 180.0f));
-        glScalef(gc.scale, gc.scale, gc.scale);
+    // Stone Base Plinth
+    glPushMatrix();
+    glTranslatef(0.0f, 0.10f, 0.0f);
+    drawBox(0.95f, 0.20f, 0.45f, 0.8f, 0.5f);
+    glPopMatrix();
 
-        // Slightly varied dark gray-brown stone color per cross
-        float tint = 0.90f + (float)(i % 4) * 0.03f;
-        glColor4f(0.38f * tint, 0.36f * tint, 0.33f * tint, 1.0f);
+    // Main Vertical Headstone Slab
+    glPushMatrix();
+    glTranslatef(0.0f, 0.85f, 0.0f);
+    drawBox(0.78f, 1.30f, 0.18f, 0.8f, 1.0f);
 
-        // Vertical post
-        drawBox(0.14f, 1.6f, 0.10f);
+    // Rounded / Arched Top Cap
+    glTranslatef(0.0f, 0.65f, 0.0f);
+    glPushMatrix();
+    glScalef(0.39f, 0.28f, 0.09f);
+    drawSphere(1.0f, 12, 8);
+    glPopMatrix();
 
-        // Horizontal crossbar (slightly above center)
-        glPushMatrix();
-        glTranslatef(0.0f, 0.45f, 0.0f);
-        drawBox(0.75f, 0.12f, 0.10f);
-        glPopMatrix();
+    // Relief Cross Carving on Headstone Front
+    glColor4f(0.28f * tint, 0.29f * tint, 0.32f * tint, 1.0f);
+    glTranslatef(0.0f, -0.22f, 0.095f);
+    drawBox(0.12f, 0.55f, 0.02f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.08f, 0.0f);
+    drawBox(0.38f, 0.10f, 0.02f);
+    glPopMatrix();
+    glPopMatrix();
 
-        // Rough hewn top (slightly wider cap)
-        glPushMatrix();
-        glTranslatef(0.0f, 0.82f, 0.0f);
-        drawBox(0.18f, 0.06f, 0.12f);
-        glPopMatrix();
+    // Overgrown Dirt / Moss Mound at Base
+    applyMaterial(MAT_MOSS_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.22f, 0.25f, 0.18f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.05f, 0.55f);
+    glScalef(0.55f, 0.18f, 0.95f);
+    drawSphere(1.0f, 8, 6);
+    glPopMatrix();
 
-        // Small mound of dirt at base
-        glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
-        glPushMatrix();
-        glTranslatef(0.0f, -0.75f, 0.0f);
-        glScalef(0.6f, 0.18f, 0.45f);
-        drawSphere(1.0f, 6, 4);
-        glPopMatrix();
+    glPopMatrix();
+}
 
-        glPopMatrix();
+// 2. Celtic Weathered Stone Cross with Ring Halo
+void drawCelticCrossGrave(float x, float z, float scale, float rotY, float lean, float leanDir) {
+    float groundY = getTerrainHeight(x, z);
+
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(lean, std::sin(leanDir * (float)M_PI / 180.0f), 0.0f,
+                   std::cos(leanDir * (float)M_PI / 180.0f));
+    glScalef(scale, scale, scale);
+
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.40f, 0.42f, 0.46f, 1.0f);
+
+    // Stepped Pedestal Base
+    glPushMatrix();
+    glTranslatef(0.0f, 0.12f, 0.0f);
+    drawBox(0.85f, 0.24f, 0.65f);
+    glTranslatef(0.0f, 0.20f, 0.0f);
+    drawBox(0.65f, 0.16f, 0.50f);
+    glPopMatrix();
+
+    // Vertical Cross Shaft
+    glPushMatrix();
+    glTranslatef(0.0f, 1.25f, 0.0f);
+    drawBox(0.22f, 1.90f, 0.16f, 0.5f, 1.5f);
+
+    // Horizontal Crossbar
+    glPushMatrix();
+    glTranslatef(0.0f, 0.42f, 0.0f);
+    drawBox(1.10f, 0.20f, 0.16f, 1.0f, 0.5f);
+    glPopMatrix();
+
+    // Circular Halo Ring behind cross intersection
+    glPushMatrix();
+    glTranslatef(0.0f, 0.42f, 0.0f);
+    int ringSegs = 16;
+    float rIn = 0.32f;
+    float rOut = 0.44f;
+    float depth = 0.08f;
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= ringSegs; ++i) {
+        float th = 2.0f * (float)M_PI * (float)i / ringSegs;
+        glVertex3f(rIn * std::cos(th), rIn * std::sin(th), depth * 0.5f);
+        glVertex3f(rOut * std::cos(th), rOut * std::sin(th), depth * 0.5f);
     }
+    glEnd();
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= ringSegs; ++i) {
+        float th = 2.0f * (float)M_PI * (float)i / ringSegs;
+        glVertex3f(rIn * std::cos(th), rIn * std::sin(th), -depth * 0.5f);
+        glVertex3f(rOut * std::cos(th), rOut * std::sin(th), -depth * 0.5f);
+    }
+    glEnd();
+    glPopMatrix();
+
+    // Central ornamental boss
+    glTranslatef(0.0f, 0.42f, 0.09f);
+    drawSphere(0.07f, 8, 6);
+    glPopMatrix();
+
+    // Earth mound
+    applyMaterial(MAT_WET_GROUND);
+    bindTexture(TEX_GROUND);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.06f, 0.65f);
+    glScalef(0.60f, 0.20f, 1.05f);
+    drawSphere(1.0f, 8, 6);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// 3. Rough-Hewn Weathered Stone Cross
+void drawStoneCrossGrave(float x, float z, float scale, float rotY, float lean, float leanDir) {
+    float groundY = getTerrainHeight(x, z);
+
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glRotatef(lean, std::sin(leanDir * (float)M_PI / 180.0f), 0.0f,
+                   std::cos(leanDir * (float)M_PI / 180.0f));
+    glScalef(scale, scale, scale);
+
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.36f, 0.38f, 0.42f, 1.0f);
+
+    // Vertical post
+    glPushMatrix();
+    glTranslatef(0.0f, 0.80f, 0.0f);
+    drawBox(0.16f, 1.60f, 0.12f, 0.5f, 1.5f);
+
+    // Horizontal crossbar
+    glPushMatrix();
+    glTranslatef(0.0f, 0.35f, 0.0f);
+    drawBox(0.85f, 0.14f, 0.12f, 1.0f, 0.5f);
+    glPopMatrix();
+
+    // Rough cap
+    glTranslatef(0.0f, 0.82f, 0.0f);
+    drawBox(0.20f, 0.08f, 0.15f);
+    glPopMatrix();
+
+    // Mound of dirt at base
+    applyMaterial(MAT_WET_GROUND);
+    bindTexture(TEX_NONE);
+    glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    glScalef(0.65f, 0.20f, 0.50f);
+    drawSphere(1.0f, 8, 6);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// 4. Heavy Raised Stone Sarcophagus / Tomb Crypt with Cracked Ajar Lid
+void drawStoneSarcophagusGrave(float x, float z, float scale, float rotY, float tilt, bool lidAjar = true) {
+    float groundY = getTerrainHeight(x, z);
+
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    if (tilt != 0.0f) glRotatef(tilt, 1.0f, 0.0f, 0.0f);
+    glScalef(scale, scale, scale);
+
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.40f, 0.42f, 0.46f, 1.0f);
+
+    // Stepped plinth foundation
+    glPushMatrix();
+    glTranslatef(0.0f, 0.10f, 0.0f);
+    drawBox(1.15f, 0.20f, 2.25f, 1.0f, 2.0f);
+    glPopMatrix();
+
+    // Main sarcophagus body box
+    glPushMatrix();
+    glTranslatef(0.0f, 0.45f, 0.0f);
+    drawBox(0.95f, 0.50f, 2.05f, 1.0f, 2.0f);
+    glPopMatrix();
+
+    // Heavy Stone Lid Slab (Shifted/Cracked Ajar revealing dark hollow)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.74f, 0.0f);
+    if (lidAjar) {
+        glTranslatef(0.10f, 0.02f, 0.06f);
+        glRotatef(7.5f, 0.0f, 1.0f, 0.0f);
+        glRotatef(3.0f, 0.0f, 0.0f, 1.0f);
+    }
+    drawBox(1.05f, 0.14f, 2.15f, 1.0f, 2.0f);
+
+    // Carved Cross on top of lid
+    glColor4f(0.28f, 0.30f, 0.34f, 1.0f);
+    glTranslatef(0.0f, 0.075f, 0.0f);
+    drawBox(0.14f, 0.02f, 1.40f);
+    glTranslatef(0.0f, 0.0f, -0.20f);
+    drawBox(0.65f, 0.02f, 0.14f);
+    glPopMatrix();
+
+    // Moss / Mud patches around sarcophagus
+    applyMaterial(MAT_MOSS_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.22f, 0.26f, 0.18f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.50f, 0.06f, 0.40f);
+    glScalef(0.40f, 0.14f, 0.60f);
+    drawSphere(1.0f, 6, 4);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// 5. Elongated Earth Burial Mound with Head & Foot Markers
+void drawEarthBurialMound(float x, float z, float scale, float rotY) {
+    float groundY = getTerrainHeight(x, z);
+
+    glPushMatrix();
+    glTranslatef(x, groundY, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+    glScalef(scale, scale, scale);
+
+    // Earthen mound
+    applyMaterial(MAT_WET_GROUND);
+    bindTexture(TEX_GROUND);
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.14f, 0.0f);
+    glScalef(0.50f, 0.28f, 1.10f);
+    drawSphere(1.0f, 10, 8);
+    glPopMatrix();
+
+    // Headstone (Small weathered arch)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_STONE);
+    glColor4f(0.38f, 0.40f, 0.44f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.42f, -1.05f);
+    glRotatef(-10.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.48f, 0.70f, 0.12f);
+    glPopMatrix();
+
+    // Foot marker stone
+    glPushMatrix();
+    glTranslatef(0.0f, 0.20f, 1.05f);
+    glRotatef(12.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.32f, 0.35f, 0.10f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// ============================================================================
+// COMPLETE EXPANDED GRAVEYARD & CEMETERY (Surrounding the Haunted House)
+// ============================================================================
+void drawGraveyardCrosses() {
+    // ------------------------------------------------------------------------
+    // 1. LEFT CEMETERY KNOLL (Primary Dense Graveyard)
+    // ------------------------------------------------------------------------
+    drawCelticCrossGrave(     -14.5f, -2.0f, 0.95f,  15.0f,  8.0f,  30.0f);
+    drawArchedHeadstone(      -13.0f, -0.5f, 1.05f,  -8.0f,  5.0f, -20.0f, 0);
+    drawStoneCrossGrave(      -15.8f,  0.8f, 0.85f,  28.0f, 14.0f,  60.0f);
+    drawArchedHeadstone(      -12.5f,  1.8f, 0.95f, -20.0f,  7.0f, -45.0f, 1);
+    drawStoneSarcophagusGrave(-16.2f, -3.5f, 0.90f,  12.0f,  3.0f, true);
+    drawCelticCrossGrave(     -13.8f, -4.2f, 0.80f, -32.0f, 11.0f, -80.0f);
+    drawArchedHeadstone(      -15.0f,  3.0f, 0.75f,  42.0f, 18.0f,  45.0f, 2);
+    drawEarthBurialMound(     -17.2f, -1.2f, 0.85f,  18.0f);
+    drawStoneSarcophagusGrave(-11.5f, -2.8f, 0.85f, -15.0f, -2.0f, false);
+    drawStoneCrossGrave(      -16.5f,  4.5f, 0.80f, -22.0f, 12.0f,  90.0f);
+
+    // ------------------------------------------------------------------------
+    // 2. LEFT FOREGROUND & FENCE LINE GRAVES
+    // ------------------------------------------------------------------------
+    drawArchedHeadstone(      -10.5f,  7.5f, 0.85f,  35.0f,  9.0f,  25.0f, 1);
+    drawEarthBurialMound(     -12.8f,  9.5f, 0.80f, -40.0f);
+    drawStoneCrossGrave(      -14.2f, 13.0f, 0.75f,  18.0f, 15.0f, -60.0f);
+    drawArchedHeadstone(       -8.8f, 12.2f, 0.70f, -50.0f, 12.0f,  40.0f, 0);
+
+    // ------------------------------------------------------------------------
+    // 3. RIGHT YARD GRAVEYARD (Beside Car & Surrounding Right Grounds)
+    // ------------------------------------------------------------------------
+    drawArchedHeadstone(       12.0f,  3.2f, 0.90f, -25.0f,  6.0f, -35.0f, 2);
+    drawCelticCrossGrave(      14.5f,  1.5f, 0.95f,  30.0f, 10.0f,  50.0f);
+    drawStoneSarcophagusGrave( 13.2f, -2.0f, 0.90f, -10.0f,  4.0f, true);
+    drawArchedHeadstone(       15.8f, -4.0f, 0.80f,  45.0f, 12.0f, -40.0f, 0);
+    drawStoneCrossGrave(       10.5f,  8.5f, 0.85f, -35.0f,  8.0f,  80.0f);
+    drawArchedHeadstone(       14.0f, 11.2f, 0.80f,  20.0f, 14.0f, -30.0f, 1);
+    drawEarthBurialMound(      16.2f,  7.8f, 0.85f, -15.0f);
+    drawStoneCrossGrave(       11.8f, 14.5f, 0.75f,  55.0f, 16.0f,  45.0f);
+
+    // ------------------------------------------------------------------------
+    // 4. DISTANT MIST GRAVEYARD (Scattered in background mist around trees)
+    // ------------------------------------------------------------------------
+    drawCelticCrossGrave(     -16.0f,  -9.5f, 0.85f,  10.0f, 12.0f,  30.0f);
+    drawArchedHeadstone(      -13.5f, -12.0f, 0.80f, -40.0f,  8.0f, -60.0f, 0);
+    drawStoneCrossGrave(       -8.5f, -11.5f, 0.75f,  25.0f, 14.0f,  90.0f);
+    drawArchedHeadstone(        7.5f, -10.5f, 0.80f, -18.0f,  9.0f, -45.0f, 2);
+    drawStoneSarcophagusGrave( 11.5f, -11.0f, 0.85f,  35.0f,  3.0f, false);
+    drawStoneCrossGrave(       15.0f, -12.5f, 0.80f, -30.0f, 15.0f,  70.0f);
 }
 
 // 5. Hanging Porch Bulb with Dynamic Point Light
@@ -6247,8 +6889,28 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
             g_cam.x = 1.2f; g_cam.y = 1.35f; g_cam.z = 22.0f;
             g_cam.yaw = -94.0f; g_cam.pitch = 5.0f;
             g_cinematicMode = false;
-            std::cout << "[CAMERA] Reset to Reference Image Vantage Point" << std::endl;
+            std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point" << std::endl;
             break;
+        case 'v':
+        case 'V':
+        case 'i':
+        case 'I': {
+            static bool inInterior = false;
+            inInterior = !inInterior;
+            if (inInterior) {
+                // View inside Haunted Interior Room (Matching Reference Panel 2)
+                g_cam.x = -7.50f; g_cam.y = 1.60f; g_cam.z = -9.20f;
+                g_cam.yaw = -100.0f; g_cam.pitch = -4.0f;
+                g_cinematicMode = false;
+                std::cout << "[CAMERA] Switched to Haunted Room Interior View" << std::endl;
+            } else {
+                g_cam.x = 1.2f; g_cam.y = 1.35f; g_cam.z = 22.0f;
+                g_cam.yaw = -94.0f; g_cam.pitch = 5.0f;
+                g_cinematicMode = false;
+                std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point" << std::endl;
+            }
+            break;
+        }
     }
 }
 
@@ -6333,6 +6995,9 @@ int main(int argc, char** argv) {
             g_appState = STATE_SCENE;
             g_showHUD = false;
             i++;
+        } else if (std::string(argv[i]) == "--interior") {
+            g_cam.x = -7.50f; g_cam.y = 1.60f; g_cam.z = -9.20f;
+            g_cam.yaw = -100.0f; g_cam.pitch = -4.0f;
         }
     }
 
