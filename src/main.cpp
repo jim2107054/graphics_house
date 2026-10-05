@@ -6734,52 +6734,89 @@ void drawMoonAndStars() {
     bindTexture(TEX_NONE);
     glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glDisable(GL_LIGHTING);
-
-    // 1. Cinematic Atmospheric Sky Gradient Backdrop (Navy Zenith -> Mid Teal -> Horizon Desaturated Blue)
-    glDepthMask(GL_FALSE);
+    glDisable(GL_CULL_FACE);
     glDisable(GL_FOG);
     glDisable(GL_TEXTURE_2D);
-
-    glPushMatrix();
-    float skyZ = -70.0f;
-    float skyW = 180.0f;
-    float skyBottom = -15.0f;
-    float skyMid    =  16.0f;
-    float skyTop    =  60.0f;
+    glDepthMask(GL_FALSE);
 
     float flash = g_lightning.flashIntensity;
 
-    // Horizon: Slightly lighter desaturated blue-gray (blends seamlessly into fog)
-    float horR = 0.07f + 0.22f * flash;
-    float horG = 0.13f + 0.25f * flash;
-    float horB = 0.19f + 0.35f * flash;
+    // Horizon: Desaturated atmospheric blue-gray (blends seamlessly into fog)
+    float horR = 0.06f + 0.22f * flash;
+    float horG = 0.10f + 0.25f * flash;
+    float horB = 0.16f + 0.35f * flash;
 
     // Mid-sky: Dark teal-blue
-    float midR = 0.04f + 0.20f * flash;
-    float midG = 0.08f + 0.22f * flash;
-    float midB = 0.14f + 0.32f * flash;
+    float midR = 0.035f + 0.20f * flash;
+    float midG = 0.065f + 0.22f * flash;
+    float midB = 0.115f + 0.32f * flash;
 
-    // Upper Zenith: Deep navy blue
-    float topR = 0.02f + 0.18f * flash;
-    float topG = 0.035f + 0.20f * flash;
-    float topB = 0.075f + 0.28f * flash;
+    // Upper Zenith: Deep navy blue-black
+    float topR = 0.020f + 0.18f * flash;
+    float topG = 0.030f + 0.20f * flash;
+    float topB = 0.065f + 0.28f * flash;
 
-    glBegin(GL_QUAD_STRIP);
-    glColor4f(horR, horG, horB, 1.0f);
-    glVertex3f(-skyW, skyBottom, skyZ);
-    glVertex3f( skyW, skyBottom, skyZ);
+    // 1. Seamless 360-Degree Spherical Sky Dome (Centered on camera - ZERO edges or seams anywhere!)
+    glPushMatrix();
+    glTranslatef(g_cam.x, g_cam.y, g_cam.z);
 
-    glColor4f(midR, midG, midB, 1.0f);
-    glVertex3f(-skyW, skyMid,    skyZ);
-    glVertex3f( skyW, skyMid,    skyZ);
+    int skyStacks = 16;
+    int skySlices = 36;
+    float skyRadius = 220.0f;
 
-    glColor4f(topR, topG, topB, 1.0f);
-    glVertex3f(-skyW, skyTop,    skyZ);
-    glVertex3f( skyW, skyTop,    skyZ);
-    glEnd();
+    for (int i = 0; i < skyStacks; ++i) {
+        float f0 = (float)i / (float)skyStacks;
+        float f1 = (float)(i + 1) / (float)skyStacks;
+
+        // Phi from 0 (zenith, top) to PI*0.60 (past horizon)
+        float phi0 = f0 * (float)M_PI * 0.60f;
+        float phi1 = f1 * (float)M_PI * 0.60f;
+
+        float sinP0 = std::sin(phi0);
+        float cosP0 = std::cos(phi0);
+        float sinP1 = std::sin(phi1);
+        float cosP1 = std::cos(phi1);
+
+        // Smooth 3-tier color interpolation
+        auto evalSkyColor = [&](float t, float& r, float& g, float& b) {
+            if (t <= 0.45f) {
+                float u = t / 0.45f;
+                float s = u * u * (3.0f - 2.0f * u);
+                r = topR + s * (midR - topR);
+                g = topG + s * (midG - topG);
+                b = topB + s * (midB - topB);
+            } else {
+                float u = (t - 0.45f) / 0.55f;
+                float s = u * u * (3.0f - 2.0f * u);
+                r = midR + s * (horR - midR);
+                g = midG + s * (horG - midG);
+                b = midB + s * (horB - midB);
+            }
+        };
+
+        float r0, g0, b0, r1, g1, b1;
+        evalSkyColor(f0, r0, g0, b0);
+        evalSkyColor(f1, r1, g1, b1);
+
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= skySlices; ++j) {
+            float theta = (float)j / (float)skySlices * 2.0f * (float)M_PI;
+            float cosT = std::cos(theta);
+            float sinT = std::sin(theta);
+
+            glColor4f(r0, g0, b0, 1.0f);
+            glVertex3f(skyRadius * sinP0 * cosT, skyRadius * cosP0, skyRadius * sinP0 * sinT);
+
+            glColor4f(r1, g1, b1, 1.0f);
+            glVertex3f(skyRadius * sinP1 * cosT, skyRadius * cosP1, skyRadius * sinP1 * sinT);
+        }
+        glEnd();
+    }
     glPopMatrix();
 
     // 2. Subtle Faint Distant Stars in Upper Dark Sky (Non-distracting, high above horizon)
+    glPushMatrix();
+    glTranslatef(g_cam.x, g_cam.y, g_cam.z);
     glPointSize(1.2f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -6791,6 +6828,7 @@ void drawMoonAndStars() {
         glVertex3f(g_stars[i].x, g_stars[i].y, g_stars[i].z);
     }
     glEnd();
+    glPopMatrix();
 
     // 3. Giant Luminous Moon (Elevated higher in the night sky behind the house)
     float moonX =   2.5f;
@@ -6798,7 +6836,7 @@ void drawMoonAndStars() {
     float moonZ = -52.0f; // Screen X ≈ 0.54
     float moonRadius = 10.8f;
 
-    // 2.1 Soft Luminous Atmospheric Halo Disc behind the Moon
+    // 3.1 Soft Luminous Atmospheric Halo Disc behind the Moon
     glDepthMask(GL_FALSE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive halo glow
@@ -6817,7 +6855,7 @@ void drawMoonAndStars() {
     glEnd();
     glPopMatrix();
 
-    // 2.2 Crisp Luminous Full Moon with Lunar Maria & Craters
+    // 3.2 Crisp Luminous Full Moon with Lunar Maria & Craters
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE); // Strict depth write so front gothic house tower cleanly occludes it
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -7294,7 +7332,7 @@ void render3DScene() {
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, curGlobalAmbient);
 
     // Clear Color (Sky backdrop flash)
-    glClearColor(0.04f + 0.20f * flash, 0.06f + 0.22f * flash, 0.10f + 0.32f * flash, 1.0f);
+    glClearColor(0.020f + 0.18f * flash, 0.030f + 0.20f * flash, 0.065f + 0.28f * flash, 1.0f);
 
     // Light 0: Point Light (Porch Bulb)
     if (g_light0PointOn) {
