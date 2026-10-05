@@ -181,11 +181,15 @@ struct Camera {
     float pitch;
     float speed;
     float sens;
+    float fov;
+    float targetFov;
 } g_cam = {
     1.2f, 1.35f, 22.0f,
     -94.0f, 5.0f,
     12.0f,
-    0.15f
+    0.15f,
+    52.0f,
+    52.0f
 };
 
 bool g_keyState[256] = { false };
@@ -4057,11 +4061,11 @@ void drawAllTrees() {
 // GOTHIC HAUNTED HOUSE ARCHITECTURE (MULTI-SECTION SILHOUETTE & LOCALIZED WINDOW GLOW)
 // ============================================================================
 
-// Helper to draw realistic Gothic windows with dark sills, casings, cross muntins, and warm amber glass
+// Helper to draw realistic Gothic windows with dark sills, casings, cross muntins, and transparent glass
 // Supports rotY for side (90 / -90) and back (180) walls with zero Z-fighting
 void drawHouseWindow(float x, float y, float z, float width, float height, float rotY = 0.0f, bool hasArch = true, bool hasCrossMuntin = true) {
     (void)hasArch;
-    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT);
+    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
     glPushMatrix();
     glTranslatef(x, y, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
@@ -4074,37 +4078,34 @@ void drawHouseWindow(float x, float y, float z, float width, float height, float
     // Sill ledge at bottom (protrudes forward)
     glPushMatrix();
     glTranslatef(0.0f, -height * 0.5f - 0.04f, 0.06f);
-    drawBox(width + 0.24f, 0.09f, 0.16f);
+    drawBox(width + 0.24f, 0.09f, 0.20f);
     glPopMatrix();
 
     // Top Drip Cap Header
     glPushMatrix();
     glTranslatef(0.0f, height * 0.5f + 0.04f, 0.045f);
-    drawBox(width + 0.20f, 0.08f, 0.12f);
+    drawBox(width + 0.20f, 0.08f, 0.16f);
     glPopMatrix();
 
     // Left & Right Side Casings
     glPushMatrix();
     glTranslatef(-width * 0.5f - 0.04f, 0.0f, 0.035f);
-    drawBox(0.08f, height + 0.06f, 0.08f);
+    drawBox(0.08f, height + 0.06f, 0.16f);
     glTranslatef(width + 0.08f, 0.0f, 0.0f);
-    drawBox(0.08f, height + 0.06f, 0.08f);
+    drawBox(0.08f, height + 0.06f, 0.16f);
     glPopMatrix();
 
-    // 2. Glowing Amber Glass Pane (Smooth single clean plane, preventing Z-fighting)
+    // 2. Translucent Glass Pane (100% visible outside world from indoors!)
     glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     bindTexture(TEX_NONE);
 
-    // Outer warm amber / orange radiant glow
-    glColor4f(0.96f, 0.62f, 0.20f, 1.0f);
+    // Subtle moonlit reflection tint with high transparency
+    glColor4f(0.72f, 0.85f, 0.98f, 0.18f);
     glPushMatrix();
     glTranslatef(0.0f, 0.0f, 0.020f);
-    drawBox(width, height, 0.020f);
-
-    // Inner bright luminous core (slightly stepped forward by 0.005f to eliminate co-planar fighting)
-    glColor4f(1.0f, 0.88f, 0.50f, 1.0f);
-    glTranslatef(0.0f, 0.0f, 0.006f);
-    drawBox(width * 0.70f, height * 0.70f, 0.016f);
+    drawBox(width, height, 0.008f);
     glPopMatrix();
 
     glEnable(GL_LIGHTING);
@@ -4115,9 +4116,9 @@ void drawHouseWindow(float x, float y, float z, float width, float height, float
     glColor4f(0.24f, 0.20f, 0.18f, 1.0f);
     if (hasCrossMuntin) {
         glPushMatrix();
-        glTranslatef(0.0f, 0.0f, 0.038f);
-        drawBox(width + 0.02f, 0.055f, 0.04f); // Horizontal bar
-        drawBox(0.055f, height + 0.02f, 0.04f); // Vertical bar
+        glTranslatef(0.0f, 0.0f, 0.025f);
+        drawBox(width + 0.01f, 0.045f, 0.03f); // Horizontal bar
+        drawBox(0.045f, height + 0.01f, 0.03f); // Vertical bar
         glPopMatrix();
     }
 
@@ -5086,17 +5087,27 @@ void drawHouse() {
     drawSecondFloorInterior();
 
     // ========================================================================
-    // 2. SECTION A: MAIN LEFT WING (Hollow Room with Doorway Opening)
+    // ========================================================================
+    // 2. SECTION A: MAIN LEFT WING (Hollow Room with Doorway & Clear Window Cutouts)
     // ========================================================================
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
 
-    // Left outer side wall
-    glPushMatrix();
-    glTranslatef(-8.95f, 3.8f, 0.5f);
-    drawBox(0.24f, 5.6f, 8.8f, 1.0f, 2.0f);
-    glPopMatrix();
+    // Left outer side wall (Constructed with window cutouts at z = 2.2f, z = -1.5f, and 2nd floor z = 0.5f)
+    // Ground floor bottom sill
+    glPushMatrix(); glTranslatef(-8.95f, 1.45f, 0.5f); drawBox(0.24f, 0.90f, 8.8f, 1.0f, 0.3f); glPopMatrix();
+    // Ground floor piers
+    glPushMatrix(); glTranslatef(-8.95f, 2.70f, -2.98f); drawBox(0.24f, 1.60f, 1.85f, 0.3f, 0.6f); glPopMatrix(); // Rear
+    glPushMatrix(); glTranslatef(-8.95f, 2.70f,  0.35f); drawBox(0.24f, 1.60f, 2.60f, 0.4f, 0.6f); glPopMatrix(); // Middle
+    glPushMatrix(); glTranslatef(-8.95f, 2.70f,  3.83f); drawBox(0.24f, 1.60f, 2.15f, 0.3f, 0.6f); glPopMatrix(); // Front
+    // 2nd floor sill band
+    glPushMatrix(); glTranslatef(-8.95f, 4.05f, 0.5f); drawBox(0.24f, 1.10f, 8.8f, 1.0f, 0.4f); glPopMatrix();
+    // 2nd floor piers
+    glPushMatrix(); glTranslatef(-8.95f, 5.40f, -1.95f); drawBox(0.24f, 1.60f, 3.90f, 0.5f, 0.6f); glPopMatrix(); // 2nd fl rear
+    glPushMatrix(); glTranslatef(-8.95f, 5.40f,  2.95f); drawBox(0.24f, 1.60f, 3.90f, 0.5f, 0.6f); glPopMatrix(); // 2nd fl front
+    // Top eaves wall
+    glPushMatrix(); glTranslatef(-8.95f, 6.40f, 0.5f); drawBox(0.24f, 0.80f, 8.8f, 1.0f, 0.3f); glPopMatrix();
 
     // Right interior partition wall (separating wing from central tower)
     glPushMatrix();
@@ -5104,28 +5115,43 @@ void drawHouse() {
     drawBox(0.24f, 5.6f, 8.8f, 1.0f, 2.0f);
     glPopMatrix();
 
-    // Back wall
-    glPushMatrix();
-    glTranslatef(-4.8f, 3.8f, -3.78f);
-    drawBox(8.5f, 5.6f, 0.24f, 3.0f, 2.0f);
-    glPopMatrix();
+    // Back wall (Constructed with window cutouts at x = -7.2f, x = -2.4f, and 2nd floor x = -4.8f)
+    // Bottom sill
+    glPushMatrix(); glTranslatef(-4.8f, 1.45f, -3.78f); drawBox(8.5f, 0.90f, 0.24f, 3.0f, 0.3f); glPopMatrix();
+    // Ground piers
+    glPushMatrix(); glTranslatef(-8.45f, 2.70f, -3.78f); drawBox(1.20f, 1.60f, 0.24f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-4.80f, 2.70f, -3.78f); drawBox(3.70f, 1.60f, 0.24f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-1.15f, 2.70f, -3.78f); drawBox(1.20f, 1.60f, 0.24f); glPopMatrix();
+    // 2nd floor sill band
+    glPushMatrix(); glTranslatef(-4.8f, 4.05f, -3.78f); drawBox(8.5f, 1.10f, 0.24f, 3.0f, 0.4f); glPopMatrix();
+    // 2nd floor piers
+    glPushMatrix(); glTranslatef(-7.10f, 5.40f, -3.78f); drawBox(3.90f, 1.60f, 0.24f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-2.50f, 5.40f, -3.78f); drawBox(3.90f, 1.60f, 0.24f); glPopMatrix();
+    // Top gable header
+    glPushMatrix(); glTranslatef(-4.8f, 6.40f, -3.78f); drawBox(8.5f, 0.80f, 0.24f, 3.0f, 0.3f); glPopMatrix();
 
-    // Front wall: Left panel (from left edge to door frame)
-    glPushMatrix();
-    glTranslatef(-7.15f, 3.8f, 4.78f);
-    drawBox(3.6f, 5.6f, 0.24f, 1.5f, 2.0f);
-    glPopMatrix();
+    // Front wall: Left section (with window cutout at x = -7.4f, y = 2.6f)
+    glPushMatrix(); glTranslatef(-7.40f, 1.35f, 4.78f); drawBox(1.60f, 0.70f, 0.24f); glPopMatrix(); // under window
+    glPushMatrix(); glTranslatef(-8.50f, 2.60f, 4.78f); drawBox(0.90f, 1.80f, 0.24f); glPopMatrix(); // left pier
+    glPushMatrix(); glTranslatef(-6.15f, 2.60f, 4.78f); drawBox(1.30f, 1.80f, 0.24f); glPopMatrix(); // right pier
+    glPushMatrix(); glTranslatef(-7.30f, 4.00f, 4.78f); drawBox(3.30f, 1.00f, 0.24f); glPopMatrix(); // over window
 
-    // Front wall: Right panel (from door frame to right edge)
-    glPushMatrix();
-    glTranslatef(-2.25f, 3.8f, 4.78f);
-    drawBox(3.2f, 5.6f, 0.24f, 1.5f, 2.0f);
-    glPopMatrix();
+    // Front wall: Right section (with window cutout at x = -1.8f, y = 2.6f)
+    glPushMatrix(); glTranslatef(-1.80f, 1.35f, 4.78f); drawBox(1.60f, 0.70f, 0.24f); glPopMatrix(); // under window
+    glPushMatrix(); glTranslatef(-3.05f, 2.60f, 4.78f); drawBox(1.30f, 1.80f, 0.24f); glPopMatrix(); // left pier
+    glPushMatrix(); glTranslatef(-0.95f, 2.60f, 4.78f); drawBox(0.60f, 1.80f, 0.24f); glPopMatrix(); // right pier
+    glPushMatrix(); glTranslatef(-2.30f, 4.00f, 4.78f); drawBox(3.10f, 1.00f, 0.24f); glPopMatrix(); // over window
 
     // Front wall: Top lintel wall above doorway
     glPushMatrix();
     glTranslatef(-4.6f, 5.55f, 4.78f);
     drawBox(1.8f, 2.1f, 0.24f, 0.8f, 0.8f);
+    glPopMatrix();
+
+    // Front wall: 2nd floor upper facade band
+    glPushMatrix();
+    glTranslatef(-4.8f, 5.55f, 4.78f);
+    drawBox(8.5f, 2.1f, 0.24f, 3.0f, 0.8f);
     glPopMatrix();
 
     // Second-floor ceiling slab with Dedicated Stairwell Opening Cutout!
@@ -5215,13 +5241,15 @@ void drawHouse() {
     drawCylinder(0.15f, 0.12f, 0.55f, 8);
     glPopMatrix();
 
-    // Left Front Dormer with Peaked Roof
+    // Left Front Dormer with Peaked Roof & Window Cutout
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
     glTranslatef(-5.2f, 6.8f, 4.2f);
-    drawBox(2.2f, 2.0f, 2.0f, 1.0f, 1.0f);
+    glPushMatrix(); glTranslatef(-0.95f, 0.0f, 0.0f); drawBox(0.18f, 2.0f, 2.0f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.95f, 0.0f, 0.0f); drawBox(0.18f, 2.0f, 2.0f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, -0.85f, 0.90f); drawBox(1.8f, 0.30f, 0.20f); glPopMatrix();
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
     glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
@@ -5236,7 +5264,9 @@ void drawHouse() {
     glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
     glTranslatef(-3.2f, 6.8f, 4.2f);
-    drawBox(1.8f, 1.8f, 1.8f, 1.0f, 1.0f);
+    glPushMatrix(); glTranslatef(-0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.8f, 1.8f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.8f, 1.8f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, -0.75f, 0.80f); drawBox(1.5f, 0.30f, 0.20f); glPopMatrix();
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
     glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
@@ -5450,11 +5480,10 @@ void drawHouse() {
     drawBox(0.12f, 0.65f, 0.10f);
     glPopMatrix();
 
-    // Broken ajar wooden panel door leaf (swung inward/ajar with crooked tilt)
+    // Broken ajar wooden panel door leaf (always wide open swung inwards along interior wall at 82 deg)
     glPushMatrix();
     glTranslatef(-0.68f, -0.05f, 0.0f);
-    glRotatef(42.0f, 0.0f, 1.0f, 0.0f);
-    glRotatef( 3.5f, 1.0f, 0.0f, 0.0f);
+    glRotatef(82.0f, 0.0f, 1.0f, 0.0f);
     glTranslatef(0.60f, 0.0f, 0.0f);
     drawBox(1.20f, 2.45f, 0.06f, 1.0f, 2.0f);
     // Door panels
@@ -7519,7 +7548,12 @@ void renderSceneHUD() {
     drawCinematicColorGrade();
     drawScreenVignette();
 
-    if (!g_showHUD) return;
+    if (!g_showHUD) {
+        // Small collapsable indicator badge in corner
+        drawUIPanel(w - 270.0f, 15.0f, 250.0f, 32.0f, 0.03f, 0.04f, 0.07f, 0.75f);
+        drawString2D(w - 255.0f, 36.0f, GLUT_BITMAP_HELVETICA_12, "[ Press 'H' / 'TAB' : Expand HUD ]", 0.9f, 0.85f, 0.5f);
+        return;
+    }
 
     // Crosshair (+)
     glDisable(GL_LIGHTING);
@@ -7601,18 +7635,19 @@ void renderSceneHUD() {
         drawString2D(35.0f, 272.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
     }
 
-    // Right Controls Cheat-Sheet
-    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 210.0f, 0.03f, 0.04f, 0.07f, 0.82f);
-    drawString2D(w - 365.0f, 35.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS & SHORTCUTS GUIDE:", 0.9f, 0.85f, 0.6f);
+    // Right Controls Cheat-Sheet (Collapsable via [H] / [TAB])
+    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 225.0f, 0.03f, 0.04f, 0.07f, 0.85f);
+    drawString2D(w - 365.0f, 35.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS & SHORTCUTS [H / TAB: Hide]", 0.9f, 0.85f, 0.6f);
     drawString2D(w - 365.0f, 53.0f,  GLUT_BITMAP_HELVETICA_12, "W, A, S, D     : Walk (Walk Up Stairs to 2nd Floor!)", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 71.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Move     : Look Around (Yaw / Pitch)", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 89.0f,  GLUT_BITMAP_HELVETICA_12, "C / U          : FULL GUIDED SHOWCASE TOUR", 1.0f, 0.45f, 0.2f);
-    drawString2D(w - 365.0f, 107.0f, GLUT_BITMAP_HELVETICA_12, "V / I          : Cycle View (Exterior / 1st / 2nd Floor)", 1.0f, 0.85f, 0.3f);
-    drawString2D(w - 365.0f, 125.0f, GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 143.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 161.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 179.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | G: Fog | L: Lightning", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 197.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 89.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Scroll   : Zoom In / Zoom Out (Dynamic FOV)", 0.3f, 1.0f, 0.4f);
+    drawString2D(w - 365.0f, 107.0f, GLUT_BITMAP_HELVETICA_12, "C / U          : FULL GUIDED SHOWCASE TOUR", 1.0f, 0.45f, 0.2f);
+    drawString2D(w - 365.0f, 125.0f, GLUT_BITMAP_HELVETICA_12, "V / I          : Cycle View (Exterior / 1st / 2nd Floor)", 1.0f, 0.85f, 0.3f);
+    drawString2D(w - 365.0f, 143.0f, GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 161.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 179.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 197.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | G: Fog | L: Lightning", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 215.0f, GLUT_BITMAP_HELVETICA_12, "H / TAB: Collapse HUD | P: Screenshot | ESC", 0.8f, 0.85f, 0.9f);
 
     // Comprehensive Guided Showcase Tour HUD Card (Bottom Center)
     if (g_cinematicMode) {
@@ -8008,7 +8043,7 @@ void displayCallback() {
     } else {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(50.0, (double)g_windowWidth / (double)g_windowHeight, 0.2, 350.0);
+        gluPerspective((double)g_cam.fov, (double)g_windowWidth / (double)g_windowHeight, 0.2, 350.0);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -8101,6 +8136,9 @@ void idleCallback() {
 
     // 2.1 Dynamic Falling Leaves Animation
     updateFallingLeaves(g_deltaTime);
+
+    // Smooth camera FOV zooming (game-style mouse scroll)
+    g_cam.fov += (g_cam.targetFov - g_cam.fov) * std::min(1.0f, g_deltaTime * 14.0f);
 
     // 3. Lightning State Machine & Dynamic Flashes
     g_lightning.timer += g_deltaTime;
@@ -8257,15 +8295,18 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
         }
         case 'h':
         case 'H':
+        case 9: // TAB key
             g_showHUD = !g_showHUD;
+            std::cout << "[HUD] Controls & Shortcuts Display : " << (g_showHUD ? "EXPANDED (VISIBLE)" : "COLLAPSED (HIDDEN)") << std::endl;
             break;
         case 'r':
         case 'R':
             g_cam.x = 1.2f; g_cam.y = 1.35f; g_cam.z = 22.0f;
             g_cam.yaw = -94.0f; g_cam.pitch = 5.0f;
+            g_cam.fov = 52.0f; g_cam.targetFov = 52.0f;
             g_cinematicMode = false;
             g_camFloorState = 0;
-            std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point" << std::endl;
+            std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point (FOV Reset)" << std::endl;
             break;
         case 'v':
         case 'V':
@@ -8349,6 +8390,17 @@ void mousePassiveMotionCallback(int x, int y) {
 
 void mouseButtonCallback(int button, int state, int x, int y) {
     (void)x; (void)y;
+    // Mouse Scroll Wheel Zoom (like standard 3D games)
+    if (button == 3) { // Wheel Up -> Zoom In
+        g_cam.targetFov -= 3.5f;
+        if (g_cam.targetFov < 18.0f) g_cam.targetFov = 18.0f;
+        glutPostRedisplay();
+    } else if (button == 4) { // Wheel Down -> Zoom Out
+        g_cam.targetFov += 3.5f;
+        if (g_cam.targetFov > 85.0f) g_cam.targetFov = 85.0f;
+        glutPostRedisplay();
+    }
+
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         if (g_appState == STATE_TITLE) {
             g_appState = STATE_SCENE;
@@ -8427,6 +8479,7 @@ int main(int argc, char** argv) {
     std::cout << "  [P] Take Screenshot (.bmp)                              " << std::endl;
     std::cout << "  [R] Reset Camera to Reference Image Vantage Point       " << std::endl;
     std::cout << "  [W/A/S/D + Mouse] First-Person Exploration              " << std::endl;
+    std::cout << "  [Mouse Scroll Wheel] Zoom In / Zoom Out (Dynamic FOV)   " << std::endl;
     std::cout << "==========================================================" << std::endl;
 
     glutMainLoop();

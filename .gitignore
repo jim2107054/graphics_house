@@ -1,0 +1,21 @@
+# Build outputs & executables
+*.exe
+*.o
+*.obj
+*.pdb
+*.ilk
+
+# Temporary screenshots & raw bitmaps
+*.bmp
+*.tmp
+
+# IDE & Editor files
+.vscode/
+.vs/
+.idea/
+__pycache__/
+*.pyc
+
+# OS files
+Thumbs.db
+Desktop.ini

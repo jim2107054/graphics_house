@@ -3,131 +3,183 @@
 **Developer:** MD Jahid Hasan Jim  
 **Roll Number:** 2107054  
 **Course:** Computer Graphics Sessional (CSE 4-1)  
-**Framework:** C++ / Legacy OpenGL (Fixed-Function Pipeline) with FreeGLUT / GLUT  
+**Framework:** C++ / Legacy OpenGL (Fixed-Function Pipeline) with FreeGLUT & Windows Multimedia (WinMM)  
 
 ---
 
 ## 🎬 Project Overview
 
-An eerie, presentation-ready 3D **"Horror House at Night"** scene built from scratch in C++ and OpenGL. The project visually demonstrates all **FOUR core computer graphics light models** operating concurrently with **Texture Mapping (`GL_MODULATE`)** within a single cohesive, atmospheric environment inspired by classic gothic horror aesthetics.
+**"Horror House at Night"** is a real-time, highly detailed 3D gothic horror simulation built from scratch in C++ and OpenGL. The project demonstrates all **FOUR core computer graphics light models** operating concurrently with **Texture Mapping (`GL_MODULATE`)**, realistic procedural animations, mathematical heightmap terrain, multi-floor interior architecture, and interactive first-person exploration.
 
-### 🌟 Key Visual & Technical Highlights
-- **4 Distinct Light Types** working simultaneously, individually toggleable with live status UI.
-- **Texture Mapping with `GL_MODULATE`**: Weathered wood planks, slate roof shingles, wet dirt/mud ground, cobblestone pathway, gnarly bark, peeling paint & rust on the car, and celestial moon.
-- **Robust Fallback**: Uses `stb_image` to load PNG/JPG/BMP textures from `textures/`. If an image file is missing, it dynamically synthesizes procedural textures in memory so it never crashes!
-- **Realistic Undulating Terrain & 3 Reflective Puddles**: Smooth heightmap elevation with finite-difference normals and mirror-like puddles catching moon and bulb reflections.
-- **Irregular Mossy Rocks & Boulders**: Perturbed low-poly faceted rock generator with top-facing moss tinting, partially embedded into the mud.
-- **Abandoned Environmental Clutter**: Smashed wooden crate with spilling planks, upright & mud-tilted barrels, fallen fence pickets, rusty metal bucket, scattered bricks, tangled dead bushes, and an antique leaning wrought-iron lamppost with glowing carriage lantern.
-- **Atmospheric Fog (`GL_FOG` - `GL_EXP2`)** with dark blue midnight horizon matching.
-- **Dynamic Planar Projected Shadows** driven by low-angle moonlight projection matrices for house, car, trees, and clutter props.
-- **Sinister Carved Jack-o'-Lanterns** with glowing eyes, toothy mouths, and internal candlelight halos.
-- **Swaying & Flickering Porch Bulb** with physical harmonic pendulum motion and filament flicker.
-- **Detailed Abandoned Rusted Car**: Beveled hood and trunk contours, sloped windshield with spiderweb glass cracks, ajar driver's door showing steering wheel & bench seat, dangling side mirror, dual headlights, chrome slotted grille, heavy bumpers with overriders, and deflated flat tyre listing the car into the mud with high metallic specular glints.
-- **First-Person Camera** (WASD + Mouse Look) and **Cinematic Auto-Tour Mode (`C`)**.
-- **2D HUD Overlay & Title Screen** with glowing borders, live FPS counter, reticle, and vignette.
+![Exterior Facade Overview](screenshots/01_exterior_facade.png)
 
 ---
 
-## 📁 Where to Put Texture Files
+## 📸 Visual Showcase & Architectural Gallery
 
-Image files belong in the **`textures/`** directory in your project root:
-```text
-opengl-project/
-├── textures/
-│   ├── wall.png (or .jpg / .bmp)   # Weathered wood planks for house walls & doors
-│   ├── roof.png (or .jpg / .bmp)   # Dark roof shingles / tiles
-│   ├── ground.png (or .jpg / .bmp) # Wet dirt / mud terrain
-│   ├── stone.png (or .jpg / .bmp)  # Cobblestone pathway & stone foundation
-│   ├── bark.png (or .jpg / .bmp)   # Tree trunks & branches
-│   ├── rust.png (or .jpg / .bmp)   # Peeling paint & rusted car metal
-│   └── moon.png (or .jpg / .bmp)   # Lunar surface texture
-├── include/
-├── lib/
-├── src/
-│   └── main.cpp
-├── run.bat
-└── run.ps1
+| Scene / Feature | Preview | Description |
+|---|---|---|
+| **Moonlit Exterior Facade** | ![Exterior Overview](screenshots/01_exterior_facade.png) | High-pitched slate gabled roofs, stone foundation plinth, twin chimneys, dormers, and full moon illumination. |
+| **Front Porch & Wide-Open Doorway** | ![Front Porch](screenshots/02_front_porch_open_door.png) | Weathered wooden porch steps, swinging incandescent bulb, and front door swung wide open for free walk-in access. |
+| **1st Floor Dilapidated Parlor** | ![Ground Floor Parlor](screenshots/03_ground_floor_parlor.png) | Broken floorboards, red-brick fireplace, antique grandfather clock with oscillating brass pendulum, and fallen timbers. |
+| **Completed 15-Step Staircase** | ![Completed Staircase](screenshots/04_completed_staircase.png) | Full 15-step wooden staircase with risers, bullnose treads, baluster spindles, and handrails connecting 1st floor to 2nd floor. |
+| **2nd Floor (Dotola) Master Bedroom** | ![Second Floor Bedroom](screenshots/05_second_floor_bedroom.png) | Gothic 4-poster mahogany bed with velvet quilt, alchemist study desk, open arcane grimoire, and 3-arm candelabra. |
+| **View Outside Through Transparent Windows** | ![View Through Window](screenshots/06_view_through_window.png) | Translucent glass and real architectural wall cutouts allow looking outside to the moonlit yard from indoors. |
+| **Foggy Cemetery & Jack-o'-Lanterns** | ![Graveyard](screenshots/07_graveyard_pumpkins.png) | Weathered Celtic headstones, stone crosses, earth mounds, and carved pumpkins with flickering candle light pools. |
+| **Abandoned 1950s Rusted Car** | ![Rusted Car](screenshots/08_rusted_vintage_car.png) | Vintage sedan with open driver's door, split windshield, chrome grille, deflated flat tyre, and planar ground shadow. |
+
+---
+
+## 💡 The Four OpenGL Lighting Types
+
+The scene demonstrates all four foundational delta & distribution lighting models in computer graphics:
+
+```mermaid
+graph TD
+    A[OpenGL Fixed-Function Lighting] --> B[1. Point Light GL_LIGHT0]
+    A --> C[2. Directional Light GL_LIGHT1]
+    A --> D[3. Spot Light GL_LIGHT2]
+    A --> E[4. Area Light Emulation GL_LIGHT3]
+    
+    B --> B1[Porch Bulb: Positional w=1.0, Attenuation, Harmonic Pendulum Sway]
+    C --> C1[Moonlight: Directional w=0.0, Infinite Parallel Rays, Planar Shadows]
+    D --> D1[Flashlight: Positional w=1.0, 22° Cone Cutoff, Synchronous Player Tracking]
+    E --> E1[Window Glow: Emulated via Window Center Source with High Ambient ka]
 ```
-*Note: You can drop any standard `.png`, `.jpg`, or `.bmp` file into `textures/` with these names. If any file is omitted, procedural textures are synthesized automatically.*
+
+### 1. Point Light (`GL_LIGHT0`) — Porch Hanging Bulb
+* **Mathematical Definition**: Emits light spherically in all directions from a discrete 3D coordinate $(x, y, z, 1.0)$.
+* **Attenuation Formula**:
+  $$\text{Attenuation}(d) = \frac{1}{k_c + k_l \cdot d + k_q \cdot d^2}$$
+  Configured via `GL_CONSTANT_ATTENUATION` ($k_c = 1.0$), `GL_LINEAR_ATTENUATION` ($k_l = 0.08$), and `GL_QUADRATIC_ATTENUATION` ($k_q = 0.025$).
+* **Harmonic Animation**: The bulb swings smoothly as a physical pendulum using trigonometric harmonic formulas while flickering randomly like an aged incandescent filament.
+
+### 2. Directional Light (`GL_LIGHT1`) — Celestial Moonlight
+* **Mathematical Definition**: Emits parallel light rays from an infinite distance with vector direction $(-dx, -dy, -dz, 0.0)$.
+* **Properties**: No distance attenuation applies. Casts long, cool silvery-blue planar shadows across the muddy yard and graveyard.
+
+### 3. Spot Light (`GL_LIGHT2`) — First-Person Player Flashlight
+* **Mathematical Definition**: A positional cone constrained by an angular cutoff and radial falloff exponent:
+  $$\text{Spot Intensity} = \max(\vec{L} \cdot \vec{D}, 0)^{\text{exponent}} \quad \text{for } \angle(\vec{L}, \vec{D}) \le \text{cutoff}$$
+* **Parameters**: `GL_SPOT_CUTOFF` $= 22.0^\circ$, `GL_SPOT_EXPONENT` $= 28.0$. Moves and rotates synchronously with the camera's eye position and forward view vector.
+
+### 4. Area Light Emulation (`GL_LIGHT3`) — Warm Glowing Window
+* **Emulation Technique**: Legacy fixed-function OpenGL natively supports only point/directional/spot delta sources. True area lights require surface integral formulations. We emulate radiant window light by combining a warm amber source at the window center with elevated ambient coefficient ($k_a$) and emissive geometry to cast a soft diffuse radiant spread over the porch.
 
 ---
 
-## 💡 The Four Lighting Types
+## 🏛️ Key 3D Objects & Environmental Dynamics
 
-| Light # | OpenGL Identifier | Light Model | World Object | Key Characteristics |
-|---|---|---|---|---|
-| **Light 0** | `GL_LIGHT0` | **Point Light** | Porch Hanging Bulb | Positional ($w=1.0$), warm amber, distance attenuation, harmonic $\sin(t)$ pendulum sway & random filament flicker. |
-| **Light 1** | `GL_LIGHT1` | **Directional Light** | Full Moon Sky | Directional ($w=0.0$), parallel cool blue rays from infinity, casts dramatic planar ground shadows. |
-| **Light 2** | `GL_LIGHT2` | **Spot Light** | First-Person Flashlight | Positional ($w=1.0$), $18.5^\circ$ cone cutoff (`GL_SPOT_CUTOFF`), exponent $28.0$, follows camera eye and view vector every frame. |
-| **Light 3** | `GL_LIGHT3` | **Area Light Emulation** | Parlor Window Glow | Point light source placed at window opening with elevated ambient ($k_a$) dispersion to simulate soft radiant window illumination. |
+### 1. Multi-Floor Victorian Gothic House
+- **1st Floor Dilapidated Interior**: Weathered rotten floorboards, exposed ceiling collar beams, red-brick fireplace, vintage grandfather clock with swinging brass pendulum, overturned antique chairs, and scattered clutter.
+- **Completed 15-Step Staircase**: Seamless 15-step wooden stairway with bullnose steps, baluster spindles, newel posts, and continuous handrail connecting ground floor to 2nd floor (`y = 4.20f`).
+- **2nd Floor (Dotola) Master Bedroom & Occult Study**: Antique gothic 4-poster bed with carved mahogany posts and velvet quilt, alchemist witchcraft desk with open arcane grimoire (spellbook with glowing runes), 3-arm candelabra with flickering flames, potion flasks, and upper dormer windows.
+- **Transparent Window System**: Crystal-clear translucent glass panes and architectural wall cutouts allow viewing the moonlit exterior environment directly from inside any room.
+- **Strict Single-Door Entry Collision**: Solid wall collision boundaries across all exterior walls; entrance and exit are only possible through the wide-open front door on the porch deck.
+
+### 2. Terrain, Graveyard & Yard Props
+- **Procedural Heightmap Terrain**: Continuous elevation grid with mathematical sine/cosine undulations and finite-difference surface normals.
+- **Reflective Rain Puddles**: Dual-pass blended water surfaces reflecting moonlight and dynamic lights.
+- **Foggy Cemetery**: Weathered Celtic cross headstones, arched graves, and ancient earth burial mounds.
+- **Sinister Jack-o'-Lanterns**: Hollow carved pumpkins with toothy grins and flickering warm internal candles casting dynamic local light pools.
+- **Abandoned 1950s Rusted Sedan**: Vintage body contours, split windshield, open driver's door, chrome slotted grille, deflated flat tire, and planar ground shadow.
+- **Atmospheric Weather**: Dynamic lightning state machine with dual flash pulses, sky bursts, and procedural audio rumble.
 
 ---
 
-## 🎮 Controls & Shortcuts
+## 🎮 Interactive Controls & Keyboard Shortcuts
 
-| Key / Input | Action |
+| Input | Action |
 |---|---|
-| **`W` / `A` / `S` / `D`** | Move Forward / Strafe Left / Move Backward / Strafe Right |
-| **Mouse Motion** | Look Around (Yaw & Clamped Pitch) |
-| **`Space` / `Ctrl` (or `X`)** | Fly Up / Fly Down |
-| **`1`** | Toggle Point Light (Porch Bulb with Moving Shadows & Light Pool) |
-| **`2`** | Toggle Directional Light (Moonlight with Planar Shadows) |
-| **`3` / `F`** | Toggle Spot Light (Flashlight with Volumetric Fog Beam) |
+| **`W` / `A` / `S` / `D`** | First-Person Walk (Step up porch, enter front door, climb 15-step staircase) |
+| **Mouse Look** | Rotate Camera View (Yaw & Clamped Pitch) |
+| **Mouse Scroll Wheel** | **Dynamic Zoom In / Zoom Out** (Smooth Field of View adjustments, 18°–85°) |
+| **`H` / `TAB`** | **Collapse / Expand On-Screen HUD & Controls Guide** |
+| **`C` / `U`** | **Automated Guided Showcase Tour** (Hands-free 8-stage 64s cinematic tour) |
+| **`V` / `I`** | **Cycle Vantage Points** (Exterior Yard ➔ 1st Floor Parlor ➔ 2nd Floor Dotola) |
+| **`Space` / `Ctrl` (or `Q`)** | Fly Up / Fly Down (Free Camera) |
+| **`1`** | Toggle Point Light (Porch Bulb) |
+| **`2`** | Toggle Directional Light (Moonlight) |
+| **`3` / `F`** | Toggle Spot Light (Flashlight) |
 | **`4`** | Toggle Area Light (Window Interior Glow) |
+| **`5` / `K`** | Toggle Pumpkin Candle Lights |
 | **`0`** | Master Switch (Toggle ALL Lights) |
 | **`T`** | Toggle Texture Mapping ON / OFF (`GL_MODULATE`) |
-| **`G`** | Toggle Fog (`GL_FOG`) |
-| **`B`** | Toggle Bulb Pendulum Sway & Random Flicker |
-| **`L`** | Trigger Distant Lightning Strike (Multi-Pulse Flash & Sky Burst) |
-| **`M`** | Toggle Procedural Ambient Audio & Thunder (WinMM) |
-| **`C`** | Toggle Hands-Free Cinematic Auto-Tour Presentation Mode |
-| **`H`** | Toggle In-Game HUD & Controls Overlay |
-| **`P`** | Take Screenshot (Saves as uncompressed 24-bit `.bmp`) |
-| **`R`** | Reset Camera to Default Reference Image View |
-| **`Enter` / `Space`** | Start Simulation from Title Screen |
+| **`G`** | Toggle Exponential Fog (`GL_FOG`) |
+| **`B`** | Toggle Porch Bulb Pendulum Sway & Filament Flicker |
+| **`L`** | Trigger Manual Lightning Strike & Thunder |
+| **`M`** | Toggle Procedural Ambient Audio & Thunder Sound |
+| **`P`** | Save 24-bit Screen Capture (`.bmp`) |
+| **`R`** | Reset Camera & FOV to Default Exterior Viewpoint |
 | **`ESC`** | Exit Application |
 
 ---
 
-## 🛠️ How to Build and Run
+## 🛠️ Build & Run Instructions
 
-### Option 1: Quick Batch Script (Windows)
-Double-click `run.bat` or run in terminal:
+### Prerequisites
+- **Operating System:** Windows 10 / 11
+- **Compiler:** MinGW-w64 (`g++` supporting C++17) or Microsoft Visual Studio (MSVC)
+- **Libraries:** OpenGL32, FreeGLUT (included in `include/` and `lib/`), Windows Multimedia (`winmm`)
+
+### Option 1: Run via Batch Script (Recommended)
+Double-click `run.bat` or execute in Command Prompt:
 ```cmd
 .\run.bat
 ```
 
-### Option 2: PowerShell Script
+### Option 2: Run via PowerShell Script
 ```powershell
 .\run.ps1
 ```
 
-### Option 3: Direct GCC/G++ Command Line
-```cmd
+### Option 3: Manual Compilation with MinGW `g++`
+```bash
 g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
 .\main.exe
 ```
 
 ---
 
-## 🎓 Viva Defense Quick-Reference
+## 📁 Repository Directory Structure
 
-- **Q: Why use `GL_MODULATE` instead of `GL_REPLACE` for texture mapping?**  
-  *A:* `GL_REPLACE` overwrites polygon colors completely, discarding lighting calculations. `GL_MODULATE` multiplies the texture color ($C_t$) with the computed Phong lighting ($C_l$) such that $C = C_t \times C_l$, preserving all ambient, diffuse, specular highlights, and shadows on textured surfaces.
-
-- **Q: How does `GL_REPEAT` prevent texture stretching?**  
-  *A:* When UV texture coordinates exceed $1.0$, `GL_REPEAT` tiles the texture periodically based on the fractional part of $U$ and $V$, maintaining uniform resolution across large walls, roofs, and terrain.
-
-- **Q: How does OpenGL differentiate between a Point Light and a Directional Light?**  
-  *A:* By the 4th element ($w$) of the position array passed to `glLightfv(..., GL_POSITION, pos)`:
-  - $w = 1.0f \implies$ **Point / Positional Light** at coordinates $(x, y, z)$.
-  - $w = 0.0f \implies$ **Directional Light** whose parallel rays travel along direction vector $(-x, -y, -z)$.
-
-- **Q: How do `GL_SPOT_CUTOFF` and `GL_SPOT_EXPONENT` control a Spotlight?**  
-  *A:* `GL_SPOT_CUTOFF` specifies the half-angle of the light cone ($0^\circ$ to $90^\circ$). `GL_SPOT_EXPONENT` defines the power factor modulating radial falloff concentration from the central axis $\cos^\alpha(\theta)$ towards the cone edge.
-
-- **Q: How do Dynamic Planar Projected Shadows and the Swinging Light Pool work?**  
-  *A:* We compute a $4 \times 4$ projection matrix that flattens geometry onto planes ($y = 0.725$ for porch floor, $y = 0$ for terrain) along rays cast from the light position. For the swaying porch bulb, the light position $(x(t), y(t), z(t), 1.0)$ swings dynamically, causing the cast shadows of porch balusters and furniture to move across the floor in exact counter-motion with the swinging amber light pool.
-
-- **Q: Why does Legacy OpenGL require Area Light Emulation?**  
-  *A:* The fixed-function pipeline natively only supports mathematical delta point, directional, and spot lights. True area lights with soft penumbras require surface integral evaluation or Monte Carlo ray-tracing. We emulate it using an offset point source with high ambient dispersion ($k_a$) and soft distance attenuation.
+```text
+opengl-project/
+├── include/                      # FreeGLUT, GLAD, GLFW, GLM, STB header files
+│   ├── GL/
+│   │   ├── freeglut.h
+│   │   ├── glut.h
+│   │   └── ...
+│   └── stb_image.h
+├── lib/                          # Pre-compiled static/import libraries
+│   ├── libfreeglut.a
+│   └── ...
+├── src/                          # Project Source Code
+│   ├── main.cpp                  # Master OpenGL Horror House implementation
+│   ├── glad.c
+│   └── stb_image.cpp
+├── textures/                     # 512x512 Seamless Bitmap Texture Maps
+│   ├── wall.bmp                  # Weathered wood planks
+│   ├── roof.bmp                  # Slate shingles
+│   ├── ground.bmp                # Wet mud & soil
+│   ├── stone.bmp                 # Cobblestones & foundation
+│   ├── bark.bmp                  # Gothic tree bark
+│   ├── rust.bmp                  # Rusted car sheet metal
+│   └── moon.bmp                  # Lunar surface
+├── screenshots/                  # High-resolution showcase PNG images
+│   ├── 01_exterior_facade.png
+│   ├── 02_front_porch_open_door.png
+│   ├── 03_ground_floor_parlor.png
+│   ├── 04_completed_staircase.png
+│   ├── 05_second_floor_bedroom.png
+│   ├── 06_view_through_window.png
+│   ├── 07_graveyard_pumpkins.png
+│   └── 08_rusted_vintage_car.png
+├── freeglut.dll                  # FreeGLUT runtime binary
+├── run.bat                       # 1-Click Build & Run batch script
+├── run.ps1                       # PowerShell launcher
+├── Makefile                      # Make build configuration
+├── CMakeLists.txt                # CMake build configuration
+├── .gitignore                    # Git ignore file
+└── README.md                     # Project documentation
+```
