@@ -7,7 +7,8 @@ Write-Host "===================================================" -ForegroundColo
 Get-Process -Name "main" -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # Compile with g++
-& g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
+$sources = @("src/main.cpp", "src/stb_image.cpp") + (Get-ChildItem -Path "src/*/*.cpp" | ForEach-Object { $_.FullName })
+& g++ -std=c++17 $sources -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n[BUILD SUCCESS] Launching main.exe...`n" -ForegroundColor Green
