@@ -890,14 +890,6 @@ const Material MAT_MOON = {
     35.0f
 };
 
-const Material MAT_GHOST_SPECTRAL = {
-    { 0.45f, 0.75f, 0.95f, 0.60f },
-    { 0.75f, 0.90f, 1.00f, 0.60f },
-    { 0.95f, 1.00f, 1.00f, 0.60f },
-    { 0.55f, 0.88f, 1.00f, 0.60f },
-    50.0f
-};
-
 const Material MAT_BARK = {
     { 0.08f, 0.08f, 0.10f, 1.0f },
     { 0.18f, 0.18f, 0.22f, 1.0f },
@@ -4066,50 +4058,70 @@ void drawAllTrees() {
 // ============================================================================
 
 // Helper to draw realistic Gothic windows with dark sills, casings, cross muntins, and warm amber glass
-void drawHouseWindow(float x, float y, float z, float width, float height, bool hasArch = true, bool hasCrossMuntin = true) {
+// Supports rotY for side (90 / -90) and back (180) walls with zero Z-fighting
+void drawHouseWindow(float x, float y, float z, float width, float height, float rotY = 0.0f, bool hasArch = true, bool hasCrossMuntin = true) {
     (void)hasArch;
-    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT);
+    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT);
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 
     // 1. Dark outer wooden sill / casing
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.28f, 0.25f, 0.22f, 1.0f);
+
+    // Sill ledge at bottom (protrudes forward)
     glPushMatrix();
-    glTranslatef(x, y - height * 0.5f, z + 0.04f);
-    drawBox(width + 0.25f, 0.10f, 0.18f); // Sill ledge
-    glTranslatef(0.0f, height + 0.05f, 0.0f);
-    drawBox(width + 0.20f, 0.08f, 0.14f); // Top drip cap
+    glTranslatef(0.0f, -height * 0.5f - 0.04f, 0.06f);
+    drawBox(width + 0.24f, 0.09f, 0.16f);
     glPopMatrix();
 
-    // 2. Glowing Amber Glass Pane with warm radiant center hotspot
+    // Top Drip Cap Header
+    glPushMatrix();
+    glTranslatef(0.0f, height * 0.5f + 0.04f, 0.045f);
+    drawBox(width + 0.20f, 0.08f, 0.12f);
+    glPopMatrix();
+
+    // Left & Right Side Casings
+    glPushMatrix();
+    glTranslatef(-width * 0.5f - 0.04f, 0.0f, 0.035f);
+    drawBox(0.08f, height + 0.06f, 0.08f);
+    glTranslatef(width + 0.08f, 0.0f, 0.0f);
+    drawBox(0.08f, height + 0.06f, 0.08f);
+    glPopMatrix();
+
+    // 2. Glowing Amber Glass Pane (Smooth single clean plane, preventing Z-fighting)
     glDisable(GL_LIGHTING);
     bindTexture(TEX_NONE);
+
+    // Outer warm amber / orange radiant glow
+    glColor4f(0.96f, 0.62f, 0.20f, 1.0f);
     glPushMatrix();
-    glTranslatef(x, y, z + 0.02f);
+    glTranslatef(0.0f, 0.0f, 0.020f);
+    drawBox(width, height, 0.020f);
 
-    // Outer warm amber / orange edge
-    glColor4f(0.95f, 0.58f, 0.18f, 1.0f);
-    drawBox(width, height, 0.04f);
-
-    // Inner bright warm cream / yellow luminous core
-    glColor4f(1.0f, 0.88f, 0.48f, 1.0f);
-    drawBox(width * 0.72f, height * 0.72f, 0.045f);
-
+    // Inner bright luminous core (slightly stepped forward by 0.005f to eliminate co-planar fighting)
+    glColor4f(1.0f, 0.88f, 0.50f, 1.0f);
+    glTranslatef(0.0f, 0.0f, 0.006f);
+    drawBox(width * 0.70f, height * 0.70f, 0.016f);
     glPopMatrix();
+
     glEnable(GL_LIGHTING);
 
-    // 3. Dark Wooden Cross Muntins / Glazing Bars
+    // 3. Dark Wooden Cross Muntins / Glazing Bars (Cleanly seated in front of glass)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
+    glColor4f(0.24f, 0.20f, 0.18f, 1.0f);
     if (hasCrossMuntin) {
         glPushMatrix();
-        glTranslatef(x, y, z + 0.025f);
-        drawBox(width + 0.02f, 0.06f, 0.06f); // Horizontal bar
-        drawBox(0.06f, height + 0.02f, 0.06f); // Vertical bar
+        glTranslatef(0.0f, 0.0f, 0.038f);
+        drawBox(width + 0.02f, 0.055f, 0.04f); // Horizontal bar
+        drawBox(0.055f, height + 0.02f, 0.04f); // Vertical bar
         glPopMatrix();
     }
 
+    glPopMatrix();
     glPopAttrib();
 }
 
@@ -4159,102 +4171,49 @@ void drawCobweb(float x, float y, float z, float size, float rotY = 0.0f) {
 }
 
 // ----------------------------------------------------------------------------
-// ETHEREAL HAUNTED GHOST APPARITION (Panel 2 - Floating Spectral Phantom)
-// ----------------------------------------------------------------------------
-void drawHauntedGhost(float x, float y, float z, float rotY = 0.0f) {
-    float floatBob = 0.08f * std::sin(g_time * 2.2f);
-    float swayX    = 0.05f * std::sin(g_time * 1.4f);
-    float waveFolds = std::sin(g_time * 3.5f);
-
-    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_LIGHTING); // Unlit emissive spectral glow
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous glow
-    bindTexture(TEX_NONE);
-
-    glPushMatrix();
-    glTranslatef(x + swayX, y + floatBob, z);
-    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-
-    // 1. Ethereal Spectral Aura (Outer soft glowing halo)
-    float auraPulse = 0.30f + 0.12f * std::sin(g_time * 2.8f);
-    glColor4f(0.25f, 0.70f, 1.0f, auraPulse);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.55f, 0.0f);
-    glScalef(0.70f, 1.15f, 0.70f);
-    drawSphere(1.0f, 12, 8);
-    glPopMatrix();
-
-    // 2. Ghostly Hood / Head
-    glColor4f(0.82f, 0.94f, 1.0f, 0.80f);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.92f, 0.0f);
-    drawSphere(0.25f, 14, 10);
-    // Flowing cowl / cowl rim
-    glTranslatef(0.0f, -0.06f, 0.04f);
-    drawCylinder(0.25f, 0.30f, 0.18f, 10);
-    glPopMatrix();
-
-    // 3. Eerie Glowing Spectral Eyes (Intense cyan-white piercing gaze)
-    glColor4f(0.35f, 1.0f, 1.0f, 1.0f);
-    glPushMatrix();
-    glTranslatef(-0.07f, 0.95f, 0.22f);
-    drawSphere(0.040f, 8, 6);
-    glTranslatef(0.14f, 0.0f, 0.0f);
-    drawSphere(0.040f, 8, 6);
-    glPopMatrix();
-
-    // 4. Ghost Body / Tapered Flowing Shroud
-    glColor4f(0.72f, 0.88f, 1.0f, 0.70f);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.25f, 0.0f);
-    // Upper torso
-    drawCylinder(0.26f, 0.36f, 0.65f, 12);
-    // Lower flowing drapery / wispy trailing vapor
-    glTranslatef(0.0f, -0.38f, 0.0f);
-    glRotatef(waveFolds * 6.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.36f, 0.12f, 0.42f, 10);
-    glPopMatrix();
-
-    // 5. Floating Spectral Arms (Reaching forward)
-    glColor4f(0.68f, 0.85f, 0.98f, 0.60f);
-    // Left arm
-    glPushMatrix();
-    glTranslatef(-0.28f, 0.68f, 0.10f);
-    glRotatef(-30.0f + 6.0f * waveFolds, 0.0f, 0.0f, 1.0f);
-    glRotatef( 35.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.065f, 0.030f, 0.45f, 8);
-    glPopMatrix();
-    // Right arm
-    glPushMatrix();
-    glTranslatef(0.28f, 0.68f, 0.10f);
-    glRotatef(30.0f - 6.0f * waveFolds, 0.0f, 0.0f, 1.0f);
-    glRotatef(35.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.065f, 0.030f, 0.45f, 8);
-    glPopMatrix();
-
-    glPopMatrix();
-    glPopAttrib();
-}
-
-// ----------------------------------------------------------------------------
-// HAUNTED HOUSE INTERIOR (Panel 2: Dilapidated Room, Ghost, Furniture, Candle, Stairs)
+// HAUNTED HOUSE INTERIOR (Intensely Dilapidated Old Abandoned Interior)
 // ----------------------------------------------------------------------------
 void drawHouseInterior() {
-    // 1. Weathered, Peeling Floorboards
+    // 1. Weathered, Rotten Floorboards with Missing Planks & Cracks
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
+    glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.8f, 0.74f, 0.5f);
     drawBox(8.2f, 0.08f, 8.4f, 4.0f, 3.0f);
     glPopMatrix();
 
-    // 2. Interior Walls (Weathered, water-stained rotting wallpaper)
+    // Dark underfloor hole / broken floor gap
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    glColor4f(0.04f, 0.03f, 0.02f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-3.2f, 0.77f, -0.6f);
+    drawBox(1.2f, 0.02f, 0.9f);
+    glPopMatrix();
+
+    // Broken loose wooden floor planks scattered on floor
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-3.5f, 0.80f, -0.4f);
+    glRotatef(25.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(4.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(1.10f, 0.04f, 0.20f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(-2.8f, 0.80f, -0.8f);
+    glRotatef(-38.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(-3.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.95f, 0.04f, 0.18f);
+    glPopMatrix();
+
+    // 2. Interior Walls (Weathered, water-stained rotting wallpaper & decay)
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
-    glColor4f(0.32f, 0.30f, 0.28f, 1.0f);
+    glColor4f(0.30f, 0.28f, 0.26f, 1.0f);
     // Left wall inner face
     glPushMatrix();
     glTranslatef(-8.85f, 2.45f, 0.5f);
@@ -4274,7 +4233,7 @@ void drawHouseInterior() {
     // 3. Hallway Partition Wall & Gothic Doorway Opening (Back of room)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.24f, 0.20f, 0.17f, 1.0f);
+    glColor4f(0.22f, 0.18f, 0.15f, 1.0f);
     // Left hallway partition
     glPushMatrix();
     glTranslatef(-6.85f, 2.45f, -1.20f);
@@ -4298,20 +4257,24 @@ void drawHouseInterior() {
     glPushMatrix(); glTranslatef( 0.0f, 1.55f, 0.0f); drawBox(1.8f, 0.10f, 0.10f); glPopMatrix();
     glPopMatrix();
 
-    // 4. FLOATING SPECTRAL GHOST (In back hallway doorway)
-    drawHauntedGhost(-4.6f, 1.35f, -2.5f, 0.0f);
-
-    // 5. Heavy Exposed Dark Ceiling Timber Beams
+    // 5. Heavy Exposed Dark Ceiling Timber Beams (One fallen & splintered!)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.20f, 0.17f, 0.14f, 1.0f);
-    float beamZs[4] = { 3.5f, 1.5f, -0.5f, -2.5f };
-    for (int b = 0; b < 4; ++b) {
+    glColor4f(0.18f, 0.15f, 0.12f, 1.0f);
+    float beamZs[3] = { 3.5f, 1.5f, -2.5f };
+    for (int b = 0; b < 3; ++b) {
         glPushMatrix();
         glTranslatef(-4.8f, 4.08f, beamZs[b]);
         drawBox(8.2f, 0.22f, 0.20f, 2.5f, 0.2f);
         glPopMatrix();
     }
+    // Collapsed splintered ceiling beam hanging down across room
+    glPushMatrix();
+    glTranslatef(-6.2f, 2.6f, -0.4f);
+    glRotatef(28.0f, 0.0f, 0.0f, 1.0f);
+    glRotatef(12.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(4.5f, 0.20f, 0.18f, 2.0f, 0.2f);
+    glPopMatrix();
 
     // 6. Interior Hanging Flickering Incandescent Bulb
     float intBulbFlicker = 0.85f + 0.15f * std::sin(g_time * 7.5f) * std::cos(g_time * 13.0f);
@@ -4340,35 +4303,55 @@ void drawHouseInterior() {
     drawSphere(0.085f, 10, 8);
     glPopMatrix();
 
-    // 7. Dilapidated Wooden Dining Table (Center Room)
+    // 7. Smashed & Dilapidated Wooden Dining Table (Split & Tilted on Broken Leg)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.8f, 0.74f, 1.7f);
-    // Tabletop
-    glTranslatef(0.0f, 0.72f, 0.0f);
-    drawBox(1.50f, 0.06f, 0.85f);
-    // Apron
-    glTranslatef(0.0f, -0.04f, 0.0f);
-    drawBox(1.40f, 0.08f, 0.75f);
-    // 4 Sturdy Legs
-    glTranslatef(-0.65f, -0.34f, -0.32f); drawBox(0.07f, 0.68f, 0.07f);
-    glTranslatef( 1.30f,  0.0f,   0.0f);  drawBox(0.07f, 0.68f, 0.07f);
-    glTranslatef( 0.0f,   0.0f,   0.64f); drawBox(0.07f, 0.68f, 0.07f);
-    glTranslatef(-1.30f,  0.0f,   0.0f);  drawBox(0.07f, 0.68f, 0.07f);
+    glRotatef(8.5f, 0.0f, 0.0f, 1.0f); // Tilted because right legs are broken/collapsed
+
+    // Tabletop (Split into two broken halves)
+    glPushMatrix();
+    glTranslatef(-0.35f, 0.68f, 0.0f);
+    drawBox(0.75f, 0.055f, 0.85f);
+    glTranslatef(0.72f, -0.04f, 0.0f);
+    glRotatef(6.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.68f, 0.055f, 0.82f);
     glPopMatrix();
 
-    // 8. Melting Wax Candle & Dusty Wine Bottle on Table
+    // Intact Left Legs
     glPushMatrix();
-    glTranslatef(-4.55f, 1.50f, 1.55f);
+    glTranslatef(-0.65f, 0.32f, -0.32f); drawBox(0.07f, 0.64f, 0.07f);
+    glTranslatef( 0.0f,  0.0f,   0.64f); drawBox(0.07f, 0.64f, 0.07f);
+    // Broken Snapped Right Legs (short stubs propped on bricks)
+    glTranslatef( 1.30f, -0.15f,  0.0f);  drawBox(0.07f, 0.34f, 0.07f);
+    glTranslatef( 0.0f,   0.0f,  -0.64f); drawBox(0.07f, 0.28f, 0.07f);
+    glPopMatrix();
+    glPopMatrix();
+
+    // Broken Red Clay Bricks under collapsed table leg
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.55f, 0.25f, 0.18f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-4.1f, 0.80f, 1.4f);
+    drawBox(0.24f, 0.10f, 0.14f);
+    glTranslatef(0.08f, 0.08f, 0.18f);
+    glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.22f, 0.08f, 0.12f);
+    glPopMatrix();
+
+    // 8. Melting Wax Candle & Dusty Shattered Wine Bottle on Table
+    glPushMatrix();
+    glTranslatef(-4.95f, 1.44f, 1.55f);
     // Brass candle holder base
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_NONE);
-    glColor4f(0.55f, 0.45f, 0.25f, 1.0f);
+    glColor4f(0.48f, 0.38f, 0.20f, 1.0f);
     drawCylinder(0.065f, 0.045f, 0.03f, 8);
     // White wax candle column with melted wax drips
-    glColor4f(0.92f, 0.90f, 0.82f, 1.0f);
+    glColor4f(0.88f, 0.85f, 0.75f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
     drawCylinder(0.022f, 0.020f, 0.12f, 6);
     // Candle flame (flickering orange-yellow teardrop)
@@ -4381,49 +4364,43 @@ void drawHouseInterior() {
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // Tabletop warm glowing light pool
-    glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
-    glDisable(GL_LIGHTING);
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glPushMatrix();
-    glTranslatef(-4.8f, 1.505f, 1.7f);
-    glBegin(GL_TRIANGLE_FAN);
-    glColor4f(1.0f, 0.72f, 0.25f, 0.42f * intBulbFlicker);
-    glVertex3f(0.0f, 0.005f, 0.0f);
-    for (int i = 0; i <= 16; ++i) {
-        float th = 2.0f * (float)M_PI * (float)i / 16.0f;
-        glColor4f(1.0f, 0.55f, 0.10f, 0.0f);
-        glVertex3f(0.85f * std::cos(th), 0.005f, 0.55f * std::sin(th));
-    }
-    glEnd();
-    glPopMatrix();
-    glPopAttrib();
-
-    // Dusty Wine Bottle on table
+    // Fallen shattered bottle on floor
     applyMaterial(MAT_CAR_INTERIOR);
     bindTexture(TEX_NONE);
     glColor4f(0.18f, 0.25f, 0.16f, 1.0f);
     glPushMatrix();
-    glTranslatef(-5.15f, 1.50f, 1.85f);
+    glTranslatef(-4.2f, 0.80f, 2.1f);
+    glRotatef(82.0f, 0.0f, 0.0f, 1.0f);
+    glRotatef(25.0f, 0.0f, 1.0f, 0.0f);
     drawCylinder(0.042f, 0.042f, 0.20f, 8);
+    // Broken neck
     glTranslatef(0.0f, 0.20f, 0.0f);
-    drawCylinder(0.042f, 0.016f, 0.05f, 8);
-    glTranslatef(0.0f, 0.05f, 0.0f);
-    drawCylinder(0.016f, 0.016f, 0.08f, 8);
+    drawCylinder(0.042f, 0.016f, 0.06f, 8);
     glPopMatrix();
 
-    // 9. Broken Chairs around Dining Table
+    // 9. Broken & Overturned Chairs
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.30f, 0.26f, 0.22f, 1.0f);
-    // Chair 1 (Tilted backward / broken leg)
+    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
+    // Chair 1 (Completely overturned on floor with shattered legs)
     glPushMatrix();
-    glTranslatef(-3.75f, 0.74f, 1.65f);
-    glRotatef(-75.0f, 0.0f, 1.0f, 0.0f);
-    glRotatef( 16.0f, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-3.6f, 0.88f, 1.65f);
+    glRotatef(88.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-35.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.48f, 0.04f, 0.48f); // Seat
+    // Broken legs sticking out
+    glTranslatef(-0.19f, -0.18f, -0.19f); drawBox(0.045f, 0.36f, 0.045f);
+    glTranslatef( 0.38f,  0.0f,   0.0f);  drawBox(0.045f, 0.20f, 0.045f);
+    // Backrest posts
+    glTranslatef(-0.19f, 0.45f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
+    glTranslatef( 0.38f, 0.0f,   0.0f);  drawBox(0.045f, 0.40f, 0.045f);
+    glPopMatrix();
+
+    // Chair 2 (Tilted askew on opposite side)
+    glPushMatrix();
+    glTranslatef(-5.95f, 0.74f, 1.85f);
+    glRotatef(82.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(14.0f, 0.0f, 0.0f, 1.0f);
     glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.04f, 0.48f);
     glPushMatrix();
     glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f);
@@ -4436,51 +4413,195 @@ void drawHouseInterior() {
     glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
     glPopMatrix();
 
-    // Chair 2 (Upright on opposite side)
+    // 10. Decaying & Leaning Antique Bookshelf with Fallen Dusty Books
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
     glPushMatrix();
-    glTranslatef(-5.85f, 0.74f, 1.85f);
-    glRotatef(85.0f, 0.0f, 1.0f, 0.0f);
-    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.04f, 0.48f);
+    glTranslatef(-8.20f, 0.74f, -2.20f);
+    glRotatef(8.0f, 0.0f, 0.0f, 1.0f); // Leaning precariously against the wall
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+
+    // Outer frame (1.4m wide, 2.4m tall, 0.45m deep)
     glPushMatrix();
-    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef( 0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef( 0.0f,   0.0f,    0.38f); drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef(-0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
-    glPopMatrix();
-    glTranslatef(-0.19f, 0.26f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
-    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.52f, 0.045f);
-    glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
+    glTranslatef(0.0f, 1.20f, 0.0f);
+    // Backing panel
+    drawBox(1.40f, 2.40f, 0.04f);
+    // Side panels
+    glTranslatef(-0.68f, 0.0f, 0.20f); drawBox(0.05f, 2.40f, 0.40f);
+    glTranslatef( 1.36f, 0.0f, 0.0f);  drawBox(0.05f, 2.40f, 0.40f);
+    // Top & bottom
+    glTranslatef(-0.68f, 1.18f, 0.0f); drawBox(1.40f, 0.06f, 0.40f);
+    glTranslatef( 0.0f, -2.36f, 0.0f); drawBox(1.40f, 0.06f, 0.40f);
+    // Shelves (one broken/tilted)
+    glTranslatef( 0.0f, 0.65f, 0.0f); drawBox(1.32f, 0.04f, 0.38f);
+    glTranslatef( 0.0f, 0.65f, 0.0f); glRotatef(12.0f, 0.0f, 0.0f, 1.0f); drawBox(1.25f, 0.04f, 0.38f);
     glPopMatrix();
 
-    // 10. Dilapidated Wooden Staircase (Ascending into upper darkness along right wall)
-    int numSteps = 8;
-    float stepWidth = 1.10f;
-    float stepDepth = 0.42f;
-    float stepHeight = 0.28f;
+    // Scattered Antique Books on shelves & fallen on floor
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    // Red leather book
+    glColor4f(0.48f, 0.18f, 0.14f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.35f, 1.95f, 0.18f);
+    glRotatef(18.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.08f, 0.26f, 0.20f);
+    glPopMatrix();
+    // Blue leather book
+    glColor4f(0.18f, 0.24f, 0.38f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.20f, 1.30f, 0.18f);
+    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.09f, 0.24f, 0.20f);
+    glPopMatrix();
+    // Fallen books on floor
+    glColor4f(0.35f, 0.28f, 0.18f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.45f, 0.06f, 0.55f);
+    glRotatef(42.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.24f, 0.06f, 0.18f);
+    glTranslatef(0.10f, 0.05f, -0.05f);
+    glRotatef(-20.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.22f, 0.05f, 0.16f);
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // 11. Old Broken Grandfather Clock in Corner (Cracked face & askew pendulum)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-8.35f, 0.74f, 4.20f);
+    glRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(4.5f, 0.0f, 0.0f, 1.0f); // Tilted
+
+    // Clock Base & Waist Body
+    glPushMatrix();
+    glTranslatef(0.0f, 0.35f, 0.0f); drawBox(0.60f, 0.70f, 0.40f);
+    glTranslatef(0.0f, 0.85f, 0.0f); drawBox(0.48f, 1.00f, 0.34f);
+    // Clock Hood / Head
+    glTranslatef(0.0f, 0.72f, 0.0f); drawBox(0.58f, 0.48f, 0.38f);
+    // Top Arch Cap
+    glTranslatef(0.0f, 0.28f, 0.0f); drawBox(0.50f, 0.12f, 0.36f);
+    glPopMatrix();
+
+    // Clock Dial Face (Yellowed, cracked parchment)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.78f, 0.74f, 0.60f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.92f, 0.20f);
+    drawSphere(0.16f, 12, 8);
+    // Broken brass clock hands frozen at midnight!
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.22f, 0.18f, 0.10f, 1.0f);
+    glTranslatef(0.0f, 0.0f, 0.03f);
+    drawBox(0.015f, 0.14f, 0.01f);
+    glTranslatef(0.0f, 0.0f, 0.005f);
+    drawBox(0.10f, 0.015f, 0.01f);
+    glPopMatrix();
+
+    // Crooked brass pendulum in waist aperture
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.55f, 0.45f, 0.22f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.04f, 1.05f, 0.08f);
+    glRotatef(18.0f, 0.0f, 0.0f, 1.0f);
+    drawCylinder(0.012f, 0.012f, 0.65f, 6);
+    glTranslatef(0.0f, 0.65f, 0.0f);
+    drawSphere(0.075f, 8, 6);
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // 12. FULLY COMPLETED WOODEN STAIRCASE (Ascending seamlessly from 1st Floor y=0.74f to 2nd Floor y=4.20f)
+    int numSteps = 15;
+    float stairStartX = -1.35f;
+    float stairStartZ =  3.60f;
+    float stairEndZ   = -1.40f;
+    float stairStartY =  0.74f;
+    float stairEndY   =  4.20f;
+    float stepWidth   =  1.05f;
+    float stepDepth   =  0.38f;
+    float stepHeight  = (stairEndY - stairStartY) / (float)numSteps; // ~0.2307f per step
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.28f, 0.23f, 0.18f, 1.0f);
+
     for (int s = 0; s < numSteps; ++s) {
-        float sy = 0.74f + (float)s * stepHeight;
-        float sz = 3.2f - (float)s * stepDepth;
-        float sx = -1.45f;
+        float t = (float)s / (float)(numSteps - 1);
+        float sy = stairStartY + (float)s * stepHeight;
+        float sz = stairStartZ + t * (stairEndZ - stairStartZ);
+        float sx = stairStartX;
 
+        // Step Tread & Riser Box
         glPushMatrix();
         glTranslatef(sx, sy + stepHeight * 0.5f, sz);
-        drawBox(stepWidth, stepHeight, stepDepth, 0.8f, 0.5f);
-        glTranslatef(-stepWidth * 0.45f, stepHeight * 0.5f + 0.40f, 0.0f);
-        drawBox(0.04f, 0.80f, 0.04f);
+        drawBox(stepWidth, stepHeight, stepDepth, 0.8f, 0.4f);
+
+        // Bullnose step overhang trim
+        applyMaterial(MAT_DARK_WOOD);
+        glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+        glTranslatef(0.0f, stepHeight * 0.45f, stepDepth * 0.48f);
+        drawBox(stepWidth + 0.04f, 0.035f, 0.06f);
+        glPopMatrix();
+
+        // Vertical Carved Baluster Spindle on open side of step
+        glPushMatrix();
+        glTranslatef(sx - stepWidth * 0.45f, sy + stepHeight + 0.38f, sz);
+        applyMaterial(MAT_DARK_WOOD);
+        glColor4f(0.25f, 0.20f, 0.16f, 1.0f);
+        drawBox(0.04f, 0.76f, 0.04f);
         glPopMatrix();
     }
-    // Handrail
+
+    // Carved Newel Posts (Sturdy square posts with pyramid finials at bottom, mid-landing, and top)
+    // Bottom Newel Post
     glPushMatrix();
-    glTranslatef(-1.45f - stepWidth * 0.45f, 0.74f + (float)numSteps * 0.5f * stepHeight + 0.80f, 3.2f - (float)numSteps * 0.5f * stepDepth);
-    glRotatef(-34.0f, 1.0f, 0.0f, 0.0f);
-    drawBox(0.06f, 0.08f, 3.8f);
+    glTranslatef(stairStartX - stepWidth * 0.45f, stairStartY + 0.55f, stairStartZ + stepDepth * 0.35f);
+    drawBox(0.10f, 1.10f, 0.10f);
+    glTranslatef(0.0f, 0.58f, 0.0f);
+    drawBox(0.13f, 0.06f, 0.13f); // Post cap
+    glTranslatef(0.0f, 0.06f, 0.0f);
+    drawSphere(0.055f, 8, 6);      // Finial ball
     glPopMatrix();
 
-    // 11. Creepy Vintage Portrait Painting on Left Interior Wall
+    // Top 2nd Floor Newel Post
+    glPushMatrix();
+    glTranslatef(stairStartX - stepWidth * 0.45f, stairEndY + 0.55f, stairEndZ - stepDepth * 0.35f);
+    drawBox(0.10f, 1.10f, 0.10f);
+    glTranslatef(0.0f, 0.58f, 0.0f);
+    drawBox(0.13f, 0.06f, 0.13f);
+    glTranslatef(0.0f, 0.06f, 0.0f);
+    drawSphere(0.055f, 8, 6);
+    glPopMatrix();
+
+    // Continuous Carved Wooden Handrail running smoothly from bottom to top
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+    glPushMatrix();
+    float midX = stairStartX - stepWidth * 0.45f;
+    float midY = (stairStartY + stairEndY) * 0.5f + 0.85f;
+    float midZ = (stairStartZ + stairEndZ) * 0.5f;
+    float totalRunZ = std::abs(stairEndZ - stairStartZ);
+    float totalRiseY = (stairEndY - stairStartY);
+    float railAngle = -std::atan2(totalRiseY, totalRunZ) * 180.0f / (float)M_PI;
+    float railLen = std::sqrt(totalRunZ * totalRunZ + totalRiseY * totalRiseY) + 0.20f;
+
+    glTranslatef(midX, midY, midZ);
+    glRotatef(railAngle, 1.0f, 0.0f, 0.0f);
+    drawBox(0.065f, 0.075f, railLen);
+    glPopMatrix();
+
+    // 13. Creepy Vintage Portrait Painting on Left Wall (Hanging crookedly)
     glPushMatrix();
     glTranslatef(-8.78f, 2.40f, 1.60f);
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glRotatef( 3.5f, 0.0f, 0.0f, 1.0f);
+    glRotatef( 7.5f, 0.0f, 0.0f, 1.0f); // Hanging crookedly from single loose nail
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_NONE);
     glColor4f(0.22f, 0.18f, 0.12f, 1.0f);
@@ -4488,19 +4609,445 @@ void drawHouseInterior() {
     glTranslatef(0.0f, 0.0f, 0.022f);
     glColor4f(0.10f, 0.09f, 0.08f, 1.0f);
     drawBox(0.70f, 1.00f, 0.01f);
-    glColor4f(0.85f, 0.35f, 0.15f, 0.65f * intBulbFlicker);
-    glPushMatrix(); glTranslatef(-0.06f, 0.15f, 0.01f); drawSphere(0.015f, 6, 4); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.06f, 0.15f, 0.01f); drawSphere(0.015f, 6, 4); glPopMatrix();
+    // Glowing eerie eyes in portrait
+    glColor4f(0.85f, 0.35f, 0.15f, 0.70f * intBulbFlicker);
+    glPushMatrix(); glTranslatef(-0.06f, 0.15f, 0.01f); drawSphere(0.016f, 6, 4); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.06f, 0.15f, 0.01f); drawSphere(0.016f, 6, 4); glPopMatrix();
     glPopMatrix();
 
-    // 12. Corner Cobwebs in Ceiling Corners
+    // 14. Dense Cobwebs in Ceiling & Floor Corners
     drawCobweb(-8.75f, 4.10f,  4.65f, 0.95f,   0.0f);
     drawCobweb(-0.85f, 4.10f,  4.65f, 0.85f,  90.0f);
     drawCobweb(-8.75f, 4.10f, -3.65f, 1.10f, -90.0f);
     drawCobweb(-4.60f, 3.50f, -1.15f, 0.65f,   0.0f);
+    drawCobweb(-8.20f, 1.80f, -2.00f, 0.55f,  45.0f);
+    drawCobweb(-8.35f, 1.50f,  3.90f, 0.60f, -45.0f);
 }
 
-// 4. Multi-Section Victorian Gothic Haunted House (Reference B Architectural Rebuild)
+// ----------------------------------------------------------------------------
+// FULL SECOND FLOOR (DOTOLA) INTERIOR (Walk-in Attic Bedroom & Witchcraft Study)
+// ----------------------------------------------------------------------------
+void drawSecondFloorInterior() {
+    // 1. Weathered Second-Floor Floorboards (y = 4.24f) with Stairwell Opening Cutout
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
+
+    // Main 2nd floor room floor (Left section from left wall to stairwell boundary)
+    glPushMatrix();
+    glTranslatef(-5.45f, 4.24f, 0.50f);
+    drawBox(7.00f, 0.08f, 8.40f, 3.5f, 3.0f);
+    glPopMatrix();
+
+    // Rear 2nd floor floor extension (Behind stairwell)
+    glPushMatrix();
+    glTranslatef(-1.30f, 4.24f, -2.65f);
+    drawBox(1.30f, 0.08f, 2.10f, 0.8f, 0.8f);
+    glPopMatrix();
+
+    // 2. Safety Balustrade / Banister Guardrail around the 2nd Floor Stairwell Opening
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
+
+    // Left Guardrail Handrail (along x = -1.95f, from z = 3.8f to z = -1.5f)
+    glPushMatrix();
+    glTranslatef(-1.95f, 5.08f, 1.15f);
+    drawBox(0.065f, 0.075f, 5.30f);
+    glPopMatrix();
+
+    // Vertical Guardrail Balusters along left edge
+    for (float bz = 3.70f; bz >= -1.40f; bz -= 0.45f) {
+        glPushMatrix();
+        glTranslatef(-1.95f, 4.66f, bz);
+        drawBox(0.035f, 0.76f, 0.035f);
+        glPopMatrix();
+    }
+
+    // Corner Newel Post at front of stair opening (x = -1.95f, z = 3.80f)
+    glPushMatrix();
+    glTranslatef(-1.95f, 4.78f, 3.80f);
+    drawBox(0.09f, 1.05f, 0.09f);
+    glTranslatef(0.0f, 0.55f, 0.0f);
+    drawBox(0.12f, 0.05f, 0.12f);
+    drawSphere(0.05f, 8, 6);
+    glPopMatrix();
+
+    // Back Guardrail Handrail (across z = -1.50f from x = -1.95f to x = -0.65f)
+    glPushMatrix();
+    glTranslatef(-1.30f, 5.08f, -1.50f);
+    drawBox(1.30f, 0.075f, 0.065f);
+    glPopMatrix();
+
+    for (float bx = -1.80f; bx <= -0.80f; bx += 0.35f) {
+        glPushMatrix();
+        glTranslatef(bx, 4.66f, -1.50f);
+        drawBox(0.035f, 0.76f, 0.035f);
+        glPopMatrix();
+    }
+
+    // 3. Exposed Heavy Timber Roof Trusses & Collar Beams in the Vaulted Ceiling
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+    float trussZs[3] = { 3.2f, 0.5f, -2.2f };
+    for (int t = 0; t < 3; ++t) {
+        // Horizontal collar tie beam
+        glPushMatrix();
+        glTranslatef(-4.8f, 7.20f, trussZs[t]);
+        drawBox(6.8f, 0.20f, 0.18f, 2.0f, 0.2f);
+        // Vertical king post
+        glTranslatef(0.0f, 1.40f, 0.0f);
+        drawBox(0.18f, 2.60f, 0.18f);
+        // Left sloped rafter
+        glPushMatrix();
+        glTranslatef(-2.2f, -0.2f, 0.0f);
+        glRotatef(48.0f, 0.0f, 0.0f, 1.0f);
+        drawBox(0.18f, 3.8f, 0.18f);
+        glPopMatrix();
+        // Right sloped rafter
+        glPushMatrix();
+        glTranslatef(2.2f, -0.2f, 0.0f);
+        glRotatef(-48.0f, 0.0f, 0.0f, 1.0f);
+        drawBox(0.18f, 3.8f, 0.18f);
+        glPopMatrix();
+        glPopMatrix();
+    }
+
+    // 4. GOTHIC ANTIQUE FOUR-POSTER BED (Placed against Left Wall x = -6.8f, z = 1.8f)
+    glPushMatrix();
+    glTranslatef(-6.80f, 4.24f, 1.80f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+
+    // Bed Frame base platform
+    glPushMatrix();
+    glTranslatef(0.0f, 0.35f, 0.0f);
+    drawBox(1.90f, 0.30f, 2.40f);
+    glPopMatrix();
+
+    // 4 Tall Turned Mahogany Bedposts (2.3m tall) with Finial Balls
+    float postBX[4] = { -0.92f,  0.92f, -0.92f,  0.92f };
+    float postBZ[4] = { -1.18f, -1.18f,  1.18f,  1.18f };
+    for (int p = 0; p < 4; ++p) {
+        glPushMatrix();
+        glTranslatef(postBX[p], 1.15f, postBZ[p]);
+        drawBox(0.09f, 2.30f, 0.09f);
+        // Turned corbel rings
+        glTranslatef(0.0f, 1.18f, 0.0f);
+        drawSphere(0.065f, 8, 6);
+        glPopMatrix();
+    }
+
+    // Top Wooden Canopy Rails connecting the 4 bedposts
+    glPushMatrix();
+    glTranslatef(0.0f, 2.30f, 0.0f);
+    glPushMatrix(); glTranslatef( 0.0f, 0.0f, -1.18f); drawBox(1.90f, 0.07f, 0.07f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 0.0f,  1.18f); drawBox(1.90f, 0.07f, 0.07f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-0.92f, 0.0f,   0.0f); drawBox(0.07f, 0.07f, 2.40f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.92f, 0.0f,   0.0f); drawBox(0.07f, 0.07f, 2.40f); glPopMatrix();
+    glPopMatrix();
+
+    // Carved Gothic Headboard
+    glPushMatrix();
+    glTranslatef(0.0f, 0.90f, -1.16f);
+    drawBox(1.80f, 0.85f, 0.06f);
+    // Pointed arch crest on headboard
+    glTranslatef(0.0f, 0.48f, 0.0f);
+    drawBox(0.90f, 0.22f, 0.06f);
+    glPopMatrix();
+
+    // Footboard
+    glPushMatrix();
+    glTranslatef(0.0f, 0.65f, 1.16f);
+    drawBox(1.80f, 0.45f, 0.06f);
+    glPopMatrix();
+
+    // Velvet Burgundy Quilt & Torn Antique Mattress
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.42f, 0.12f, 0.15f, 1.0f); // Dark gothic crimson velvet
+    glPushMatrix();
+    glTranslatef(0.0f, 0.55f, 0.10f);
+    drawBox(1.72f, 0.20f, 2.15f);
+    glPopMatrix();
+
+    // Dusty Antique Pillows
+    glColor4f(0.68f, 0.65f, 0.58f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.45f, 0.70f, -0.80f);
+    glScalef(0.65f, 0.18f, 0.45f);
+    drawSphere(0.5f, 10, 8);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef( 0.45f, 0.70f, -0.80f);
+    glScalef(0.65f, 0.18f, 0.45f);
+    drawSphere(0.5f, 10, 8);
+    glPopMatrix();
+
+    glPopMatrix(); // End Bed
+
+    // 5. ALCHEMIST / WITCHCRAFT STUDY DESK & OCCULT GRIMOIRE (x = -7.2f, z = -2.4f)
+    glPushMatrix();
+    glTranslatef(-7.20f, 4.24f, -2.40f);
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+
+    // Desk Top & Drawers
+    glPushMatrix();
+    glTranslatef(0.0f, 0.75f, 0.0f);
+    drawBox(1.60f, 0.08f, 0.85f);
+    // Drawers box
+    glTranslatef(0.0f, -0.12f, 0.0f);
+    drawBox(1.50f, 0.16f, 0.80f);
+    // 4 Turned Desk Legs
+    glTranslatef(-0.68f, -0.32f, -0.34f); drawBox(0.08f, 0.64f, 0.08f);
+    glTranslatef( 1.36f,  0.00f,  0.00f); drawBox(0.08f, 0.64f, 0.08f);
+    glTranslatef( 0.00f,  0.00f,  0.68f); drawBox(0.08f, 0.64f, 0.08f);
+    glTranslatef(-1.36f,  0.00f,  0.00f); drawBox(0.08f, 0.64f, 0.08f);
+    glPopMatrix();
+
+    // Wooden High-Back Desk Chair
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.65f);
+    glRotatef(15.0f, 0.0f, 1.0f, 0.0f);
+    // Chair Seat
+    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.05f, 0.48f);
+    // Legs
+    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.05f, 0.45f, 0.05f);
+    glTranslatef( 0.38f,  0.000f,  0.00f); drawBox(0.05f, 0.45f, 0.05f);
+    glTranslatef( 0.00f,  0.000f,  0.38f); drawBox(0.05f, 0.45f, 0.05f);
+    glTranslatef(-0.38f,  0.000f,  0.00f); drawBox(0.05f, 0.45f, 0.05f);
+    // Carved Backrest
+    glTranslatef( 0.19f,  0.500f, -0.19f); drawBox(0.44f, 0.55f, 0.04f);
+    glPopMatrix();
+
+    // OPEN ANCIENT SPELLBOOK / GRIMOIRE on Desk with visible magical rune pages!
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    // Leather book cover
+    glColor4f(0.38f, 0.15f, 0.10f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.25f, 0.81f, 0.05f);
+    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.46f, 0.03f, 0.34f);
+
+    // Open Parchment Pages (Left & Right halves)
+    glColor4f(0.85f, 0.80f, 0.65f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.10f, 0.025f, 0.0f);
+    glRotatef( 6.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.20f, 0.02f, 0.30f);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef( 0.10f, 0.025f, 0.0f);
+    glRotatef(-6.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.20f, 0.02f, 0.30f);
+    glPopMatrix();
+
+    // Glowing Arcane Glyphs & Runes on open pages
+    glDisable(GL_LIGHTING);
+    float runeGlow = 0.70f + 0.30f * std::sin(g_time * 4.0f);
+    glColor4f(0.40f, 0.90f, 1.0f, runeGlow);
+    glBegin(GL_LINES);
+    glVertex3f(-0.16f, 0.045f, -0.08f); glVertex3f(-0.04f, 0.045f, -0.08f);
+    glVertex3f(-0.16f, 0.045f, -0.02f); glVertex3f(-0.04f, 0.045f, -0.02f);
+    glVertex3f(-0.16f, 0.045f,  0.04f); glVertex3f(-0.04f, 0.045f,  0.04f);
+    glVertex3f( 0.04f, 0.045f, -0.08f); glVertex3f( 0.16f, 0.045f, -0.08f);
+    glVertex3f( 0.04f, 0.045f, -0.02f); glVertex3f( 0.16f, 0.045f, -0.02f);
+    glVertex3f( 0.04f, 0.045f,  0.04f); glVertex3f( 0.16f, 0.045f,  0.04f);
+    glEnd();
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // ORNATE 3-ARM BRASS CANDELABRA ON DESK WITH 3 BURNING CANDLES
+    glPushMatrix();
+    glTranslatef(0.42f, 0.79f, -0.10f);
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.58f, 0.46f, 0.22f, 1.0f); // Antique brass
+
+    // Base & Center stem
+    drawCylinder(0.08f, 0.04f, 0.04f, 8);
+    glTranslatef(0.0f, 0.04f, 0.0f);
+    drawCylinder(0.02f, 0.015f, 0.22f, 6);
+
+    // Left curved branch
+    glPushMatrix();
+    glTranslatef(-0.10f, 0.16f, 0.0f);
+    drawBox(0.12f, 0.018f, 0.018f);
+    drawCylinder(0.025f, 0.025f, 0.03f, 6);
+    // Candle wax
+    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
+    glTranslatef(0.0f, 0.03f, 0.0f);
+    drawCylinder(0.016f, 0.015f, 0.10f, 6);
+    // Flickering Flame
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.10f, 0.0f);
+    float cFlick1 = 0.85f + 0.15f * std::sin(g_time * 8.0f);
+    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick1);
+    drawSphere(0.022f * cFlick1, 6, 6);
+    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
+    drawSphere(0.010f * cFlick1, 6, 6);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // Right curved branch
+    glPushMatrix();
+    glTranslatef(0.10f, 0.16f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.58f, 0.46f, 0.22f, 1.0f);
+    drawBox(0.12f, 0.018f, 0.018f);
+    drawCylinder(0.025f, 0.025f, 0.03f, 6);
+    // Candle wax
+    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
+    glTranslatef(0.0f, 0.03f, 0.0f);
+    drawCylinder(0.016f, 0.015f, 0.10f, 6);
+    // Flickering Flame
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.10f, 0.0f);
+    float cFlick2 = 0.85f + 0.15f * std::cos(g_time * 9.5f);
+    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick2);
+    drawSphere(0.022f * cFlick2, 6, 6);
+    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
+    drawSphere(0.010f * cFlick2, 6, 6);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // Center tall candle
+    glPushMatrix();
+    glTranslatef(0.0f, 0.22f, 0.0f);
+    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
+    drawCylinder(0.016f, 0.015f, 0.14f, 6);
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.14f, 0.0f);
+    float cFlick3 = 0.88f + 0.12f * std::sin(g_time * 11.0f);
+    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick3);
+    drawSphere(0.025f * cFlick3, 6, 6);
+    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
+    drawSphere(0.012f * cFlick3, 6, 6);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    glPopMatrix(); // End Candelabra
+
+    // Glowing Alchemical Potion Bottles & Crystal Scrying Ball
+    glPushMatrix();
+    glTranslatef(0.48f, 0.79f, 0.20f);
+    // Emerald Potion Bottle
+    glDisable(GL_LIGHTING);
+    glColor4f(0.20f, 0.95f, 0.35f, 0.85f);
+    drawSphere(0.045f, 8, 8);
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawCylinder(0.015f, 0.015f, 0.04f, 6);
+    // Mystical Scrying Orb
+    glTranslatef(-0.16f, -0.01f, 0.0f);
+    float orbPulse = 0.80f + 0.20f * std::sin(g_time * 3.5f);
+    glColor4f(0.70f, 0.35f, 0.95f, 0.88f * orbPulse);
+    drawSphere(0.055f, 10, 8);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    glPopMatrix(); // End Study Desk
+
+    // 6. VINTAGE ROCKING ARMCHAIR BY UPPER DORMER WINDOW (x = -5.2f, z = 3.6f)
+    glPushMatrix();
+    glTranslatef(-5.20f, 4.24f, 3.60f);
+    glRotatef(180.0f, 0.0f, 1.0f, 0.0f); // Facing toward window
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
+
+    // Curved Rocker Runners on floor
+    glPushMatrix();
+    glTranslatef(-0.24f, 0.04f, 0.0f); drawBox(0.04f, 0.04f, 0.85f);
+    glTranslatef( 0.48f, 0.00f, 0.0f); drawBox(0.04f, 0.04f, 0.85f);
+    glPopMatrix();
+
+    // Chair Seat & Legs
+    glPushMatrix();
+    glTranslatef(0.0f, 0.42f, 0.0f); drawBox(0.52f, 0.05f, 0.48f);
+    glTranslatef(-0.20f, -0.19f, -0.18f); drawBox(0.045f, 0.38f, 0.045f);
+    glTranslatef( 0.40f,  0.00f,  0.00f); drawBox(0.045f, 0.38f, 0.045f);
+    glTranslatef( 0.00f,  0.00f,  0.36f); drawBox(0.045f, 0.38f, 0.045f);
+    glTranslatef(-0.40f,  0.00f,  0.00f); drawBox(0.045f, 0.38f, 0.045f);
+    // Spindle Backrest
+    glTranslatef( 0.20f,  0.48f, -0.18f); drawBox(0.48f, 0.58f, 0.04f);
+    // Armrests
+    glTranslatef(-0.22f, -0.22f, 0.18f); drawBox(0.045f, 0.04f, 0.40f);
+    glTranslatef( 0.44f,  0.00f, 0.00f); drawBox(0.045f, 0.04f, 0.40f);
+    glPopMatrix();
+
+    glPopMatrix(); // End Rocking Chair
+
+    // 7. ANTIQUE WOODEN STORAGE CHEST WITH RUSTED IRON STRAPS (x = -3.4f, z = -2.6f)
+    glPushMatrix();
+    glTranslatef(-3.40f, 4.24f, -2.60f);
+    glRotatef(25.0f, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.26f, 0.20f, 0.15f, 1.0f);
+    // Chest Body Box
+    glPushMatrix();
+    glTranslatef(0.0f, 0.30f, 0.0f);
+    drawBox(1.10f, 0.60f, 0.65f);
+    // Curved Lid
+    glTranslatef(0.0f, 0.33f, 0.0f);
+    drawBox(1.12f, 0.08f, 0.67f);
+    // Iron Reinforcing Straps
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
+    glPushMatrix(); glTranslatef(-0.35f, -0.15f, 0.0f); drawBox(0.06f, 0.70f, 0.68f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.35f, -0.15f, 0.0f); drawBox(0.06f, 0.70f, 0.68f); glPopMatrix();
+    // Front Padlock
+    glTranslatef(0.0f, -0.06f, 0.34f);
+    drawBox(0.08f, 0.10f, 0.04f);
+    glPopMatrix();
+    glPopMatrix();
+
+    // 8. HANGING VINTAGE BRASS LANTERN FROM RIDGE TIMBER BEAM
+    glPushMatrix();
+    glTranslatef(-4.80f, 7.20f, 0.50f);
+    // Wire
+    bindTexture(TEX_NONE);
+    glDisable(GL_LIGHTING);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, -0.80f, 0.0f);
+    glEnd();
+    glEnable(GL_LIGHTING);
+    // Lantern Body
+    glTranslatef(0.0f, -0.80f, 0.0f);
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.55f, 0.42f, 0.20f, 1.0f);
+    drawCylinder(0.07f, 0.05f, 0.06f, 8);
+    // Glowing Warm Core
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, -0.06f, 0.0f);
+    glColor4f(1.0f, 0.82f, 0.35f, 0.95f);
+    drawSphere(0.06f, 8, 6);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    // 9. Cobwebs in 2nd Floor Ceiling Rafter Angles
+    drawCobweb(-8.75f, 6.80f,  4.60f, 0.85f,   0.0f);
+    drawCobweb(-0.85f, 6.80f,  4.60f, 0.75f,  90.0f);
+    drawCobweb(-8.75f, 6.80f, -3.60f, 0.95f, -90.0f);
+    drawCobweb(-4.80f, 7.20f, -2.10f, 0.65f,   0.0f);
+}
+
+// 4. Multi-Section Victorian Gothic Haunted House (Complete with Accurate Windows & Collision)
 void drawHouse() {
     glPushMatrix();
     glTranslatef(g_houseShiftX, 0.0f, g_houseShiftZ);
@@ -4532,8 +5079,11 @@ void drawHouse() {
     drawBox(17.9f, 0.10f, 10.9f, 5.0f, 0.3f);
     glPopMatrix();
 
-    // Render Full Walk-in Haunted Interior (Dilapidated room, Ghost, Furniture, Candle, Stairs)
+    // Render Full Walk-in Haunted Dilapidated Interior (1st Floor)
     drawHouseInterior();
+
+    // Render Full Walk-in 2nd Floor (Dotola) Interior (Bed, Spellbook, Candelabra, Guardrails)
+    drawSecondFloorInterior();
 
     // ========================================================================
     // 2. SECTION A: MAIN LEFT WING (Hollow Room with Doorway Opening)
@@ -4578,12 +5128,18 @@ void drawHouse() {
     drawBox(1.8f, 2.1f, 0.24f, 0.8f, 0.8f);
     glPopMatrix();
 
-    // Second-floor ceiling slab dividing ground haunted room from upper level
+    // Second-floor ceiling slab with Dedicated Stairwell Opening Cutout!
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
+    // Main 2nd floor ceiling slab (from left wall up to stairwell opening)
     glPushMatrix();
-    glTranslatef(-4.8f, 4.20f, 0.5f);
-    drawBox(8.5f, 0.18f, 8.8f, 2.0f, 2.0f);
+    glTranslatef(-5.45f, 4.20f, 0.50f);
+    drawBox(7.00f, 0.18f, 8.80f, 2.0f, 2.0f);
+    glPopMatrix();
+    // Rear ceiling slab behind stairwell
+    glPushMatrix();
+    glTranslatef(-1.30f, 4.20f, -2.69f);
+    drawBox(1.30f, 0.18f, 2.18f, 0.5f, 0.8f);
     glPopMatrix();
 
     // Half-timber decorative framing on left wing front facade
@@ -4672,7 +5228,7 @@ void drawHouse() {
     glTranslatef(0.0f, 1.0f, 0.0f);
     drawPrismRoof(2.5f, 1.6f, 2.2f, 1.0f, 1.0f);
     glPopMatrix();
-    drawHouseWindow(-5.2f, 7.0f, 5.25f, 1.2f, 1.4f, true, true);
+    drawHouseWindow(-5.2f, 7.0f, 5.25f, 1.2f, 1.4f, 0.0f, true, true);
 
     // Second Dormer (right side of left wing)
     applyMaterial(MAT_WEATHERED_WALL);
@@ -4687,7 +5243,7 @@ void drawHouse() {
     glTranslatef(0.0f, 0.9f, 0.0f);
     drawPrismRoof(2.1f, 1.3f, 2.0f, 1.0f, 1.0f);
     glPopMatrix();
-    drawHouseWindow(-3.2f, 6.9f, 5.15f, 1.0f, 1.2f, true, true);
+    drawHouseWindow(-3.2f, 6.9f, 5.15f, 1.0f, 1.2f, 0.0f, true, true);
 
     // ========================================================================
     // 3. SECTION B: TALL CENTRAL GOTHIC TOWER (Silhouetted against Moon)
@@ -4730,10 +5286,10 @@ void drawHouse() {
     drawBox(0.55f, 0.03f, 0.03f);
     glPopMatrix();
 
-    // Tower narrow slit windows at multiple heights
-    drawHouseWindow(1.2f, 8.6f, 4.35f, 1.1f, 1.6f, true, true);
-    drawHouseWindow(1.2f, 4.8f, 4.35f, 1.1f, 1.6f, true, true);
-    drawHouseWindow(1.2f, 6.6f, 4.35f, 0.8f, 1.2f, true, false);
+    // Tower narrow slit windows
+    drawHouseWindow(1.2f, 8.6f, 4.35f, 1.0f, 1.5f, 0.0f, true, true);
+    drawHouseWindow(1.2f, 4.8f, 4.35f, 1.0f, 1.5f, 0.0f, true, true);
+    drawHouseWindow(1.2f, 6.6f, 4.35f, 0.8f, 1.2f, 0.0f, true, false);
 
     // Buttresses on tower sides
     applyMaterial(MAT_STONE);
@@ -4797,16 +5353,12 @@ void drawHouse() {
     drawBox(0.10f, 2.2f, 0.08f);
     glPopMatrix();
 
-    // Upper gable window
-    drawHouseWindow(3.8f, 6.2f, 4.55f, 1.5f, 1.5f, false, true);
+    // Upper gable window (Front)
+    drawHouseWindow(3.8f, 6.2f, 4.55f, 1.4f, 1.4f, 0.0f, false, true);
 
-    // Ground-floor right wing windows
-    drawHouseWindow(2.6f, 2.6f, 4.35f, 1.2f, 1.6f, true, true);
-    drawHouseWindow(4.8f, 2.6f, 4.35f, 1.2f, 1.6f, true, true);
-
-    // Side facade window on right wing
-    drawHouseWindow(6.05f, 3.2f, 2.5f, 1.0f, 1.4f, true, true);
-    drawHouseWindow(6.05f, 5.5f, 2.5f, 0.9f, 1.2f, true, false);
+    // Ground-floor right wing front windows
+    drawHouseWindow(2.6f, 2.6f, 4.35f, 1.1f, 1.5f, 0.0f, true, true);
+    drawHouseWindow(4.8f, 2.6f, 4.35f, 1.1f, 1.5f, 0.0f, true, true);
 
     // ========================================================================
     // 5. SECTION D: GROUND-FLOOR PORCH & ENTRANCE WITH GOTHIC ARCHED DOORWAY
@@ -4919,18 +5471,36 @@ void drawHouse() {
 
     glPopMatrix();
 
-    // Main-floor windows under porch / left wing
-    drawHouseWindow(-7.4f, 2.6f, 4.95f, 1.2f, 1.6f, true, true);
-    drawHouseWindow(-1.8f, 2.6f, 4.95f, 1.2f, 1.6f, true, true);
+    // Main-floor front windows under porch / left wing
+    drawHouseWindow(-7.4f, 2.6f, 4.90f, 1.15f, 1.55f, 0.0f, true, true);
+    drawHouseWindow(-1.8f, 2.6f, 4.90f, 1.15f, 1.55f, 0.0f, true, true);
 
     // ========================================================================
-    // 6. ADDITIONAL ARCHITECTURAL DETAILS (Reference B Fidelity)
+    // 6. ACCURATELY PLACED SIDE & BACK WINDOWS (FIXED PLACEMENT & ORIENTATIONS)
     // ========================================================================
-    // Side facade windows on left wing
-    drawHouseWindow(-9.05f, 3.2f, 1.5f, 1.0f, 1.4f, true, true);
-    drawHouseWindow(-9.05f, 5.5f, 1.5f, 0.9f, 1.2f, true, false);
-    drawHouseWindow(-9.05f, 3.2f, -1.5f, 1.0f, 1.4f, true, true);
+    
+    // LEFT SIDE WINDOWS (Wall at X = -8.95f, rotY = -90.0f facing -X)
+    drawHouseWindow(-9.00f, 2.7f,  2.2f, 1.10f, 1.50f, -90.0f, true, true);
+    drawHouseWindow(-9.00f, 2.7f, -1.5f, 1.10f, 1.50f, -90.0f, true, true);
+    drawHouseWindow(-9.00f, 5.4f,  0.5f, 1.00f, 1.35f, -90.0f, true, true);
 
+    // RIGHT SIDE WINDOWS (Wall at X = 6.05f, rotY = 90.0f facing +X)
+    drawHouseWindow(6.05f, 2.7f,  2.2f, 1.10f, 1.50f, 90.0f, true, true);
+    drawHouseWindow(6.05f, 2.7f, -1.2f, 1.10f, 1.50f, 90.0f, true, true);
+    drawHouseWindow(6.05f, 5.0f,  0.5f, 1.00f, 1.30f, 90.0f, true, true);
+
+    // BACK FACADE WINDOWS (Walls at Z = -3.78f and Z = -3.35f, rotY = 180.0f facing -Z)
+    // Left Wing Back Windows
+    drawHouseWindow(-7.2f, 2.7f, -3.85f, 1.10f, 1.50f, 180.0f, true, true);
+    drawHouseWindow(-2.4f, 2.7f, -3.85f, 1.10f, 1.50f, 180.0f, true, true);
+    drawHouseWindow(-4.8f, 5.4f, -3.85f, 1.20f, 1.40f, 180.0f, true, true);
+    // Right Wing Back Windows
+    drawHouseWindow(3.8f, 2.7f, -3.38f, 1.10f, 1.50f, 180.0f, true, true);
+    drawHouseWindow(3.8f, 5.0f, -3.38f, 1.00f, 1.30f, 180.0f, true, true);
+
+    // ========================================================================
+    // 7. ADDITIONAL ARCHITECTURAL DETAILS
+    // ========================================================================
     // Overhanging eaves / fascia boards on main sections
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
@@ -4960,18 +5530,18 @@ void drawHouse() {
     glPushMatrix(); glTranslatef(2.6f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
     glPushMatrix(); glTranslatef(4.8f, 3.55f, 4.38f); drawBox(1.5f, 0.14f, 0.10f); glPopMatrix();
 
-    // Small rear extension / lean-to
+    // Small rear extension / lean-to (Positioned on the exterior behind the back wall)
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.35f, 0.33f, 0.30f, 1.0f);
     glPushMatrix();
-    glTranslatef(-6.5f, 2.5f, -3.0f);
-    drawBox(3.2f, 3.0f, 3.5f, 1.5f, 1.0f);
+    glTranslatef(-6.5f, 1.8f, -5.50f);
+    drawBox(3.2f, 2.4f, 3.4f, 1.5f, 1.0f);
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
     glColor4f(0.36f, 0.40f, 0.48f, 1.0f);
-    glTranslatef(0.0f, 1.5f, 0.0f);
-    drawPrismRoof(3.4f, 1.8f, 3.7f, 1.5f, 1.5f);
+    glTranslatef(0.0f, 1.2f, 0.0f);
+    drawPrismRoof(3.4f, 1.5f, 3.5f, 1.5f, 1.5f);
     glPopMatrix();
 
     glPopMatrix(); // End House
@@ -6963,15 +7533,15 @@ void renderSceneHUD() {
     glEnd();
 
     // Top Banner
-    drawUIPanel(20.0f, 15.0f, 450.0f, 40.0f, 0.04f, 0.05f, 0.08f, 0.80f);
+    drawUIPanel(20.0f, 15.0f, 480.0f, 40.0f, 0.04f, 0.05f, 0.08f, 0.82f);
     drawString2D(35.0f, 40.0f, GLUT_BITMAP_HELVETICA_18, "HORROR HOUSE AT NIGHT", 1.0f, 0.4f, 0.15f);
     
     char fpsStr[32];
     snprintf(fpsStr, sizeof(fpsStr), "FPS: %.0f", g_fps);
-    drawString2D(380.0f, 40.0f, GLUT_BITMAP_HELVETICA_12, fpsStr, 0.4f, 0.9f, 0.4f);
+    drawString2D(410.0f, 40.0f, GLUT_BITMAP_HELVETICA_12, fpsStr, 0.4f, 0.9f, 0.4f);
 
     // Left Panel: 4-Light Live Status Indicator Card
-    drawUIPanel(20.0f, 65.0f, 450.0f, 195.0f, 0.03f, 0.04f, 0.07f, 0.82f);
+    drawUIPanel(20.0f, 65.0f, 480.0f, 215.0f, 0.03f, 0.04f, 0.07f, 0.85f);
     drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & ATMOSPHERE STATUS [1, 2, 3, 4, 5, 0, T]:", 0.9f, 0.85f, 0.6f);
 
     if (g_light0PointOn) {
@@ -6981,7 +7551,7 @@ void renderSceneHUD() {
     }
 
     if (g_light1DirectionalOn) {
-        drawString2D(35.0f, 128.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ ON ] Cool Silvery Blue (Shadows)", 0.4f, 0.8f, 1.0f);
+        drawString2D(35.0f, 128.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ ON ] Cool Silvery Blue (Planar Shadows)", 0.4f, 0.8f, 1.0f);
     } else {
         drawString2D(35.0f, 128.0f, GLUT_BITMAP_HELVETICA_12, "[2] Directional (Moonlight)   : [ OFF ]", 0.7f, 0.2f, 0.2f);
     }
@@ -7012,67 +7582,149 @@ void renderSceneHUD() {
 
 #ifdef _WIN32
     char featStr[160];
-    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Tour: %s [C] | Audio: %s [M] | Lightning: [L]",
+    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Guided Tour: %s [C] | Audio: %s [M] | Lightning: [L]",
              g_fogEnabled ? "ON" : "OFF",
              g_cinematicMode ? "ACTIVE" : "OFF",
              g_audioEnabled ? "ON" : "MUTED");
     drawString2D(35.0f, 230.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
 #else
     char featStr[160];
-    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Tour: %s [C] | Lightning: [L]",
+    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Guided Tour: %s [C] | Lightning: [L]",
              g_fogEnabled ? "ON" : "OFF",
              g_cinematicMode ? "ACTIVE" : "OFF");
     drawString2D(35.0f, 230.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
 #endif
 
+    drawString2D(35.0f, 252.0f, GLUT_BITMAP_HELVETICA_12, "Floors: 1st Floor Parlor + 2nd Floor (Dotola) Attic [V/I: Cycle Views]", 1.0f, 0.85f, 0.3f);
+
     if (g_lightning.active) {
-        drawString2D(35.0f, 252.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
+        drawString2D(35.0f, 272.0f, GLUT_BITMAP_HELVETICA_12, ">> DISTANT LIGHTNING STRIKE ILLUMINATING SCENE <<", 0.9f, 0.95f, 1.0f);
     }
 
     // Right Controls Cheat-Sheet
-    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 195.0f, 0.03f, 0.04f, 0.07f, 0.80f);
-    drawString2D(w - 365.0f, 36.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS GUIDE:", 0.9f, 0.85f, 0.6f);
-    drawString2D(w - 365.0f, 56.0f,  GLUT_BITMAP_HELVETICA_12, "W, A, S, D     : First-Person Walk / Strafe", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 76.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Move     : Look Around (Yaw / Pitch)", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 96.0f,  GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 116.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 134.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 152.0f, GLUT_BITMAP_HELVETICA_12, "L: Lightning Strike | M: Audio Mute", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 170.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | C: Tour | R: Reset View", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 188.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
+    drawUIPanel(w - 380.0f, 15.0f, 360.0f, 210.0f, 0.03f, 0.04f, 0.07f, 0.82f);
+    drawString2D(w - 365.0f, 35.0f,  GLUT_BITMAP_HELVETICA_12, "CONTROLS & SHORTCUTS GUIDE:", 0.9f, 0.85f, 0.6f);
+    drawString2D(w - 365.0f, 53.0f,  GLUT_BITMAP_HELVETICA_12, "W, A, S, D     : Walk (Walk Up Stairs to 2nd Floor!)", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 71.0f,  GLUT_BITMAP_HELVETICA_12, "Mouse Move     : Look Around (Yaw / Pitch)", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 89.0f,  GLUT_BITMAP_HELVETICA_12, "C / U          : FULL GUIDED SHOWCASE TOUR", 1.0f, 0.45f, 0.2f);
+    drawString2D(w - 365.0f, 107.0f, GLUT_BITMAP_HELVETICA_12, "V / I          : Cycle View (Exterior / 1st / 2nd Floor)", 1.0f, 0.85f, 0.3f);
+    drawString2D(w - 365.0f, 125.0f, GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 143.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 161.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 179.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | G: Fog | L: Lightning", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 197.0f, GLUT_BITMAP_HELVETICA_12, "P: Screenshot | H: HUD | ESC: Quit", 0.8f, 0.85f, 0.9f);
 
+    // Comprehensive Guided Showcase Tour HUD Card (Bottom Center)
     if (g_cinematicMode) {
-        drawUIPanel(w * 0.5f - 240.0f, h - 65.0f, 480.0f, 45.0f, 0.08f, 0.03f, 0.02f, 0.90f);
-        drawString2D(w * 0.5f - 210.0f, h - 38.0f, GLUT_BITMAP_HELVETICA_18, "CINEMATIC AUTO-TOUR ACTIVE", 1.0f, 0.45f, 0.2f);
-        drawString2D(w * 0.5f + 90.0f, h - 38.0f, GLUT_BITMAP_HELVETICA_12, "[Press 'C' to Exit]", 0.8f, 0.8f, 0.8f);
+        drawUIPanel(w * 0.5f - 380.0f, h - 85.0f, 760.0f, 68.0f, 0.04f, 0.03f, 0.06f, 0.92f);
+        
+        // Header title
+        drawString2D(w * 0.5f - 360.0f, h - 60.0f, GLUT_BITMAP_HELVETICA_18, "FULL PROJECT GUIDED SHOWCASE TOUR", 1.0f, 0.55f, 0.20f);
+        drawString2D(w * 0.5f + 190.0f, h - 60.0f, GLUT_BITMAP_HELVETICA_12, "[Press 'C' to Exit Tour]", 0.85f, 0.85f, 0.85f);
+
+        // Stage description & dynamic action badge
+        extern std::string g_tourStageTitle;
+        extern std::string g_tourActionBadge;
+        drawString2D(w * 0.5f - 360.0f, h - 35.0f, GLUT_BITMAP_HELVETICA_12, g_tourStageTitle.c_str(), 0.9f, 0.9f, 0.95f);
+        
+        char actionStr[160];
+        snprintf(actionStr, sizeof(actionStr), "Action: %s", g_tourActionBadge.c_str());
+        drawString2D(w * 0.5f + 10.0f, h - 35.0f, GLUT_BITMAP_HELVETICA_12, actionStr, 0.3f, 1.0f, 0.4f);
+
+        // Progress bar line
+        float prog = g_cinematicTime / 64.0f;
+        if (prog > 1.0f) prog = 1.0f;
+        glLineWidth(3.0f);
+        glBegin(GL_LINES);
+        glColor4f(0.3f, 0.3f, 0.3f, 0.8f);
+        glVertex2f(w * 0.5f - 360.0f, h - 22.0f);
+        glVertex2f(w * 0.5f + 360.0f, h - 22.0f);
+        glColor4f(1.0f, 0.6f, 0.1f, 1.0f);
+        glVertex2f(w * 0.5f - 360.0f, h - 22.0f);
+        glVertex2f(w * 0.5f - 360.0f + 720.0f * prog, h - 22.0f);
+        glEnd();
     }
 }
 
 // ============================================================================
-// CINEMATIC AUTO-TOUR CAMERA FLIGHT PATH
+// FULL COMPREHENSIVE GUIDED SHOWCASE TOUR CAMERA SYSTEM & DYNAMIC ACTIONS
 // ============================================================================
-struct Keyframe {
+std::string g_tourStageTitle = "1/8: Exterior Overview & Moonlit Atmosphere";
+std::string g_tourActionBadge = "Directional Light (GL_LIGHT1)";
+int g_camFloorState = 0; // 0 = Exterior, 1 = 1st Floor Interior, 2 = 2nd Floor (Dotola)
+
+struct TourKeyframe {
     float time;
     float x, y, z;
     float yaw, pitch;
+    const char* stageTitle;
+    const char* actionBadge;
 };
 
-const Keyframe TOUR_KEYS[] = {
-    {  0.0f,   1.2f,  1.35f, 22.0f, -94.0f,   5.0f },
-    {  6.0f,  -1.2f,  1.20f, 12.0f, -85.0f,   8.0f },
-    { 12.0f,  -2.8f,  2.60f,  6.5f, -75.0f,  18.0f },
-    { 18.0f,   3.2f,  3.20f,  8.5f, -95.0f,   2.0f },
-    { 24.0f,  10.0f,  1.80f, 10.0f, -145.0f, -4.0f },
-    { 30.0f,   8.5f,  7.50f, 20.0f, -120.0f, -16.0f },
-    { 36.0f,   1.2f,  1.35f, 22.0f, -94.0f,   5.0f }
+const TourKeyframe TOUR_KEYS[] = {
+    // Stage 1: Exterior Overview & Lightning Strike (0s - 7s)
+    {  0.0f,   1.20f,  1.35f, 22.0f, -94.0f,   5.0f, "1/8: Exterior Overview & Moonlit Atmosphere", "Directional Light (GL_LIGHT1)" },
+    {  3.8f,  -0.50f,  1.80f, 16.5f, -88.0f,   6.0f, "1/8: Distant Lightning Strike & Thunder", "Lightning Strike Triggered [L]" },
+    
+    // Stage 2: Vintage Rusted 1950s Car & Spotlight (7s - 14s)
+    {  7.0f,   5.20f,  1.40f, 13.5f, -115.0f,  2.0f, "2/8: Rusted 1950s Car & Planar Shadows", "Flashlight Spotlight ON [3/F]" },
+    { 10.5f,   7.80f,  1.50f,  9.5f, -145.0f, -2.0f, "2/8: Telephone Pole & Gothic Yard Props", "Spotlight Soft Cone (22 deg)" },
+
+    // Stage 3: Foggy Graveyard & Pumpkin Candle Lights (14s - 21s)
+    { 14.0f,   8.80f,  1.60f, -3.5f, -160.0f, -4.0f, "3/8: Foggy Cemetery & Celtic Crosses", "Jack-o'-Lanterns Active [K]" },
+    { 17.5f,   3.50f,  1.50f, -4.5f, -130.0f,  2.0f, "3/8: Carved Pumpkins & Dynamic Light Pools", "Flickering Candle Point Lights" },
+
+    // Stage 4: Front Porch & Hanging Bulb Harmonic Sway (21s - 28s)
+    { 21.0f,  -1.80f,  1.80f,  3.5f,  -70.0f, 12.0f, "4/8: Front Porch & Hanging Incandescent Bulb", "Point Light (GL_LIGHT0) Sway [B]" },
+    { 24.8f,  -4.60f,  2.10f,  0.8f,  -65.0f, 15.0f, "4/8: Point Light Distance Attenuation", "1 / (kc + kl*d + kq*d^2)" },
+
+    // Stage 5: Ground Floor Interior & Material Shading (28s - 36s)
+    { 28.0f,  -7.20f,  1.65f, -9.2f, -100.0f, -4.0f, "5/8: Dilapidated Ground Floor Parlor", "Texture Mapping [T] (GL_MODULATE)" },
+    { 32.0f,  -5.50f,  1.65f, -8.5f, -125.0f, -2.0f, "5/8: Grandfather Clock & Broken Furniture", "Phong Material Shading" },
+
+    // Stage 6: Ground Floor Hallway, Dilapidated Fireplace & Clutter (36s - 44s)
+    { 36.0f,  -7.80f,  1.65f, -9.8f,  -70.0f,  4.0f, "6/8: Dilapidated Fireplace & Archway", "Interior Architecture & Props" },
+    { 40.0f,  -6.20f,  1.75f, -9.0f,  -85.0f,  2.0f, "6/8: Weathered Floorboards & Cobwebs", "Approaching 15-Step Stairway" },
+
+    // Stage 7: Ascending Completed 15-Step Staircase to 2nd Floor (44s - 52s)
+    { 44.0f,  -4.80f,  2.20f, -7.5f,  -55.0f, 18.0f, "7/8: Climbing Completed 15-Step Staircase", "Ascending to 2nd Floor (Dotola)" },
+    { 48.0f,  -4.20f,  4.20f, -9.8f,  -68.0f, 15.0f, "7/8: Passing Balusters & Stairwell Opening", "Full Stairway Completed" },
+
+    // Stage 8: 2nd Floor (Dotola) Attic Bedroom, Grimoire & Dormer Window (52s - 64s)
+    { 52.0f,  -7.50f,  5.85f, -8.8f,  -95.0f, -5.0f, "8/8: 2nd Floor Four-Poster Bed & Desk", "Occult Grimoire & Candelabra" },
+    { 58.0f,  -6.80f,  5.85f, -6.5f,  -75.0f,  4.0f, "8/8: Upper Dormer Window Moonlit View", "Tour Complete! [Press C to Explore]" },
+    { 64.0f,   1.20f,  1.35f, 22.0f, -94.0f,   5.0f, "8/8: Grand Exterior Panorama", "Cinematic Tour Finished" }
 };
 const int NUM_TOUR_KEYS = sizeof(TOUR_KEYS) / sizeof(TOUR_KEYS[0]);
-const float TOTAL_TOUR_DURATION = 36.0f;
+const float TOTAL_TOUR_DURATION = 64.0f;
 
 void updateCinematicCamera(float dt) {
+    float prevTime = g_cinematicTime;
     g_cinematicTime += dt;
     if (g_cinematicTime >= TOTAL_TOUR_DURATION) {
         g_cinematicTime = std::fmod(g_cinematicTime, TOTAL_TOUR_DURATION);
+        prevTime = 0.0f;
+    }
+
+    // Dynamic Live Action Demonstrations during Guided Tour
+    // 1. Trigger Lightning Strike at t = 2.5s
+    if (prevTime < 2.5f && g_cinematicTime >= 2.5f) {
+        triggerLightning();
+    }
+    // 2. Turn Flashlight Spotlight ON at t = 7.0s
+    if (prevTime < 7.0f && g_cinematicTime >= 7.0f) {
+        g_light2SpotOn = true;
+    }
+    // 3. Turn Flashlight Spotlight OFF at t = 13.5s
+    if (prevTime < 13.5f && g_cinematicTime >= 13.5f) {
+        g_light2SpotOn = false;
+    }
+    // 4. Brief Texture Mapping comparison at t = 30.0s to 32.5s
+    if (prevTime < 30.0f && g_cinematicTime >= 30.0f) {
+        g_texturesEnabled = false; // Show Phong material albedos
+    }
+    if (prevTime < 32.5f && g_cinematicTime >= 32.5f) {
+        g_texturesEnabled = true;  // Restore GL_MODULATE textures
     }
 
     int idx = 0;
@@ -7083,9 +7735,12 @@ void updateCinematicCamera(float dt) {
         }
     }
 
+    g_tourStageTitle  = TOUR_KEYS[idx].stageTitle;
+    g_tourActionBadge = TOUR_KEYS[idx].actionBadge;
+
     float segDur = TOUR_KEYS[idx + 1].time - TOUR_KEYS[idx].time;
     float t = (g_cinematicTime - TOUR_KEYS[idx].time) / segDur;
-    float s = t * t * (3.0f - 2.0f * t);
+    float s = t * t * (3.0f - 2.0f * t); // Smooth Hermite ease-in ease-out
 
     g_cam.x = TOUR_KEYS[idx].x + (TOUR_KEYS[idx + 1].x - TOUR_KEYS[idx].x) * s;
     g_cam.y = TOUR_KEYS[idx].y + (TOUR_KEYS[idx + 1].y - TOUR_KEYS[idx].y) * s;
@@ -7095,7 +7750,86 @@ void updateCinematicCamera(float dt) {
 }
 
 // ============================================================================
-// INPUT PROCESSING & CAMERA MOVEMENT
+// HOUSE COLLISION DETECTION (STRICT SINGLE-DOOR ENTRY/EXIT & 2ND FLOOR ACCESS)
+// Only the front doorway (dorja) allows passing between exterior and interior!
+// ============================================================================
+bool isHouseLocationFree(float worldX, float worldZ) {
+    // Transform from world space to house local space
+    float dx = worldX - g_houseShiftX;
+    float dz = worldZ - g_houseShiftZ;
+    float rad = -g_houseRotY * (float)M_PI / 180.0f;
+    float lx =  dx * std::cos(rad) + dz * std::sin(rad);
+    float lz = -dx * std::sin(rad) + dz * std::cos(rad);
+    float pr = 0.35f; // Player collision radius
+
+    // 1. Central Tower (Cylinder) - Completely Solid
+    float tdx = lx - 1.2f;
+    float tdz = lz - 2.2f;
+    if (tdx * tdx + tdz * tdz < (2.15f + pr) * (2.15f + pr)) {
+        return false;
+    }
+
+    // 2. Right Wing (Solid Building Section) - Completely Solid
+    if (lx >= (1.55f - pr) && lx <= (6.10f + pr) && lz >= (-3.40f - pr) && lz <= (4.45f + pr)) {
+        return false;
+    }
+
+    // 3. Back Lean-to Extension - Completely Solid
+    if (lx >= (-8.20f - pr) && lx <= (-4.80f + pr) && lz >= (-5.85f - pr) && lz <= (-3.70f + pr)) {
+        return false;
+    }
+
+    // 4. Main Wing Left Outer Wall (lx = -8.95f) - Completely Solid (No window clipping)
+    if (lx <= (-8.85f + pr) && lz >= (-3.90f - pr) && lz <= (4.90f + pr)) {
+        return false;
+    }
+
+    // 5. Main Wing Right Partition Wall (lx = -0.65f) - Completely Solid
+    if (lx >= (-0.75f - pr) && lz >= (-3.90f - pr) && lz <= (4.90f + pr)) {
+        return false;
+    }
+
+    // 6. Main Wing Back Wall (lz = -3.78f) - Completely Solid
+    if (lz <= (-3.65f + pr) && lx >= (-9.10f - pr) && lx <= (-0.55f + pr)) {
+        return false;
+    }
+
+    // 7. Main Wing Front Wall (lz = 4.78f)
+    // ONLY the front doorway (lx in [-5.30f, -3.90f] on ground floor y < 3.4f) allows entry/exit!
+    // All left panels, right panels, lintels, and entire 2nd floor front wall are 100% SOLID!
+    if (lz >= (4.60f - pr) && lz <= (4.96f + pr)) {
+        bool inDoorOpening = (g_cam.y < 3.4f) && (lx >= -5.30f && lx <= -3.90f);
+        if (!inDoorOpening) {
+            if (lx >= (-9.10f - pr) && lx <= (-0.55f + pr)) {
+                return false;
+            }
+        }
+    }
+
+    // 8. Porch Support Posts (Columns)
+    float postX[4] = { -7.4f, -5.8f, -3.4f, -1.8f };
+    for (int p = 0; p < 4; ++p) {
+        float pdx = lx - postX[p];
+        float pdz = lz - 5.7f;
+        if (pdx * pdx + pdz * pdz < (0.24f + pr) * (0.24f + pr)) {
+            return false;
+        }
+    }
+
+    // 9. Hallway Partition inside ground floor room (lz = -1.20f)
+    if (g_cam.y < 3.4f) {
+        bool inStairCorridor = (lx >= -2.25f && lx <= -0.65f);
+        if (!inStairCorridor && lz >= (-1.35f - pr) && lz <= (-1.05f + pr)) {
+            if (lx >= (-9.00f - pr) && lx <= -5.45f) return false;
+            if (lx >= -3.75f && lx <= (-0.55f + pr)) return false;
+        }
+    }
+
+    return true;
+}
+
+// ============================================================================
+// INPUT PROCESSING & CAMERA MOVEMENT (SEAMLESS STAIR CLIMBING & 2ND FLOOR)
 // ============================================================================
 void processKeyboardInput(float dt) {
     if (g_cinematicMode) return;
@@ -7108,33 +7842,48 @@ void processKeyboardInput(float dt) {
     float rz =  std::cos(radYaw);
 
     float moveSpeed = g_cam.speed * dt;
+    float deltaX = 0.0f;
+    float deltaZ = 0.0f;
 
     if (g_keyState['w'] || g_keyState['W']) {
-        g_cam.x += fx * moveSpeed;
-        g_cam.z += fz * moveSpeed;
+        deltaX += fx * moveSpeed;
+        deltaZ += fz * moveSpeed;
     }
     if (g_keyState['s'] || g_keyState['S']) {
-        g_cam.x -= fx * moveSpeed;
-        g_cam.z -= fz * moveSpeed;
+        deltaX -= fx * moveSpeed;
+        deltaZ -= fz * moveSpeed;
     }
     if (g_keyState['a'] || g_keyState['A']) {
-        g_cam.x -= rx * moveSpeed;
-        g_cam.z -= rz * moveSpeed;
+        deltaX -= rx * moveSpeed;
+        deltaZ -= rz * moveSpeed;
     }
     if (g_keyState['d'] || g_keyState['D']) {
-        g_cam.x += rx * moveSpeed;
-        g_cam.z += rz * moveSpeed;
+        deltaX += rx * moveSpeed;
+        deltaZ += rz * moveSpeed;
     }
-    if (g_keyState[' '] || g_keyState['e'] || g_keyState['E']) {
+
+    // Apply collision-aware movement with smooth sliding along walls
+    if (deltaX != 0.0f || deltaZ != 0.0f) {
+        if (isHouseLocationFree(g_cam.x + deltaX, g_cam.z + deltaZ)) {
+            g_cam.x += deltaX;
+            g_cam.z += deltaZ;
+        } else if (isHouseLocationFree(g_cam.x + deltaX, g_cam.z)) {
+            g_cam.x += deltaX; // Slide along X
+        } else if (isHouseLocationFree(g_cam.x, g_cam.z + deltaZ)) {
+            g_cam.z += deltaZ; // Slide along Z
+        }
+    }
+
+    if (g_keyState[' ']) {
         g_cam.y += moveSpeed;
     }
-    if (g_isCtrlPressed || g_keyState['x'] || g_keyState['X'] || g_keyState['q'] || g_keyState['Q']) {
+    if (g_isCtrlPressed || g_keyState['q'] || g_keyState['Q']) {
         g_cam.y -= moveSpeed;
         if (g_cam.y < 0.4f) g_cam.y = 0.4f;
     }
 
-    // Auto-step height tracking for seamless walking on paths, up porch steps, and into the house
-    if (!g_keyState[' '] && !g_keyState['e'] && !g_keyState['E'] && !g_isCtrlPressed && !g_keyState['q']) {
+    // Auto-step height tracking for seamless walking on paths, porch steps, staircase, and 2nd floor (Dotola)!
+    if (!g_keyState[' '] && !g_isCtrlPressed && !g_keyState['q']) {
         float surfaceY = getTerrainHeight(g_cam.x, g_cam.z);
 
         // Porch steps (Z: 7.0 to 8.2, X: -4.5 + g_houseShiftX to -1.0 + g_houseShiftX)
@@ -7146,9 +7895,29 @@ void processKeyboardInput(float dt) {
         if (g_cam.z >= 3.2f && g_cam.z < 7.0f && g_cam.x >= (-6.4f + g_houseShiftX) && g_cam.x <= (0.8f + g_houseShiftX)) {
             surfaceY = std::max(surfaceY, 0.74f);
         }
-        // House interior floor (Z: -7.0f to 5.2f, X: -9.0 + g_houseShiftX to 7.0 + g_houseShiftX)
-        if (g_cam.z >= -7.0f && g_cam.z < 5.2f && g_cam.x >= (-9.0f + g_houseShiftX) && g_cam.x <= (7.0f + g_houseShiftX)) {
-            surfaceY = std::max(surfaceY, 0.78f);
+
+        // Inside Main House Section:
+        float hdx = g_cam.x - g_houseShiftX;
+        float hdz = g_cam.z - g_houseShiftZ;
+        float hRad = -g_houseRotY * (float)M_PI / 180.0f;
+        float hlx =  hdx * std::cos(hRad) + hdz * std::sin(hRad);
+        float hlz = -hdx * std::sin(hRad) + hdz * std::cos(hRad);
+
+        if (hlx >= -8.90f && hlx <= -0.65f && hlz >= -3.75f && hlz <= 4.75f) {
+            // Inside left wing
+            if (hlx >= -2.25f && hlx <= -0.65f && hlz >= -1.65f && hlz <= 3.85f) {
+                // WALKING ON THE 15-STEP COMPLETED STAIRCASE!
+                float stairT = (3.60f - hlz) / 5.0f;
+                if (stairT < 0.0f) stairT = 0.0f;
+                if (stairT > 1.0f) stairT = 1.0f;
+                surfaceY = 0.74f + stairT * (4.20f - 0.74f);
+            } else if (g_cam.y >= 3.6f) {
+                // WALKING ON 2nd FLOOR (DOTOLA) FLOORBOARDS!
+                surfaceY = 4.20f;
+            } else {
+                // GROUND FLOOR INTERIOR!
+                surfaceY = 0.78f;
+            }
         }
 
         float targetEyeY = surfaceY + 1.65f;
@@ -7258,7 +8027,7 @@ void displayCallback() {
         if (++debugFrame % 60 == 0) {
             std::cout << "[DEBUG] Camera: (" << g_cam.x << ", " << g_cam.y << ", " << g_cam.z 
                       << ") | Yaw: " << g_cam.yaw << " deg, Pitch: " << g_cam.pitch 
-                      << " deg | House BBox Center: (-1.0, 3.8, -1.0), Extents: (17.6 wide, 10.0 tall, 13.6 deep)" << std::endl;
+                      << " deg" << std::endl;
         }
 
         render3DScene();
@@ -7330,7 +8099,7 @@ void idleCallback() {
     // 2. Pumpkin Warm Candle Flicker
     g_pumpkinFlicker = 0.85f + 0.15f * std::sin(g_time * 4.5f) * std::cos(g_time * 2.8f);
 
-    // 2.1 Dynamic Falling Leaves Animation (drifting and tumbling down from trees)
+    // 2.1 Dynamic Falling Leaves Animation
     updateFallingLeaves(g_deltaTime);
 
     // 3. Lightning State Machine & Dynamic Flashes
@@ -7345,24 +8114,18 @@ void idleCallback() {
         float dur = g_lightning.strikeDuration;
 
         if (prog < 0.08f) {
-            // Pulse 1: Pre-flash spike
             g_lightning.flashIntensity = (prog / 0.08f) * 0.70f;
         } else if (prog < 0.13f) {
-            // Dark dip
             g_lightning.flashIntensity = 0.15f;
         } else if (prog < 0.28f) {
-            // Main blinding lightning strike
             float tMain = (prog - 0.13f) / 0.15f;
             g_lightning.flashIntensity = 1.0f - tMain * 0.35f;
         } else if (prog < 0.36f) {
-            // Minor dip
             g_lightning.flashIntensity = 0.35f;
         } else if (prog < 0.48f) {
-            // Secondary return stroke
             float tSec = (prog - 0.36f) / 0.12f;
             g_lightning.flashIntensity = 0.75f - tSec * 0.40f;
         } else if (prog < dur) {
-            // Smooth trailing dissipation
             float tTail = (prog - 0.48f) / (dur - 0.48f);
             g_lightning.flashIntensity = 0.35f * (1.0f - tTail) * (1.0f - tTail);
         } else {
@@ -7372,7 +8135,6 @@ void idleCallback() {
         }
 
 #ifdef _WIN32
-        // Delayed Thunder Audio Trigger
         if (g_lightning.thunderPending) {
             g_lightning.thunderCountdown -= g_deltaTime;
             if (g_lightning.thunderCountdown <= 0.0f) {
@@ -7386,7 +8148,6 @@ void idleCallback() {
     }
 
 #ifdef _WIN32
-    // Audio Loop Recovery after Thunder
     if (g_thunderAudioTimer > 0.0f) {
         g_thunderAudioTimer -= g_deltaTime;
         if (g_thunderAudioTimer <= 0.0f) {
@@ -7470,9 +8231,11 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
             break;
         case 'c':
         case 'C':
+        case 'u':
+        case 'U':
             g_cinematicMode = !g_cinematicMode;
             if (g_cinematicMode) g_cinematicTime = 0.0f;
-            std::cout << "[CAMERA] Cinematic Auto-Tour : " << (g_cinematicMode ? "ACTIVE" : "DISABLED") << std::endl;
+            std::cout << "[CAMERA] Guided Showcase Tour : " << (g_cinematicMode ? "ACTIVE (8-Stage Comprehensive Tour)" : "DISABLED (Manual Exploration)") << std::endl;
             break;
         case 'l':
         case 'L':
@@ -7501,24 +8264,29 @@ void keyboardDownCallback(unsigned char key, int x, int y) {
             g_cam.x = 1.2f; g_cam.y = 1.35f; g_cam.z = 22.0f;
             g_cam.yaw = -94.0f; g_cam.pitch = 5.0f;
             g_cinematicMode = false;
+            g_camFloorState = 0;
             std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point" << std::endl;
             break;
         case 'v':
         case 'V':
         case 'i':
         case 'I': {
-            static bool inInterior = false;
-            inInterior = !inInterior;
-            if (inInterior) {
-                // View inside Haunted Interior Room (Matching Reference Panel 2)
-                g_cam.x = -7.50f; g_cam.y = 1.60f; g_cam.z = -9.20f;
+            g_camFloorState = (g_camFloorState + 1) % 3;
+            g_cinematicMode = false;
+            if (g_camFloorState == 1) {
+                // 1st Floor Ground Parlor Interior
+                g_cam.x = -7.50f; g_cam.y = 2.43f; g_cam.z = -9.20f;
                 g_cam.yaw = -100.0f; g_cam.pitch = -4.0f;
-                g_cinematicMode = false;
-                std::cout << "[CAMERA] Switched to Haunted Room Interior View" << std::endl;
+                std::cout << "[CAMERA] Switched to 1st Floor Parlor Interior" << std::endl;
+            } else if (g_camFloorState == 2) {
+                // 2nd Floor (Dotola) Attic Bedroom & Study Interior
+                g_cam.x = -7.72f; g_cam.y = 5.85f; g_cam.z = -8.85f;
+                g_cam.yaw = -95.0f; g_cam.pitch = -4.0f;
+                std::cout << "[CAMERA] Switched to 2nd Floor (Dotola) Attic Bedroom & Witchcraft Study" << std::endl;
             } else {
+                // Exterior Yard Vantage Point
                 g_cam.x = 1.2f; g_cam.y = 1.35f; g_cam.z = 22.0f;
                 g_cam.yaw = -94.0f; g_cam.pitch = 5.0f;
-                g_cinematicMode = false;
                 std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point" << std::endl;
             }
             break;
@@ -7610,6 +8378,13 @@ int main(int argc, char** argv) {
         } else if (std::string(argv[i]) == "--interior") {
             g_cam.x = -7.50f; g_cam.y = 1.60f; g_cam.z = -9.20f;
             g_cam.yaw = -100.0f; g_cam.pitch = -4.0f;
+        } else if (std::string(argv[i]) == "--cam" && i + 5 < argc) {
+            g_cam.x = std::stof(argv[i + 1]);
+            g_cam.y = std::stof(argv[i + 2]);
+            g_cam.z = std::stof(argv[i + 3]);
+            g_cam.yaw = std::stof(argv[i + 4]);
+            g_cam.pitch = std::stof(argv[i + 5]);
+            i += 5;
         }
     }
 
