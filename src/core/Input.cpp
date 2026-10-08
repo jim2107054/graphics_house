@@ -11,9 +11,6 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
     if (g_appState == STATE_TITLE) {
         if (key == 13 || key == ' ') {
             g_appState = STATE_SCENE;
-#ifdef _WIN32
-            playAmbientAudio();
-#endif
         }
         if (key == 27) exit(0);
         return;
@@ -80,12 +77,6 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
         case 'L':
             triggerLightning();
             break;
-#ifdef _WIN32
-        case 'm':
-        case 'M':
-            toggleAudio();
-            break;
-#endif
         case 'p':
         case 'P': {
             static int ssCount = 1;
@@ -199,9 +190,6 @@ void mouseButtonCallback(int button, int state, int x, int y) {    (void)x; (voi
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         if (g_appState == STATE_TITLE) {
             g_appState = STATE_SCENE;
-#ifdef _WIN32
-            playAmbientAudio();
-#endif
         } else {
             g_light2SpotOn = !g_light2SpotOn;
         }

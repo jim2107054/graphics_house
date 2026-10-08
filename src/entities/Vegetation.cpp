@@ -7,10 +7,13 @@
 
 void drawNaturalFoliageCluster(float radius, TreeRNG& rng, int foliageType) {    if (foliageType == 1) {
         applyMaterial(MAT_FOLIAGE_DARK);
+        glColor4fv(MAT_FOLIAGE_DARK.diffuse);
     } else if (foliageType == 2) {
         applyMaterial(MAT_FOLIAGE_AUTUMN);
+        glColor4fv(MAT_FOLIAGE_AUTUMN.diffuse);
     } else {
         applyMaterial(MAT_FOLIAGE_LUSH);
+        glColor4fv(MAT_FOLIAGE_LUSH.diffuse);
     }
     bindTexture(TEX_NONE);
 
@@ -53,6 +56,7 @@ void drawNaturalFoliageCluster(float radius, TreeRNG& rng, int foliageType) {   
 
     // Restore bark material & texture
     applyMaterial(MAT_BARK);
+    glColor4fv(MAT_BARK.diffuse);
     bindTexture(TEX_BARK);
 }
 
@@ -211,6 +215,7 @@ void drawNaturalPineTree(float x, float z, float trunkRadius, float height, floa
 
     // Tiered conical evergreen needle foliage layers
     applyMaterial(MAT_PINE_NEEDLES);
+    glColor4fv(MAT_PINE_NEEDLES.diffuse);
     bindTexture(TEX_NONE);
 
     struct PineTier {
@@ -259,6 +264,7 @@ void drawNaturalPineTree(float x, float z, float trunkRadius, float height, floa
 
     // Reset material
     applyMaterial(MAT_BARK);
+    glColor4fv(MAT_BARK.diffuse);
     bindTexture(TEX_BARK);
 
     glPopMatrix();

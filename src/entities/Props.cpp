@@ -368,8 +368,6 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
             glPopAttrib();
         }
     }
-
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 }
 

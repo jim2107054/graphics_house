@@ -61,9 +61,6 @@ void initOpenGL() {
     initAllTextures();
     initStars();
     initFallingLeaves();
-#ifdef _WIN32
-    initProceduralAudio();
-#endif
 }
 
 void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
@@ -337,22 +334,12 @@ void idleCallback() {    int curTimeMs = glutGet(GLUT_ELAPSED_TIME);
             g_lightning.thunderCountdown -= g_deltaTime;
             if (g_lightning.thunderCountdown <= 0.0f) {
                 g_lightning.thunderPending = false;
-                playThunderAudio();
             }
         }
 #endif
     } else {
         g_lightning.flashIntensity = 0.0f;
     }
-
-#ifdef _WIN32
-    if (g_thunderAudioTimer > 0.0f) {
-        g_thunderAudioTimer -= g_deltaTime;
-        if (g_thunderAudioTimer <= 0.0f) {
-            playAmbientAudio();
-        }
-    }
-#endif
 
     if (g_cinematicMode) {
         updateCinematicCamera(g_deltaTime);
@@ -417,7 +404,6 @@ int main(int argc, char** argv) {    for (int i = 1; i < argc; ++i) {
     std::cout << "  [B] Toggle Bulb Sway & Flicker                          " << std::endl;
     std::cout << "  [C] Toggle Cinematic Auto-Tour Presentation             " << std::endl;
     std::cout << "  [L] Trigger Lightning Strike (Random + Manual)          " << std::endl;
-    std::cout << "  [M] Toggle Procedural Ambient Audio                     " << std::endl;
     std::cout << "  [H] Toggle HUD Overlay                                  " << std::endl;
     std::cout << "  [P] Take Screenshot (.bmp)                              " << std::endl;
     std::cout << "  [R] Reset Camera to Reference Image Vantage Point       " << std::endl;

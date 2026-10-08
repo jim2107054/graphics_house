@@ -11,6 +11,7 @@ struct Material {
 };
 
 inline void applyMaterial(const Material& m) {
+    glColor4fv(m.diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   m.ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   m.diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  m.specular);
@@ -53,17 +54,17 @@ const Material MAT_STONE = {
 const Material MAT_WET_GROUND = {
     { 0.025f, 0.028f, 0.032f, 1.0f },
     { 0.065f, 0.072f, 0.080f, 1.0f },
-    { 0.050f, 0.055f, 0.065f, 1.0f },
+    { 0.000f, 0.000f, 0.000f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    25.0f
+    0.0f
 };
 
 const Material MAT_PUDDLE_WATER = {
-    { 0.03f, 0.04f, 0.07f, 0.92f },
-    { 0.08f, 0.10f, 0.15f, 0.92f },
-    { 0.95f, 0.98f, 1.00f, 0.92f },
-    { 0.00f, 0.00f, 0.00f, 1.0f },
-    115.0f
+    { 0.00f, 0.00f, 0.00f, 0.0f },
+    { 0.00f, 0.00f, 0.00f, 0.0f },
+    { 0.00f, 0.00f, 0.00f, 0.0f },
+    { 0.00f, 0.00f, 0.00f, 0.0f },
+    0.0f
 };
 
 const Material MAT_DEAD_GRASS = {
@@ -203,34 +204,34 @@ const Material MAT_BARK = {
 };
 
 const Material MAT_FOLIAGE_DARK = {
-    { 0.10f, 0.16f, 0.10f, 1.0f },
-    { 0.18f, 0.32f, 0.18f, 1.0f },
-    { 0.03f, 0.05f, 0.03f, 1.0f },
+    { 0.08f, 0.14f, 0.08f, 1.0f },
+    { 0.14f, 0.28f, 0.14f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    12.0f
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    0.0f
 };
 
 const Material MAT_FOLIAGE_LUSH = {
-    { 0.12f, 0.20f, 0.12f, 1.0f },
-    { 0.22f, 0.44f, 0.24f, 1.0f },
-    { 0.04f, 0.06f, 0.04f, 1.0f },
+    { 0.10f, 0.18f, 0.10f, 1.0f },
+    { 0.18f, 0.36f, 0.18f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    14.0f
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    0.0f
 };
 
 const Material MAT_FOLIAGE_AUTUMN = {
     { 0.14f, 0.10f, 0.05f, 1.0f },
-    { 0.38f, 0.26f, 0.10f, 1.0f },
-    { 0.04f, 0.04f, 0.03f, 1.0f },
+    { 0.35f, 0.22f, 0.08f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    10.0f
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    0.0f
 };
 
 const Material MAT_PINE_NEEDLES = {
-    { 0.09f, 0.16f, 0.10f, 1.0f },
-    { 0.16f, 0.34f, 0.18f, 1.0f },
-    { 0.02f, 0.04f, 0.02f, 1.0f },
+    { 0.08f, 0.15f, 0.09f, 1.0f },
+    { 0.15f, 0.30f, 0.16f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    8.0f
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    0.0f
 };
 

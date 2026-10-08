@@ -25,19 +25,7 @@ float getTerrainHeight(float x, float z) {    // Distance to house foundation [-
     float h2 = 0.12f * std::sin(x * 0.18f - z * 0.15f) * std::cos(x * 0.12f + z * 0.20f);
     float h3 = 0.05f * std::sin(x * 0.38f + z * 0.32f);
 
-    // Puddle depression 1: (x = -4.5, z = 13.5)
-    float dp1 = std::sqrt((x + 4.5f)*(x + 4.5f)*1.0f + (z - 13.5f)*(z - 13.5f)*1.4f);
-    float dip1 = (dp1 < 2.5f) ? (-0.08f * (1.0f - dp1 / 2.5f)) : 0.0f;
-
-    // Puddle depression 2: (x = 5.0, z = 10.5)
-    float dp2 = std::sqrt((x - 5.0f)*(x - 5.0f)*1.3f + (z - 10.5f)*(z - 10.5f)*1.0f);
-    float dip2 = (dp2 < 2.2f) ? (-0.07f * (1.0f - dp2 / 2.2f)) : 0.0f;
-
-    // Puddle depression 3: (x = -9.5, z = 8.2)
-    float dp3 = std::sqrt((x + 9.5f)*(x + 9.5f)*1.0f + (z - 8.2f)*(z - 8.2f)*1.2f);
-    float dip3 = (dp3 < 2.0f) ? (-0.06f * (1.0f - dp3 / 2.0f)) : 0.0f;
-
-    return (h1 + h2 + h3 + dip1 + dip2 + dip3) * blend;
+    return (h1 + h2 + h3) * blend;
 }
 
 // Compute accurate surface normals using finite differences
@@ -57,101 +45,12 @@ void getTerrainNormal(float x, float z, float& nx, float& ny, float& nz) {    co
     }
 }
 
-// Draw a single reflective water puddle with dark wet mud rim
-void drawPuddle(float cx, float cz, float radiusX, float radiusZ, float rotAngle) {    float baseY = getTerrainHeight(cx, cz) + 0.02f;
-    int segments = 24;
-
-    glPushMatrix();
-    glTranslatef(cx, baseY, cz);
-    glRotatef(rotAngle, 0.0f, 1.0f, 0.0f);
-
-    // 1. Dark damp saturated mud border fringe around puddle
-    applyMaterial(MAT_WET_GROUND);
-    bindTexture(TEX_GROUND);
-    glBegin(GL_QUAD_STRIP);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i * 2.0f * (float)M_PI / segments;
-        float cosA = std::cos(angle);
-        float sinA = std::sin(angle);
-
-        float inX  = radiusX * cosA;
-        float inZ  = radiusZ * sinA;
-        float outX = (radiusX + 0.55f) * cosA;
-        float outZ = (radiusZ + 0.55f) * sinA;
-
-        float nx, ny, nz;
-        getTerrainNormal(cx + inX, cz + inZ, nx, ny, nz);
-        glNormal3f(nx, ny, nz);
-
-        // Dark soaked mud
-        glColor4f(0.22f, 0.22f, 0.25f, 1.0f);
-        glTexCoord2f(inX * 0.2f, inZ * 0.2f);
-        glVertex3f(inX, 0.002f, inZ);
-
-        // Fading outward to normal terrain
-        glColor4f(0.70f, 0.70f, 0.72f, 1.0f);
-        glTexCoord2f(outX * 0.2f, outZ * 0.2f);
-        glVertex3f(outX, -0.015f, outZ);
-    }
-    glEnd();
-
-    // 2. Reflective Water Surface Disk (High specular mirror highlight)
-    applyMaterial(MAT_PUDDLE_WATER);
-    bindTexture(TEX_NONE);
-    glBegin(GL_TRIANGLE_FAN);
-    glNormal3f(0.0f, 1.0f, 0.0f);
-    glColor4f(0.12f, 0.16f, 0.22f, 0.92f);
-    glVertex3f(0.0f, 0.008f, 0.0f);
-
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i * 2.0f * (float)M_PI / segments;
-        float px = radiusX * std::cos(angle);
-        float pz = radiusZ * std::sin(angle);
-        glVertex3f(px, 0.008f, pz);
-    }
-    glEnd();
-
-    // 3. Dynamic Water Ripple Drip Rings (expanding concentric rings with fading alpha)
-    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
-    glDisable(GL_LIGHTING);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous water glint
-    glLineWidth(1.6f);
-
-    for (int d = 0; d < 2; ++d) {
-        float dripTime = g_time * 1.2f + (float)d * 1.4f + std::abs(cx) * 0.4f;
-        float cycle = std::fmod(dripTime, 2.4f);
-        float rProgress = cycle / 2.4f;
-        float ripRadius = rProgress * (radiusX * 0.72f);
-        float ripAlpha = (1.0f - rProgress) * 0.35f;
-
-        float dripOffsetX = (d == 0) ? -0.25f : 0.35f;
-        float dripOffsetZ = (d == 0) ? 0.15f : -0.20f;
-
-        glColor4f(0.55f, 0.72f, 0.95f, ripAlpha);
-        glBegin(GL_LINE_LOOP);
-        for (int i = 0; i < 20; ++i) {
-            float theta = 2.0f * (float)M_PI * (float)i / 20.0f;
-            float px = dripOffsetX + ripRadius * std::cos(theta);
-            float pz = dripOffsetZ + (ripRadius * (radiusZ / radiusX)) * std::sin(theta);
-            glVertex3f(px, 0.012f, pz);
-        }
-        glEnd();
-    }
-    glPopAttrib();
-
-    glPopMatrix();
+// Water removed as requested - zero glitches
+void drawPuddle(float cx, float cz, float radiusX, float radiusZ, float rotAngle) {
+    (void)cx; (void)cz; (void)radiusX; (void)radiusZ; (void)rotAngle;
 }
 
-// Draw all 3 reflective puddles
-void drawPuddles() {    // Puddle 1: Front yard pathside puddle (catches moon + porch light)
-    drawPuddle(-4.5f, 13.5f, 2.3f, 1.6f, -18.0f);
-
-    // Puddle 2: Near monster tree & rusted car (catches moonlight)
-    drawPuddle( 5.0f, 10.5f, 2.0f, 1.4f,  24.0f);
-
-    // Puddle 3: Left side near cemetery / porch corner
-    drawPuddle(-9.5f,  8.2f, 1.8f, 1.3f, -10.0f);
+void drawPuddles() {
 }
 
 
