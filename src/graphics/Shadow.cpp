@@ -39,12 +39,14 @@ void renderShadowCasters() {    drawHouse();
     drawTelephonePole(10.8f, 5.8f, -12.0f);
 }
 
-void renderBulbShadowCasters() {    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_WALL);
-    glPushMatrix();
-    glTranslatef(-4.6f + g_houseShiftX, 2.0f, 5.7f + g_houseShiftZ);
-    drawBox(6.4f, 2.8f, 0.20f);
-    glPopMatrix();
+void renderBulbShadowCasters() {
+    float postX[4] = { -7.4f, -5.8f, -3.4f, -1.8f };
+    for (int p = 0; p < 4; ++p) {
+        glPushMatrix();
+        glTranslatef(postX[p], 1.2f, 5.7f);
+        drawBox(0.24f, 1.2f, 0.24f);
+        glPopMatrix();
+    }
 }
 
 void renderPlanarShadows() {    // 1. Directional Moonlight Shadows
@@ -74,7 +76,7 @@ void renderPlanarShadows() {    // 1. Directional Moonlight Shadows
     // 2. Dynamic Point Light Moving Shadows from Swaying Bulb
     if (g_light0PointOn && g_bulbCurY > 1.0f) {
         float bulbPos[4] = { g_bulbCurX, g_bulbCurY, g_bulbCurZ, 1.0f };
-        float porchFloorPlane[4] = { 0.0f, 1.0f, 0.0f, -0.725f };
+        float porchFloorPlane[4] = { 0.0f, 1.0f, 0.0f, -0.805f };
         float porchShadowMat[16];
         buildShadowMatrix(porchShadowMat, porchFloorPlane, bulbPos);
 
@@ -87,7 +89,7 @@ void renderPlanarShadows() {    // 1. Directional Moonlight Shadows
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Warm dark moving shadow on porch deck
-        glColor4f(0.02f, 0.015f, 0.01f, 0.48f * g_bulbFlickerFactor);
+        glColor4f(0.02f, 0.015f, 0.01f, 0.35f * g_bulbFlickerFactor);
 
         glPushMatrix();
         glMultMatrixf(porchShadowMat);

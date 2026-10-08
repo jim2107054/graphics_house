@@ -33,13 +33,13 @@ float g_cinematicTime      = 0.0f;
 std::string g_autoScreenshotFile = "";
 int g_autoScreenshotFrames = 0;
 
-float g_bulbBaseX = -1.8f;
-float g_bulbBaseY = 3.6f;
-float g_bulbBaseZ = -4.2f;
+float g_bulbBaseX = -4.6f;
+float g_bulbBaseY = 3.95f;
+float g_bulbBaseZ = 5.7f;
 float g_bulbCordLength = 0.8f;
-float g_bulbCurX = -1.8f;
-float g_bulbCurY = 2.8f;
-float g_bulbCurZ = -4.2f;
+float g_bulbCurX = -4.6f;
+float g_bulbCurY = 3.15f;
+float g_bulbCurZ = 5.7f;
 float g_bulbFlickerFactor = 1.0f;
 float g_pumpkinFlicker = 1.0f;
 

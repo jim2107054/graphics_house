@@ -88,21 +88,32 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
     // Clear Color (Sky backdrop flash)
     glClearColor(0.020f + 0.18f * flash, 0.030f + 0.20f * flash, 0.065f + 0.28f * flash, 1.0f);
 
-    // Light 0: Point Light (Porch Bulb)
+    // Light 0: Point Light (House Front Porch Bulb)
     if (g_light0PointOn) {
         glEnable(GL_LIGHT0);
         float pPos[4] = { g_bulbCurX, g_bulbCurY, g_bulbCurZ, 1.0f };
-        glLightfv(GL_LIGHT0, GL_POSITION, pPos);
-
-        // Warm golden pool of light from porch bulb
         float pDiff[4] = { 
-            0.70f * g_bulbFlickerFactor, 
-            0.55f * g_bulbFlickerFactor, 
-            0.25f * g_bulbFlickerFactor, 
+            0.78f * g_bulbFlickerFactor, 
+            0.60f * g_bulbFlickerFactor, 
+            0.28f * g_bulbFlickerFactor, 
             1.0f 
         };
+        float pAmb[4] = {
+            0.12f * g_bulbFlickerFactor,
+            0.08f * g_bulbFlickerFactor,
+            0.03f * g_bulbFlickerFactor,
+            1.0f
+        };
+        float pSpec[4] = {
+            0.45f * g_bulbFlickerFactor,
+            0.35f * g_bulbFlickerFactor,
+            0.15f * g_bulbFlickerFactor,
+            1.0f
+        };
         glLightfv(GL_LIGHT0, GL_POSITION, pPos);
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, pDiff);
+        glLightfv(GL_LIGHT0, GL_AMBIENT,  pAmb);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE,  pDiff);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, pSpec);
     } else {
         glDisable(GL_LIGHT0);
     }
@@ -165,6 +176,7 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
     drawEnvironmentalClutter();
     drawGraveyardCrosses();
     drawHangingBulb();
+    drawBulbLightPool();
     drawPumpkinArray();
     drawAllTrees();
     drawFallingLeaves();
@@ -393,7 +405,7 @@ int main(int argc, char** argv) {    for (int i = 1; i < argc; ++i) {
     std::cout << "  HORROR HOUSE AT NIGHT - COMPUTER GRAPHICS PROJECT       " << std::endl;
     std::cout << "  Developer: MD Jahid Hasan Jim (Roll: 2107054)           " << std::endl;
     std::cout << "==========================================================" << std::endl;
-    std::cout << "  [1] Toggle Point Light (Porch Bulb)                     " << std::endl;
+    std::cout << "  [1] Toggle House Front Light (Porch Bulb)               " << std::endl;
     std::cout << "  [2] Toggle Directional Light (Moonlight)                " << std::endl;
     std::cout << "  [3/F] Toggle Spot Light (Flashlight)                    " << std::endl;
     std::cout << "  [4] Toggle Area Light (Window Interior Glow)            " << std::endl;

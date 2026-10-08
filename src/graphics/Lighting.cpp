@@ -99,27 +99,25 @@ void drawBulbLightPool() {    if (!g_light0PointOn) return;
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive luminous warm light pool
 
-    // Projected ground and porch coordinates based on swaying bulb
-    float swingOffsetX = (g_bulbCurX - g_bulbBaseX) * 0.75f;
-    float swingOffsetZ = (g_bulbCurZ - g_bulbBaseZ) * 0.75f;
-    float poolX = g_bulbBaseX + swingOffsetX;
-    float poolZ = g_bulbBaseZ + swingOffsetZ;
-    float poolY = 0.73f; // Just resting on porch floorboards
+    // Projected ground and porch coordinates directly beneath the swaying bulb
+    float poolX = g_bulbCurX;
+    float poolZ = g_bulbCurZ;
+    float poolY = 0.815f; // Resting on porch floorboards (height 0.80f)
 
     // 1. Porch Floor Light Pool Disc
     glPushMatrix();
     glTranslatef(poolX, poolY, poolZ);
     int segments = 24;
-    float rCore = 0.95f;
-    float rOuter = 2.40f;
+    float rCore = 1.15f;
+    float rOuter = 2.80f;
 
     // Core warm hotspot
     glBegin(GL_TRIANGLE_FAN);
-    glColor4f(1.0f, 0.82f, 0.35f, 0.42f * g_bulbFlickerFactor);
+    glColor4f(1.0f, 0.82f, 0.35f, 0.45f * g_bulbFlickerFactor);
     glVertex3f(0.0f, 0.005f, 0.0f);
     for (int i = 0; i <= segments; ++i) {
         float theta = 2.0f * (float)M_PI * (float)i / segments;
-        glColor4f(1.0f, 0.70f, 0.20f, 0.18f * g_bulbFlickerFactor);
+        glColor4f(1.0f, 0.70f, 0.20f, 0.22f * g_bulbFlickerFactor);
         glVertex3f(rCore * std::cos(theta), 0.005f, rCore * std::sin(theta));
     }
     glEnd();
@@ -130,7 +128,7 @@ void drawBulbLightPool() {    if (!g_light0PointOn) return;
         float theta = 2.0f * (float)M_PI * (float)i / segments;
         float ct = std::cos(theta);
         float st = std::sin(theta);
-        glColor4f(1.0f, 0.65f, 0.15f, 0.18f * g_bulbFlickerFactor);
+        glColor4f(1.0f, 0.65f, 0.15f, 0.22f * g_bulbFlickerFactor);
         glVertex3f(rCore * ct, 0.005f, rCore * st);
         glColor4f(1.0f, 0.50f, 0.10f, 0.0f);
         glVertex3f(rOuter * ct, 0.005f, rOuter * st);
@@ -139,9 +137,9 @@ void drawBulbLightPool() {    if (!g_light0PointOn) return;
     glPopMatrix();
 
     // 2. Terrain Ground Light Pool beneath Porch Steps
-    float groundPoolY = getTerrainHeight(poolX, poolZ + 1.8f) + 0.03f;
+    float groundPoolY = getTerrainHeight(poolX, poolZ + 1.2f) + 0.05f;
     glPushMatrix();
-    glTranslatef(poolX, groundPoolY, poolZ + 1.8f);
+    glTranslatef(poolX, groundPoolY, poolZ + 1.2f);
     float rGround = 3.2f;
     glBegin(GL_TRIANGLE_FAN);
     glColor4f(1.0f, 0.75f, 0.25f, 0.22f * g_bulbFlickerFactor);

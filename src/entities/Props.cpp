@@ -147,11 +147,13 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
             glPopAttrib();
 
             // Vibrant glowing carved face (fiery yellow-gold)
+            glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
             glDisable(GL_LIGHTING);
             bindTexture(TEX_NONE);
             glColor4f(1.0f * localFlicker, 0.86f * localFlicker, 0.22f * localFlicker, 1.0f);
         } else {
             // Unlit carved face (dark hollow inside)
+            glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
             glDisable(GL_LIGHTING);
             bindTexture(TEX_NONE);
             glColor4f(0.06f, 0.03f, 0.01f, 1.0f);
@@ -331,7 +333,7 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
             glEnd();
         }
         glPopMatrix();
-        glEnable(GL_LIGHTING);
+        glPopAttrib();
 
         // 4. Localized Warm Radiant Ground Light Halos under Pumpkin
         if (g_pumpkinLightsOn) {
@@ -368,6 +370,7 @@ void drawPumpkin(float x, float y, float z, float scale, float rotY, int faceSty
             glPopAttrib();
         }
     }
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     glPopMatrix();
 }
 

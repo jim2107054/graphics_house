@@ -188,9 +188,9 @@ void renderSceneHUD() {    bindTexture(TEX_NONE);
     drawString2D(35.0f, 88.0f, GLUT_BITMAP_HELVETICA_12, "LIGHTING & ATMOSPHERE STATUS [1, 2, 3, 4, 5, 0, T]:", 0.9f, 0.85f, 0.6f);
 
     if (g_light0PointOn) {
-        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ ON ] Warm Amber (Moving Shadow & Pool)", 0.2f, 1.0f, 0.3f);
+        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] House Front Light (Porch) : [ ON ] Warm Amber Glow & Light Pool", 0.2f, 1.0f, 0.3f);
     } else {
-        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] Point Light (Porch Bulb)  : [ OFF ]", 0.7f, 0.2f, 0.2f);
+        drawString2D(35.0f, 108.0f, GLUT_BITMAP_HELVETICA_12, "[1] House Front Light (Porch) : [ OFF ]", 0.7f, 0.2f, 0.2f);
     }
 
     if (g_light1DirectionalOn) {

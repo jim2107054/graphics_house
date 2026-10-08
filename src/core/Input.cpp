@@ -22,27 +22,27 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
             break;
         case '1':
             g_light0PointOn = !g_light0PointOn;
-            std::cout << "[LIGHT 0] Point Light (Porch Bulb) : " << (g_light0PointOn ? "ON" : "OFF") << std::endl;
+            std::cout << "[LIGHT 1] House Front Light (Porch Bulb) : " << (g_light0PointOn ? "ON" : "OFF") << std::endl;
             break;
         case '2':
             g_light1DirectionalOn = !g_light1DirectionalOn;
-            std::cout << "[LIGHT 1] Directional (Moonlight)   : " << (g_light1DirectionalOn ? "ON" : "OFF") << std::endl;
+            std::cout << "[LIGHT 2] Directional (Moonlight)        : " << (g_light1DirectionalOn ? "ON" : "OFF") << std::endl;
             break;
         case '3':
         case 'f':
         case 'F':
             g_light2SpotOn = !g_light2SpotOn;
-            std::cout << "[LIGHT 2] Spot Light (Flashlight)   : " << (g_light2SpotOn ? "ON" : "OFF") << std::endl;
+            std::cout << "[LIGHT 3] Spot Light (Flashlight)        : " << (g_light2SpotOn ? "ON" : "OFF") << std::endl;
             break;
         case '4':
             g_light3AreaOn = !g_light3AreaOn;
-            std::cout << "[LIGHT 3] Area Light (Window Glow)  : " << (g_light3AreaOn ? "ON" : "OFF") << std::endl;
+            std::cout << "[LIGHT 4] Area Light (Window Glow)       : " << (g_light3AreaOn ? "ON" : "OFF") << std::endl;
             break;
         case '5':
         case 'k':
         case 'K':
             g_pumpkinLightsOn = !g_pumpkinLightsOn;
-            std::cout << "[LIGHT 4] Pumpkin Candles (Jack-o'-Lanterns) : " << (g_pumpkinLightsOn ? "ON (Glowing)" : "OFF (Extinguished)") << std::endl;
+            std::cout << "[LIGHT 5/K] Pumpkin Candle Lights        : " << (g_pumpkinLightsOn ? "ON (Glowing)" : "OFF (Extinguished)") << std::endl;
             break;
         case '0': {
             bool anyOn = g_light0PointOn || g_light1DirectionalOn || g_light2SpotOn || g_light3AreaOn || g_pumpkinLightsOn;
