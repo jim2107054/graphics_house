@@ -74,6 +74,8 @@ extern bool g_light0PointOn;
 extern bool g_light1DirectionalOn;
 extern bool g_light2SpotOn;
 extern bool g_light3AreaOn;
+extern bool g_light4CandleOn;
+extern bool g_light5LanternOn;
 extern bool g_pumpkinLightsOn;
 
 extern bool g_texturesEnabled;

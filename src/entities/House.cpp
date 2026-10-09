@@ -196,23 +196,23 @@ static void drawTurnedFurnitureLeg(float height, float width, bool broken = fals
     // 1. Turned bun foot on floor (y = 0)
     float footR = width * 0.42f;
     glTranslatef(0.0f, footR, 0.0f);
-    drawSphere(footR, 10, 8);
+    drawSphere(footR, 20, 16);
 
     // 2. Slender lower column (grows upward along +Y)
     float shaftH = height * 0.36f;
-    drawCylinder(width * 0.30f, width * 0.34f, shaftH, 10);
+    drawCylinder(width * 0.30f, width * 0.34f, shaftH, 20);
 
     // 3. Middle turned ring
     glTranslatef(0.0f, shaftH, 0.0f);
-    drawSphere(width * 0.48f, 10, 8);
+    drawSphere(width * 0.48f, 20, 16);
 
     // 4. Upper baluster vase (grows upward along +Y)
     float vaseH = height * 0.28f;
-    drawCylinder(width * 0.48f, width * 0.36f, vaseH, 10);
+    drawCylinder(width * 0.48f, width * 0.36f, vaseH, 20);
 
     // 5. Upper turned collar bead
     glTranslatef(0.0f, vaseH, 0.0f);
-    drawSphere(width * 0.52f, 10, 8);
+    drawSphere(width * 0.52f, 20, 16);
 
     // 6. Top square mounting block
     float blockH = height - (footR + shaftH + vaseH);
@@ -222,7 +222,7 @@ static void drawTurnedFurnitureLeg(float height, float width, bool broken = fals
     glPopMatrix();
 }
 
-// Lathe-turned Victorian staircase and balustrade spindle
+// Lathe-turned Victorian staircase and balustrade spindle (Silky smooth lathe turnings)
 static void drawTurnedBalusterSpindle(float height, float width) {
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
@@ -236,19 +236,19 @@ static void drawTurnedBalusterSpindle(float height, float width) {
 
     // 2. Lower turned transition bead
     glTranslatef(0.0f, plinthH * 0.5f, 0.0f);
-    drawSphere(width * 0.56f, 8, 6);
+    drawSphere(width * 0.56f, 18, 14);
 
     // 3. Lower baluster vase/bulb (grows upward along +Y)
     float bulbH = height * 0.24f;
-    drawCylinder(width * 0.38f, width * 0.48f, bulbH, 8);
+    drawCylinder(width * 0.38f, width * 0.48f, bulbH, 18);
 
     // 4. Center turned ring
     glTranslatef(0.0f, bulbH, 0.0f);
-    drawSphere(width * 0.48f, 8, 6);
+    drawSphere(width * 0.48f, 18, 14);
 
     // 5. Slender tapered upper column (grows upward along +Y)
     float colH = height * 0.32f;
-    drawCylinder(width * 0.32f, width * 0.28f, colH, 8);
+    drawCylinder(width * 0.32f, width * 0.28f, colH, 18);
 
     // 6. Upper collar & top square block meeting the handrail
     float topH = height - (plinthH + bulbH + colH);
@@ -290,13 +290,13 @@ static void drawMasterNewelPost(float height, float width) {
     glTranslatef(0.0f, 0.05f, 0.0f);
     drawBox(width * 1.30f, 0.05f, width * 1.30f);
 
-    // 4. Carved Acorn / Spherical Finial on collar
+    // 4. Carved Acorn / Spherical Finial on collar (Silky smooth finial curves)
     glTranslatef(0.0f, 0.04f, 0.0f);
     drawBox(width * 0.75f, 0.03f, width * 0.75f);
     glTranslatef(0.0f, width * 0.45f, 0.0f);
-    drawSphere(width * 0.48f, 12, 10);
+    drawSphere(width * 0.48f, 24, 18);
     glTranslatef(0.0f, width * 0.38f, 0.0f);
-    drawSphere(width * 0.22f, 8, 6); // Acorn tip
+    drawSphere(width * 0.22f, 16, 12); // Acorn tip
     glPopMatrix();
 }
 
@@ -1144,6 +1144,85 @@ void drawHouseInterior() {    // 1. Weathered, Rotten Floorboards with Missing P
 }
 
 // ----------------------------------------------------------------------------
+// REALISTIC VICTORIAN WALL CANDLE SCONCE (Ornate Bracket, Ivory Wax & Flickering Flame)
+// ----------------------------------------------------------------------------
+void drawWallCandleSconce(float x, float y, float z, float rotY) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glRotatef(rotY, 0.0f, 1.0f, 0.0f);
+
+    // 1. Blackened Wrought Iron Wall Backplate & Curved Sconce Bracket
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_RUST);
+    glColor4f(0.25f, 0.22f, 0.20f, 1.0f);
+    // Diamond backplate on wall
+    glPushMatrix();
+    glRotatef(45.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.12f, 0.12f, 0.02f);
+    glPopMatrix();
+    // Arched forward bracket arm
+    glPushMatrix();
+    glTranslatef(0.0f, -0.06f, 0.09f);
+    drawBox(0.025f, 0.025f, 0.18f);
+    // Upward scroll curl
+    glTranslatef(0.0f, 0.05f, 0.08f);
+    drawBox(0.025f, 0.10f, 0.025f);
+    // Circular Drip Pan Catch
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawCylinder(0.06f, 0.04f, 0.02f, 8);
+    // Candle cup socket
+    glTranslatef(0.0f, 0.015f, 0.0f);
+    drawCylinder(0.025f, 0.025f, 0.035f, 8);
+    glPopMatrix();
+
+    // 2. Ivory Wax Candle Body with Melted Drips
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.92f, 0.90f, 0.82f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.04f, 0.17f);
+    drawCylinder(0.022f, 0.020f, 0.15f, 8);
+    // Top melted wax rim
+    glTranslatef(0.0f, 0.15f, 0.0f);
+    drawSphere(0.021f, 8, 6);
+    // Blackened candle wick
+    glColor4f(0.15f, 0.15f, 0.15f, 1.0f);
+    drawCylinder(0.004f, 0.003f, 0.025f, 4);
+
+    // 3. Multi-Layered Flickering Candle Flame
+    float sFlick = 0.88f + 0.12f * std::sin(g_time * 8.5f + x * 2.0f);
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.025f, 0.0f);
+    // Outer fiery orange-gold flame
+    glColor4f(1.0f, 0.60f, 0.08f, 0.95f * sFlick);
+    glPushMatrix();
+    glScalef(0.8f, 1.6f, 0.8f);
+    drawSphere(0.026f * sFlick, 8, 6);
+    glPopMatrix();
+    // Inner incandescent pale gold/white core
+    glColor4f(1.0f, 0.96f, 0.65f, 1.0f);
+    glPushMatrix();
+    glScalef(0.7f, 1.4f, 0.7f);
+    drawSphere(0.013f * sFlick, 8, 6);
+    glPopMatrix();
+
+    // 4. Soft Volumetric Additive Candle Glow Halo
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glColor4f(1.0f, 0.68f, 0.18f, 0.35f * sFlick);
+    drawSphere(0.12f, 8, 6);
+    glColor4f(1.0f, 0.45f, 0.08f, 0.15f * sFlick);
+    drawSphere(0.28f, 10, 8);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+    glEnable(GL_LIGHTING);
+
+    glPopMatrix();
+    glPopMatrix();
+}
+
+// ----------------------------------------------------------------------------
 // FULL SECOND FLOOR (DOTOLA) INTERIOR (Walk-in Attic Bedroom & Witchcraft Study)
 // ----------------------------------------------------------------------------
 void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y = 4.24f) with Stairwell Opening Cutout
@@ -1157,10 +1236,10 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawBox(7.00f, 0.08f, 8.40f, 3.5f, 3.0f);
     glPopMatrix();
 
-    // Rear 2nd floor floor extension (Behind stairwell)
+    // Rear 2nd floor floor extension (Seamlessly connects to top step nosing at z = -1.40f)
     glPushMatrix();
-    glTranslatef(-1.30f, 4.24f, -2.65f);
-    drawBox(1.30f, 0.08f, 2.10f, 0.8f, 0.8f);
+    glTranslatef(-1.30f, 4.24f, -2.525f);
+    drawBox(1.30f, 0.08f, 2.35f, 0.8f, 0.9f);
     glPopMatrix();
 
     // 2. MASTER REALISTIC BALUSTRADE & GUARDRAIL AROUND 2ND FLOOR STAIRWELL OPENING
@@ -1168,20 +1247,22 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     bindTexture(TEX_WALL);
     glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
 
-    // Left Guardrail Handrail & Base Shoe Rail (along x = -1.95f, from z = 3.80f to z = -1.50f)
+    // Left Guardrail Handrail & Base Shoe Rail (along x = -1.95f, protecting stair drop from z = 3.80f down to z = 0.65f)
+    // IMPORTANT: The entire arrival zone from z = 0.65f down to z = -3.70f is wide open into the 2nd floor room!
+    // No fence ("bera") whatsoever blocking the player's view or path!
     glPushMatrix();
     // Base Shoe Rail on floor
-    glTranslatef(-1.95f, 4.29f, 1.15f);
-    drawBox(0.07f, 0.035f, 5.30f);
+    glTranslatef(-1.95f, 4.29f, 2.225f);
+    drawBox(0.07f, 0.035f, 3.15f);
     // Molded Handrail at top
     glTranslatef(0.0f, 0.82f, 0.0f);
-    drawBox(0.08f, 0.045f, 5.30f);
+    drawBox(0.08f, 0.045f, 3.15f);
     glTranslatef(0.0f, -0.035f, 0.0f);
-    drawBox(0.06f, 0.035f, 5.30f); // Sub-rail
+    drawBox(0.06f, 0.035f, 3.15f); // Sub-rail
     glPopMatrix();
 
-    // Turned Victorian Baluster Spindles along left guardrail edge
-    for (float bz = 3.65f; bz >= -1.35f; bz -= 0.32f) {
+    // Turned Victorian Baluster Spindles along left guardrail edge (z = 3.65f down to z = 0.80f)
+    for (float bz = 3.65f; bz >= 0.80f; bz -= 0.30f) {
         glPushMatrix();
         glTranslatef(-1.95f, 4.31f, bz);
         drawTurnedBalusterSpindle(0.78f, 0.034f);
@@ -1194,51 +1275,50 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawMasterNewelPost(1.22f, 0.125f);
     glPopMatrix();
 
-    // Rear Guardrail Handrail & Base Shoe Rail (across z = -1.50f from x = -1.95f to x = -0.65f)
+    // Terminal Master Newel Post at end of stair opening guardrail (x = -1.95f, z = 0.65f)
     glPushMatrix();
-    // Base Shoe Rail
-    glTranslatef(-1.30f, 4.29f, -1.50f);
-    drawBox(1.30f, 0.035f, 0.07f);
-    // Molded Handrail
-    glTranslatef(0.0f, 0.82f, 0.0f);
-    drawBox(1.30f, 0.045f, 0.08f);
-    glTranslatef(0.0f, -0.035f, 0.0f);
-    drawBox(1.30f, 0.035f, 0.06f);
+    glTranslatef(-1.95f, 4.24f, 0.65f);
+    drawMasterNewelPost(1.15f, 0.115f);
     glPopMatrix();
 
-    // Turned Baluster Spindles along rear guardrail
-    for (float bx = -1.82f; bx <= -0.78f; bx += 0.26f) {
-        glPushMatrix();
-        glTranslatef(bx, 4.31f, -1.50f);
-        drawTurnedBalusterSpindle(0.78f, 0.034f);
-        glPopMatrix();
-    }
+    // NOTE: The previous rear guardrail across z = -1.50f has been completely removed!
+    // The player walks off the top step directly into the room with full visibility!
 
-    // 3. Exposed Heavy Timber Roof Trusses & Collar Beams in the Vaulted Ceiling
+    // 3. MASTER REALISTIC VAULTED TIMBER ATTIC CEILING & ROOF LINING
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+    glColor4f(0.28f, 0.24f, 0.19f, 1.0f);
+
+    // Left sloped finished timber ceiling (spanning smoothly from wall plate to ridge)
+    glPushMatrix();
+    glTranslatef(-6.85f, 8.40f, 0.50f);
+    glRotatef(-41.3f, 0.0f, 0.0f, 1.0f);
+    drawBox(5.50f, 0.08f, 8.40f, 2.5f, 3.0f);
+    glPopMatrix();
+
+    // Right sloped finished timber ceiling (spanning smoothly from wall plate to ridge)
+    glPushMatrix();
+    glTranslatef(-2.75f, 8.40f, 0.50f);
+    glRotatef(41.3f, 0.0f, 0.0f, 1.0f);
+    drawBox(5.50f, 0.08f, 8.40f, 2.5f, 3.0f);
+    glPopMatrix();
+
+    // Master Timber Ridge Beam along the vaulted apex (x = -4.80f, y = 10.15f)
+    glPushMatrix();
+    glTranslatef(-4.80f, 10.12f, 0.50f);
+    drawBox(0.25f, 0.25f, 8.45f, 1.0f, 3.0f);
+    glPopMatrix();
+
+    // High Timber Collar Tie Beams (high overhead at y = 7.60f, giving vast airy headroom)
     float trussZs[3] = { 3.2f, 0.5f, -2.2f };
     for (int t = 0; t < 3; ++t) {
+        glPushMatrix();
+        glTranslatef(-4.80f, 7.60f, trussZs[t]);
         // Horizontal collar tie beam
-        glPushMatrix();
-        glTranslatef(-4.8f, 7.20f, trussZs[t]);
-        drawBox(6.8f, 0.20f, 0.18f, 2.0f, 0.2f);
-        // Vertical king post
-        glTranslatef(0.0f, 1.40f, 0.0f);
-        drawBox(0.18f, 2.60f, 0.18f);
-        // Left sloped rafter
-        glPushMatrix();
-        glTranslatef(-2.2f, -0.2f, 0.0f);
-        glRotatef(48.0f, 0.0f, 0.0f, 1.0f);
-        drawBox(0.18f, 3.8f, 0.18f);
-        glPopMatrix();
-        // Right sloped rafter
-        glPushMatrix();
-        glTranslatef(2.2f, -0.2f, 0.0f);
-        glRotatef(-48.0f, 0.0f, 0.0f, 1.0f);
-        drawBox(0.18f, 3.8f, 0.18f);
-        glPopMatrix();
+        drawBox(6.20f, 0.16f, 0.16f, 2.0f, 0.2f);
+        // Vertical king post up to ridge
+        glTranslatef(0.0f, 1.25f, 0.0f);
+        drawBox(0.16f, 2.40f, 0.16f);
         glPopMatrix();
     }
 
@@ -1257,7 +1337,7 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawBeveledBox(1.92f, 0.24f, 2.42f, 0.02f);
     glPopMatrix();
 
-    // 4 Majestic Lathe-Turned Mahogany Bedposts (2.35m tall) with Gothic Spire Finials
+    // 4 Majestic Lathe-Turned Mahogany Bedposts (2.35m tall) with Gothic Spire Finials (Silky Smooth Turnings)
     float postBX[4] = { -0.92f,  0.92f, -0.92f,  0.92f };
     float postBZ[4] = { -1.18f, -1.18f,  1.18f,  1.18f };
     for (int p = 0; p < 4; ++p) {
@@ -1267,27 +1347,27 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
         // Base square plinth
         glTranslatef(0.0f, 0.35f, 0.0f);
         drawBox(0.11f, 0.70f, 0.11f);
-        // Turned ring transition
+        // Turned ring transition (high subdivisions)
         glTranslatef(0.0f, 0.35f + 0.03f, 0.0f);
-        drawSphere(0.065f, 10, 8);
+        drawSphere(0.065f, 24, 18);
         // Fluted column lower shaft
         glTranslatef(0.0f, 0.40f, 0.0f);
         glPushMatrix();
         glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
         glTranslatef(0.0f, 0.0f, -0.40f);
-        drawCylinder(0.048f, 0.048f, 0.80f, 10);
+        drawCylinder(0.048f, 0.048f, 0.80f, 24);
         glPopMatrix();
         // Upper turned baluster bulb
         glTranslatef(0.0f, 0.40f + 0.04f, 0.0f);
-        drawSphere(0.062f, 10, 8);
+        drawSphere(0.062f, 24, 18);
         // Upper column to canopy
         glTranslatef(0.0f, 0.24f, 0.0f);
         drawBox(0.085f, 0.48f, 0.085f);
         // Pointed Gothic Acorn/Spire Finial atop canopy
         glTranslatef(0.0f, 0.28f, 0.0f);
-        drawSphere(0.052f, 10, 8);
+        drawSphere(0.052f, 20, 16);
         glTranslatef(0.0f, 0.06f, 0.0f);
-        drawSphere(0.024f, 8, 6);
+        drawSphere(0.024f, 16, 12);
         glPopMatrix();
     }
 
@@ -1360,20 +1440,20 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawBox(1.68f, 0.04f, 0.18f);
     glPopMatrix();
 
-    // Dusty Antique Pillows with Piped Seam Borders
+    // Dusty Antique Pillows with Piped Seam Borders (Silky smooth contours)
     glColor4f(0.74f, 0.72f, 0.65f, 1.0f);
     glPushMatrix();
     glTranslatef(-0.46f, 0.68f, -0.78f);
     glRotatef(8.0f, 1.0f, 0.0f, 0.0f);
     glScalef(0.68f, 0.18f, 0.44f);
-    drawSphere(0.5f, 12, 10);
+    drawSphere(0.5f, 24, 18);
     glPopMatrix();
 
     glPushMatrix();
     glTranslatef( 0.46f, 0.68f, -0.78f);
     glRotatef(8.0f, 1.0f, 0.0f, 0.0f);
     glScalef(0.68f, 0.18f, 0.44f);
-    drawSphere(0.5f, 12, 10);
+    drawSphere(0.5f, 24, 18);
     glPopMatrix();
 
     glPopMatrix(); // End Four-Poster Bed
@@ -1555,21 +1635,68 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     glTranslatef(0.0f, 0.04f, 0.0f);
     drawCylinder(0.02f, 0.015f, 0.22f, 6); // Center column
 
+    // Warm candle light reflection pool on desk surface
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glPushMatrix();
+    glTranslatef(0.0f, -0.035f, 0.0f);
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    float deskFlick = 0.88f + 0.12f * std::sin(g_time * 8.0f);
+    glColor4f(1.0f, 0.70f, 0.25f, 0.28f * deskFlick);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float ang = (float)i * 2.0f * (float)M_PI / 16.0f;
+        glVertex3f(std::cos(ang) * 0.45f, std::sin(ang) * 0.45f, 0.0f);
+    }
+    glEnd();
+    glPopMatrix();
+    glPopAttrib();
+
     // Left curved branch
     glPushMatrix();
     glTranslatef(-0.10f, 0.16f, 0.0f);
     drawBox(0.12f, 0.018f, 0.018f);
     drawCylinder(0.025f, 0.025f, 0.03f, 6);
-    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
+    glColor4f(0.94f, 0.92f, 0.85f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
-    drawCylinder(0.016f, 0.015f, 0.10f, 6);
-    glDisable(GL_LIGHTING);
+    drawCylinder(0.016f, 0.015f, 0.10f, 8); // Candle body
+    // Wax drips
+    glColor4f(0.90f, 0.88f, 0.80f, 1.0f);
+    glTranslatef(-0.012f, 0.02f, 0.0f); drawSphere(0.008f, 6, 4);
+    glTranslatef( 0.024f, 0.04f, 0.0f); drawSphere(0.007f, 6, 4);
+    glTranslatef(-0.012f, -0.06f, 0.0f);
+    // Black wick
+    glColor4f(0.15f, 0.15f, 0.15f, 1.0f);
     glTranslatef(0.0f, 0.10f, 0.0f);
-    float cFlick1 = 0.85f + 0.15f * std::sin(g_time * 8.0f);
-    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick1);
-    drawSphere(0.022f * cFlick1, 6, 6);
-    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
-    drawSphere(0.010f * cFlick1, 6, 6);
+    drawCylinder(0.003f, 0.002f, 0.02f, 4);
+    // Flame & Volumetric Glow
+    glDisable(GL_LIGHTING);
+    float cFlick1 = 0.88f + 0.12f * std::sin(g_time * 8.0f + 0.5f);
+    // Outer fiery flame
+    glColor4f(1.0f, 0.58f, 0.08f, 0.95f * cFlick1);
+    glPushMatrix();
+    glScalef(0.8f, 1.7f, 0.8f);
+    drawSphere(0.026f * cFlick1, 8, 6);
+    glPopMatrix();
+    // Inner incandescent core
+    glColor4f(1.0f, 0.98f, 0.70f, 1.0f);
+    glPushMatrix();
+    glScalef(0.6f, 1.4f, 0.6f);
+    drawSphere(0.013f * cFlick1, 8, 6);
+    glPopMatrix();
+    // Additive corona glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glColor4f(1.0f, 0.68f, 0.18f, 0.38f * cFlick1);
+    drawSphere(0.10f, 8, 6);
+    glColor4f(1.0f, 0.45f, 0.08f, 0.16f * cFlick1);
+    drawSphere(0.24f, 10, 8);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
@@ -1580,58 +1707,120 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     glColor4f(0.62f, 0.50f, 0.22f, 1.0f);
     drawBox(0.12f, 0.018f, 0.018f);
     drawCylinder(0.025f, 0.025f, 0.03f, 6);
-    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
+    glColor4f(0.94f, 0.92f, 0.85f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
-    drawCylinder(0.016f, 0.015f, 0.10f, 6);
-    glDisable(GL_LIGHTING);
+    drawCylinder(0.016f, 0.015f, 0.10f, 8);
+    // Wax drips
+    glColor4f(0.90f, 0.88f, 0.80f, 1.0f);
+    glTranslatef(0.012f, 0.02f, 0.0f);  drawSphere(0.008f, 6, 4);
+    glTranslatef(-0.024f, 0.04f, 0.0f); drawSphere(0.007f, 6, 4);
+    glTranslatef(0.012f, -0.06f, 0.0f);
+    // Black wick
+    glColor4f(0.15f, 0.15f, 0.15f, 1.0f);
     glTranslatef(0.0f, 0.10f, 0.0f);
-    float cFlick2 = 0.85f + 0.15f * std::cos(g_time * 9.5f);
-    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick2);
-    drawSphere(0.022f * cFlick2, 6, 6);
-    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
-    drawSphere(0.010f * cFlick2, 6, 6);
+    drawCylinder(0.003f, 0.002f, 0.02f, 4);
+    // Flame & Volumetric Glow
+    glDisable(GL_LIGHTING);
+    float cFlick2 = 0.88f + 0.12f * std::cos(g_time * 9.5f + 1.2f);
+    glColor4f(1.0f, 0.58f, 0.08f, 0.95f * cFlick2);
+    glPushMatrix();
+    glScalef(0.8f, 1.7f, 0.8f);
+    drawSphere(0.026f * cFlick2, 8, 6);
+    glPopMatrix();
+    glColor4f(1.0f, 0.98f, 0.70f, 1.0f);
+    glPushMatrix();
+    glScalef(0.6f, 1.4f, 0.6f);
+    drawSphere(0.013f * cFlick2, 8, 6);
+    glPopMatrix();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glColor4f(1.0f, 0.68f, 0.18f, 0.38f * cFlick2);
+    drawSphere(0.10f, 8, 6);
+    glColor4f(1.0f, 0.45f, 0.08f, 0.16f * cFlick2);
+    drawSphere(0.24f, 10, 8);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
     // Center tall candle
     glPushMatrix();
     glTranslatef(0.0f, 0.22f, 0.0f);
-    glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
-    drawCylinder(0.016f, 0.015f, 0.14f, 6);
-    glDisable(GL_LIGHTING);
+    glColor4f(0.94f, 0.92f, 0.85f, 1.0f);
+    drawCylinder(0.016f, 0.015f, 0.14f, 8);
+    // Wax drips
+    glColor4f(0.90f, 0.88f, 0.80f, 1.0f);
+    glTranslatef(-0.010f, 0.04f, 0.0f); drawSphere(0.008f, 6, 4);
+    glTranslatef( 0.010f, -0.04f, 0.0f);
+    // Black wick
+    glColor4f(0.15f, 0.15f, 0.15f, 1.0f);
     glTranslatef(0.0f, 0.14f, 0.0f);
-    float cFlick3 = 0.88f + 0.12f * std::sin(g_time * 11.0f);
-    glColor4f(1.0f, 0.65f, 0.10f, 0.95f * cFlick3);
-    drawSphere(0.025f * cFlick3, 6, 6);
-    glColor4f(1.0f, 0.95f, 0.40f, 1.0f);
-    drawSphere(0.012f * cFlick3, 6, 6);
+    drawCylinder(0.003f, 0.002f, 0.02f, 4);
+    // Flame & Volumetric Glow
+    glDisable(GL_LIGHTING);
+    float cFlick3 = 0.90f + 0.10f * std::sin(g_time * 11.0f + 2.1f);
+    glColor4f(1.0f, 0.60f, 0.08f, 0.95f * cFlick3);
+    glPushMatrix();
+    glScalef(0.8f, 1.7f, 0.8f);
+    drawSphere(0.029f * cFlick3, 8, 6);
+    glPopMatrix();
+    glColor4f(1.0f, 0.98f, 0.70f, 1.0f);
+    glPushMatrix();
+    glScalef(0.6f, 1.4f, 0.6f);
+    drawSphere(0.015f * cFlick3, 8, 6);
+    glPopMatrix();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glColor4f(1.0f, 0.70f, 0.20f, 0.42f * cFlick3);
+    drawSphere(0.12f, 8, 6);
+    glColor4f(1.0f, 0.48f, 0.10f, 0.18f * cFlick3);
+    drawSphere(0.28f, 10, 8);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
     glPopMatrix();
+
+    // Overall Candelabra Warm Room Radiance Aura
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    float grandFlick = 0.90f + 0.10f * std::sin(g_time * 8.0f);
+    glColor4f(1.0f, 0.65f, 0.15f, 0.22f * grandFlick);
+    drawSphere(0.48f, 12, 10);
+    glColor4f(1.0f, 0.45f, 0.08f, 0.10f * grandFlick);
+    drawSphere(0.95f, 12, 10);
+    glDepthMask(GL_TRUE);
+    glPopAttrib();
+
     glPopMatrix(); // End Candelabra
 
-    // Glowing Alchemical Potions & Crystal Scrying Orb on Brass Tripod
+    // Glowing Alchemical Potions & Crystal Scrying Orb on Brass Tripod (Silky smooth glass & orb)
     glPushMatrix();
     glTranslatef(0.48f, 0.79f, 0.20f);
     // Emerald Potion Bottle
     glDisable(GL_LIGHTING);
     glColor4f(0.20f, 0.95f, 0.35f, 0.85f);
-    drawSphere(0.045f, 8, 8);
+    drawSphere(0.045f, 20, 16);
     glTranslatef(0.0f, 0.05f, 0.0f);
-    drawCylinder(0.015f, 0.015f, 0.04f, 6);
+    drawCylinder(0.015f, 0.015f, 0.04f, 18);
     // Ruby Red Elixir Phial
     glTranslatef(0.12f, -0.05f, -0.04f);
     glColor4f(0.95f, 0.18f, 0.25f, 0.85f);
-    drawCylinder(0.020f, 0.020f, 0.08f, 6);
+    drawCylinder(0.020f, 0.020f, 0.08f, 18);
     // Mystical Scrying Orb resting on brass tripod claw
     glTranslatef(-0.28f, 0.02f, 0.04f);
     applyMaterial(MAT_RUSTY_METAL);
     glColor4f(0.55f, 0.42f, 0.20f, 1.0f);
-    drawCylinder(0.04f, 0.025f, 0.035f, 6); // Tripod claw base
+    drawCylinder(0.04f, 0.025f, 0.035f, 18); // Tripod claw base
     glDisable(GL_LIGHTING);
     glTranslatef(0.0f, 0.05f, 0.0f);
     float orbPulse = 0.80f + 0.20f * std::sin(g_time * 3.5f);
     glColor4f(0.75f, 0.35f, 0.98f, 0.90f * orbPulse);
-    drawSphere(0.058f, 12, 10);
+    drawSphere(0.058f, 24, 20);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
@@ -1873,15 +2062,31 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     applyMaterial(MAT_RUSTY_METAL);
     glColor4f(0.55f, 0.42f, 0.20f, 1.0f);
     drawCylinder(0.07f, 0.05f, 0.06f, 8);
-    // Glowing Warm Core
+    // Glowing Warm Core & Amber Volumetric Halo
     glDisable(GL_LIGHTING);
     glTranslatef(0.0f, -0.06f, 0.0f);
-    glColor4f(1.0f, 0.82f, 0.35f, 0.95f);
-    drawSphere(0.06f, 8, 6);
+    float lFlick = 0.94f + 0.06f * std::sin(g_time * 5.0f);
+    glColor4f(1.0f, 0.92f, 0.60f, 1.0f);
+    drawSphere(0.065f * lFlick, 8, 6);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+    glColor4f(1.0f, 0.78f, 0.30f, 0.35f * lFlick);
+    drawSphere(0.22f, 10, 8);
+    glColor4f(1.0f, 0.52f, 0.12f, 0.16f * lFlick);
+    drawSphere(0.60f, 12, 10);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // 10. Cobwebs in 2nd Floor Ceiling Rafter Angles
+    // 10. ORNATE VICTORIAN WALL CANDLE SCONCES (Warmly illuminating bedroom walls & study)
+    drawWallCandleSconce(-8.85f, 5.70f,  1.80f,  90.0f); // Beside Gothic Four-Poster Bed
+    drawWallCandleSconce(-8.85f, 5.70f, -2.40f,  90.0f); // Beside Alchemist Study Desk
+    drawWallCandleSconce(-4.60f, 5.70f, -3.65f,   0.0f); // Back wall beside Chest & Wardrobe
+    drawWallCandleSconce(-5.20f, 5.70f,  4.60f, 180.0f); // Front wall beside Rocking Chair
+
+    // 11. Cobwebs in 2nd Floor Ceiling Rafter Angles
     drawCobweb(-8.75f, 6.80f,  4.60f, 0.85f,   0.0f);
     drawCobweb(-0.85f, 6.80f,  4.60f, 0.75f,  90.0f);
     drawCobweb(-8.75f, 6.80f, -3.60f, 0.95f, -90.0f);
@@ -1987,10 +2192,10 @@ void drawHouse() {    glPushMatrix();
     drawBox(1.8f, 2.1f, 0.24f, 0.8f, 0.8f);
     glPopMatrix();
 
-    // Front wall: 2nd floor upper facade band
+    // Front wall: 2nd floor upper facade band (meets 2nd floor floorboards cleanly)
     glPushMatrix();
-    glTranslatef(-4.8f, 5.55f, 4.78f);
-    drawBox(8.5f, 2.1f, 0.24f, 3.0f, 0.8f);
+    glTranslatef(-4.8f, 5.40f, 4.78f);
+    drawBox(8.5f, 2.40f, 0.24f, 3.0f, 0.8f);
     glPopMatrix();
 
     // Second-floor ceiling slab with Dedicated Stairwell Opening Cutout!
@@ -2042,15 +2247,15 @@ void drawHouse() {    glPushMatrix();
     drawBox(0.18f, 0.14f, 9.5f, 1.0f, 4.0f);
     glPopMatrix();
 
-    // Left Chimney Block (Rising on Left Roof Slope)
+    // Left Chimney Block (Rising on Left Roof Slope - Strictly on Exterior Roof)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
     glColor4f(0.45f, 0.47f, 0.52f, 1.0f);
     glPushMatrix();
-    glTranslatef(-8.2f, 8.2f, -1.0f);
-    drawBox(1.3f, 4.8f, 1.3f, 1.0f, 3.0f);
+    glTranslatef(-8.2f, 9.4f, -1.0f);
+    drawBox(1.3f, 2.6f, 1.3f, 1.0f, 2.0f);
     // Chimney crown stepped corbels
-    glTranslatef(0.0f, 2.45f, 0.0f);
+    glTranslatef(0.0f, 1.35f, 0.0f);
     drawBox(1.6f, 0.22f, 1.6f, 1.0f, 0.5f);
     glTranslatef(0.0f, 0.22f, 0.0f);
     drawBox(1.45f, 0.12f, 1.45f, 1.0f, 0.3f);
@@ -2059,60 +2264,60 @@ void drawHouse() {    glPushMatrix();
     bindTexture(TEX_RUST);
     glColor4f(0.62f, 0.52f, 0.42f, 1.0f);
     glTranslatef(-0.35f, 0.15f, 0.0f);
-    drawCylinder(0.18f, 0.15f, 0.65f, 8);
+    drawCylinder(0.18f, 0.15f, 0.65f, 16);
     glTranslatef(0.70f, 0.0f, 0.0f);
-    drawCylinder(0.18f, 0.15f, 0.65f, 8);
+    drawCylinder(0.18f, 0.15f, 0.65f, 16);
     glPopMatrix();
 
-    // Second chimney (right side of left wing)
+    // Second chimney (right side of left wing - Strictly on Exterior Roof)
     applyMaterial(MAT_STONE);
     bindTexture(TEX_STONE);
     glColor4f(0.45f, 0.47f, 0.52f, 1.0f);
     glPushMatrix();
-    glTranslatef(-2.0f, 8.8f, 1.5f);
-    drawBox(1.0f, 3.8f, 1.0f, 1.0f, 2.5f);
-    glTranslatef(0.0f, 1.95f, 0.0f);
+    glTranslatef(-2.0f, 9.6f, 1.5f);
+    drawBox(1.0f, 2.4f, 1.0f, 1.0f, 2.0f);
+    glTranslatef(0.0f, 1.25f, 0.0f);
     drawBox(1.25f, 0.18f, 1.25f);
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
     glColor4f(0.62f, 0.52f, 0.42f, 1.0f);
     glTranslatef(0.0f, 0.12f, 0.0f);
-    drawCylinder(0.15f, 0.12f, 0.55f, 8);
+    drawCylinder(0.15f, 0.12f, 0.55f, 16);
     glPopMatrix();
 
-    // Left Front Dormer with Peaked Roof & Window Cutout
+    // Left Front Dormer with Peaked Roof & Window Cutout (purely on exterior front facade)
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_WALL);
     glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
     glPushMatrix();
-    glTranslatef(-5.2f, 6.8f, 4.2f);
-    glPushMatrix(); glTranslatef(-0.95f, 0.0f, 0.0f); drawBox(0.18f, 2.0f, 2.0f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.95f, 0.0f, 0.0f); drawBox(0.18f, 2.0f, 2.0f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.0f, -0.85f, 0.90f); drawBox(1.8f, 0.30f, 0.20f); glPopMatrix();
-    applyMaterial(MAT_ROOF_SHINGLE);
-    bindTexture(TEX_ROOF);
-    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
-    glTranslatef(0.0f, 1.0f, 0.0f);
-    drawPrismRoof(2.5f, 1.6f, 2.2f, 1.0f, 1.0f);
-    glPopMatrix();
-    drawHouseWindow(-5.2f, 7.0f, 5.25f, 1.2f, 1.4f, 0.0f, true, true);
-
-    // Second Dormer (right side of left wing)
-    applyMaterial(MAT_WEATHERED_WALL);
-    bindTexture(TEX_WALL);
-    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
-    glPushMatrix();
-    glTranslatef(-3.2f, 6.8f, 4.2f);
-    glPushMatrix(); glTranslatef(-0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.8f, 1.8f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.8f, 1.8f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.0f, -0.75f, 0.80f); drawBox(1.5f, 0.30f, 0.20f); glPopMatrix();
+    glTranslatef(-5.2f, 7.0f, 5.0f);
+    glPushMatrix(); glTranslatef(-0.95f, 0.0f, 0.0f); drawBox(0.18f, 1.8f, 0.60f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.95f, 0.0f, 0.0f); drawBox(0.18f, 1.8f, 0.60f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, -0.75f, 0.25f); drawBox(1.8f, 0.30f, 0.15f); glPopMatrix();
     applyMaterial(MAT_ROOF_SHINGLE);
     bindTexture(TEX_ROOF);
     glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
     glTranslatef(0.0f, 0.9f, 0.0f);
-    drawPrismRoof(2.1f, 1.3f, 2.0f, 1.0f, 1.0f);
+    drawPrismRoof(2.5f, 1.4f, 0.85f, 1.0f, 1.0f);
     glPopMatrix();
-    drawHouseWindow(-3.2f, 6.9f, 5.15f, 1.0f, 1.2f, 0.0f, true, true);
+    drawHouseWindow(-5.2f, 7.0f, 5.32f, 1.2f, 1.4f, 0.0f, true, true);
+
+    // Second Dormer (right side of left wing facade)
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_WALL);
+    glColor4f(0.38f, 0.36f, 0.34f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-3.2f, 7.0f, 5.0f);
+    glPushMatrix(); glTranslatef(-0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.7f, 0.55f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.80f, 0.0f, 0.0f); drawBox(0.16f, 1.7f, 0.55f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, -0.70f, 0.22f); drawBox(1.5f, 0.30f, 0.15f); glPopMatrix();
+    applyMaterial(MAT_ROOF_SHINGLE);
+    bindTexture(TEX_ROOF);
+    glColor4f(0.38f, 0.42f, 0.50f, 1.0f);
+    glTranslatef(0.0f, 0.85f, 0.0f);
+    drawPrismRoof(2.1f, 1.2f, 0.80f, 1.0f, 1.0f);
+    glPopMatrix();
+    drawHouseWindow(-3.2f, 7.0f, 5.28f, 1.0f, 1.2f, 0.0f, true, true);
 
     // ========================================================================
     // 3. SECTION B: TALL CENTRAL GOTHIC TOWER (Silhouetted against Moon)

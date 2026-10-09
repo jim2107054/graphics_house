@@ -53,6 +53,16 @@ void initOpenGL() {
     float winDiff[4] = { 0.95f, 0.65f, 0.22f, 1.0f };
     glLightfv(GL_LIGHT3, GL_DIFFUSE, winDiff);
 
+    // Light 4: 2nd Floor Alchemist Candelabra & Candlelight Attenuation
+    glLightf(GL_LIGHT4, GL_CONSTANT_ATTENUATION,  0.22f);
+    glLightf(GL_LIGHT4, GL_LINEAR_ATTENUATION,    0.035f);
+    glLightf(GL_LIGHT4, GL_QUADRATIC_ATTENUATION, 0.007f);
+
+    // Light 5: 2nd Floor Hanging Brass Lantern Room Attenuation
+    glLightf(GL_LIGHT5, GL_CONSTANT_ATTENUATION,  0.25f);
+    glLightf(GL_LIGHT5, GL_LINEAR_ATTENUATION,    0.035f);
+    glLightf(GL_LIGHT5, GL_QUADRATIC_ATTENUATION, 0.008f);
+
     // Atmospheric Fog Setup
     glFogi(GL_FOG_MODE, GL_EXP2);
     glFogf(GL_FOG_DENSITY, 0.019f);
@@ -166,6 +176,58 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
         glLightfv(GL_LIGHT3, GL_POSITION, winPos);
     } else {
         glDisable(GL_LIGHT3);
+    }
+
+    // Light 4: 2nd Floor Alchemist Candelabra & Candlelight (GL_LIGHT4)
+    if (g_light4CandleOn) {
+        glEnable(GL_LIGHT4);
+        float radH = g_houseRotY * (float)M_PI / 180.0f;
+        // Desk candelabra local pos on 2nd floor: (-7.10f, 5.35f, -1.98f)
+        float cLocalX = -7.10f;
+        float cLocalY =  5.35f;
+        float cLocalZ = -1.98f;
+        float cWorldX = g_houseShiftX + cLocalX * std::cos(radH) + cLocalZ * std::sin(radH);
+        float cWorldY = cLocalY;
+        float cWorldZ = g_houseShiftZ - cLocalX * std::sin(radH) + cLocalZ * std::cos(radH);
+
+        float cFlick = 0.90f + 0.10f * std::sin(g_time * 7.5f) + 0.05f * std::cos(g_time * 12.0f);
+        float cPos[4]  = { cWorldX, cWorldY, cWorldZ, 1.0f };
+        float cDiff[4] = { 1.35f * cFlick, 0.92f * cFlick, 0.42f * cFlick, 1.0f };
+        float cAmb[4]  = { 0.22f * cFlick, 0.16f * cFlick, 0.07f * cFlick, 1.0f };
+        float cSpec[4] = { 0.75f * cFlick, 0.55f * cFlick, 0.25f * cFlick, 1.0f };
+
+        glLightfv(GL_LIGHT4, GL_POSITION, cPos);
+        glLightfv(GL_LIGHT4, GL_AMBIENT,  cAmb);
+        glLightfv(GL_LIGHT4, GL_DIFFUSE,  cDiff);
+        glLightfv(GL_LIGHT4, GL_SPECULAR, cSpec);
+    } else {
+        glDisable(GL_LIGHT4);
+    }
+
+    // Light 5: 2nd Floor Hanging Brass Lantern Room Illumination (GL_LIGHT5)
+    if (g_light5LanternOn) {
+        glEnable(GL_LIGHT5);
+        float radH = g_houseRotY * (float)M_PI / 180.0f;
+        // Hanging lantern local pos: (-4.80f, 6.34f, 0.50f)
+        float lLocalX = -4.80f;
+        float lLocalY =  6.34f;
+        float lLocalZ =  0.50f;
+        float lWorldX = g_houseShiftX + lLocalX * std::cos(radH) + lLocalZ * std::sin(radH);
+        float lWorldY = lLocalY;
+        float lWorldZ = g_houseShiftZ - lLocalX * std::sin(radH) + lLocalZ * std::cos(radH);
+
+        float lFlick = 0.94f + 0.06f * std::sin(g_time * 5.0f);
+        float lPos[4]  = { lWorldX, lWorldY, lWorldZ, 1.0f };
+        float lDiff[4] = { 1.20f * lFlick, 0.92f * lFlick, 0.50f * lFlick, 1.0f };
+        float lAmb[4]  = { 0.20f * lFlick, 0.15f * lFlick, 0.08f * lFlick, 1.0f };
+        float lSpec[4] = { 0.60f * lFlick, 0.45f * lFlick, 0.22f * lFlick, 1.0f };
+
+        glLightfv(GL_LIGHT5, GL_POSITION, lPos);
+        glLightfv(GL_LIGHT5, GL_AMBIENT,  lAmb);
+        glLightfv(GL_LIGHT5, GL_DIFFUSE,  lDiff);
+        glLightfv(GL_LIGHT5, GL_SPECULAR, lSpec);
+    } else {
+        glDisable(GL_LIGHT5);
     }
 
     // 2. RENDER 3D SCENE OBJECTS

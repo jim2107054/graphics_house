@@ -1,5 +1,6 @@
 #include "Props.h"
 #include "Terrain.h"
+#include "House.h"
 #include "../graphics/Material.h"
 #include "../graphics/TextureManager.h"
 #include "../graphics/Primitives.h"
@@ -428,318 +429,814 @@ void drawPumpkinArray() {    // ------------------------------------------------
 
 
 
-void drawRustedCar(float x, float z, float rotY) {    float groundY = getTerrainHeight(x, z);
+// ============================================================================
+// REALISTIC 1957 VINTAGE CRUISER WRECK ("VANGLA CAR")
+// Fully sculpted vintage American cruiser featuring authentic crash damage:
+// - Popped-ajar crumpled hood revealing fully exposed detailed V8 engine bay
+// - Smashed collision-twisted front chrome bumper & bent radiator grille
+// - Realistic panoramic wrap-around safety windshield with intricate fractures
+// - Authentic hollow dished 2-spoke vintage steering wheel with chrome horn ring
+// - Ripped two-tone tuck-and-roll bench seat with yellow foam & coiled steel springs
+// - Authentic wide whitewall wheels, severed tie-rod, and flattened pancake tire
+// - Splintered fence rails, fallen hubcap, oil slick puddle & mud depression rut
+// ============================================================================
+
+static const Material MAT_CAR_PAINT_TURQUOISE = {
+    { 0.16f, 0.28f, 0.30f, 1.0f },
+    { 0.34f, 0.58f, 0.62f, 1.0f },
+    { 0.42f, 0.54f, 0.56f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    32.0f
+};
+
+static const Material MAT_CAR_RUST_WEATHERED = {
+    { 0.24f, 0.15f, 0.10f, 1.0f },
+    { 0.52f, 0.32f, 0.20f, 1.0f },
+    { 0.18f, 0.14f, 0.10f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    14.0f
+};
+
+static const Material MAT_WHITEWALL_RUBBER = {
+    { 0.50f, 0.48f, 0.45f, 1.0f },
+    { 0.88f, 0.86f, 0.82f, 1.0f },
+    { 0.20f, 0.20f, 0.20f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    24.0f
+};
+
+static const Material MAT_ENGINE_IRON = {
+    { 0.12f, 0.12f, 0.14f, 1.0f },
+    { 0.28f, 0.28f, 0.30f, 1.0f },
+    { 0.35f, 0.35f, 0.38f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    28.0f
+};
+
+static const Material MAT_VALVE_RED = {
+    { 0.35f, 0.08f, 0.06f, 1.0f },
+    { 0.82f, 0.18f, 0.14f, 1.0f },
+    { 0.50f, 0.25f, 0.20f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    45.0f
+};
+
+static const Material MAT_BRASS_CORE = {
+    { 0.28f, 0.22f, 0.08f, 1.0f },
+    { 0.68f, 0.54f, 0.22f, 1.0f },
+    { 0.55f, 0.46f, 0.18f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    48.0f
+};
+
+static const Material MAT_OIL_SLICK = {
+    { 0.04f, 0.05f, 0.05f, 0.88f },
+    { 0.10f, 0.12f, 0.12f, 0.88f },
+    { 0.45f, 0.38f, 0.48f, 0.88f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    75.0f
+};
+
+// Helper: Hollow Vintage Dished Steering Wheel (Replaces solid sphere!)
+static void drawVintageSteeringWheel() {
+    glPushMatrix();
+    // Steering column angled at 36 degrees from dashboard firewall
+    applyMaterial(MAT_BLACK_IRON);
+    bindTexture(TEX_NONE);
+    drawCylinder(0.022f, 0.022f, 0.34f, 10);
+
+    // Turn signal lever wand on column
+    glPushMatrix();
+    glTranslatef(-0.025f, 0.22f, 0.0f);
+    glRotatef(75.0f, 0.0f, 0.0f, 1.0f);
+    drawCylinder(0.005f, 0.005f, 0.11f, 6);
+    glTranslatef(0.0f, 0.11f, 0.0f);
+    applyMaterial(MAT_STONE);
+    drawSphere(0.012f, 6, 6);
+    glPopMatrix();
+
+    // Wheel Hub Base
+    glTranslatef(0.0f, 0.34f, 0.0f);
+    applyMaterial(MAT_CHROME_TRIM);
+    drawCylinder(0.048f, 0.044f, 0.025f, 12);
+
+    // Center Horn Button with vintage emblem
+    glTranslatef(0.0f, 0.02f, 0.0f);
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    drawSphere(0.038f, 10, 8);
+    applyMaterial(MAT_CHROME_TRIM);
+    drawSphere(0.020f, 8, 6);
+
+    // Two Horizontal Spokes
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    drawBox(0.36f, 0.012f, 0.024f);
+    glPopMatrix();
+
+    // Lower Chrome Half-Horn Ring
+    glPushMatrix();
+    glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
+    int hornSegs = 10;
+    float hornRadius = 0.125f;
+    for (int i = 0; i < hornSegs; ++i) {
+        float a1 = 3.14159f * 0.25f + (float)i * (3.14159f * 0.50f / hornSegs);
+        float a2 = 3.14159f * 0.25f + (float)(i + 1) * (3.14159f * 0.50f / hornSegs);
+        float x1 = hornRadius * cosf(a1), z1 = -hornRadius * sinf(a1);
+        float x2 = hornRadius * cosf(a2), z2 = -hornRadius * sinf(a2);
+        glPushMatrix();
+        glTranslatef((x1 + x2) * 0.5f, 0.01f, (z1 + z2) * 0.5f);
+        drawBox(fabsf(x2 - x1) + 0.010f, 0.008f, fabsf(z2 - z1) + 0.010f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    // Hollow Outer Steering Wheel Ring (16 smooth tube segments - NOT a solid sphere!)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_NONE);
+    float rimRadius = 0.205f;
+    int rimSegs = 16;
+    for (int i = 0; i < rimSegs; ++i) {
+        float theta1 = (float)i * (2.0f * 3.14159265f / rimSegs);
+        float theta2 = (float)(i + 1) * (2.0f * 3.14159265f / rimSegs);
+        float x1 = rimRadius * cosf(theta1);
+        float z1 = rimRadius * sinf(theta1);
+        float x2 = rimRadius * cosf(theta2);
+        float z2 = rimRadius * sinf(theta2);
+
+        float mx = (x1 + x2) * 0.5f;
+        float mz = (z1 + z2) * 0.5f;
+        float dx = x2 - x1;
+        float dz = z2 - z1;
+        float segLen = sqrtf(dx * dx + dz * dz);
+        float segAngle = atan2f(dz, dx) * (180.0f / 3.14159265f);
+
+        glPushMatrix();
+        glTranslatef(mx, 0.018f, mz);
+        glRotatef(-segAngle, 0.0f, 1.0f, 0.0f);
+        drawBox(segLen + 0.006f, 0.024f, 0.024f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+}
+
+// Helper: Coiled wire seat spring poking out of torn upholstery
+static void drawSeatSpring(float radius, float totalHeight, int coils) {
+    glDisable(GL_LIGHTING);
+    glColor3f(0.68f, 0.42f, 0.26f); // Oxidized rusty spring wire
+    glLineWidth(2.6f);
+    glBegin(GL_LINE_STRIP);
+    int steps = coils * 14;
+    for (int i = 0; i <= steps; ++i) {
+        float t = (float)i / steps;
+        float angle = t * coils * 2.0f * 3.14159265f;
+        float sx = radius * cosf(angle);
+        float sz = radius * sinf(angle);
+        float sy = t * totalHeight;
+        glVertex3f(sx, sy, sz);
+    }
+    glEnd();
+    glEnable(GL_LIGHTING);
+}
+
+// Helper: Authentic 1950s Whitewall Wheel with deep dish rim & chrome hubcap
+static void drawWhitewallWheel(bool isFlat, bool hasHubcap, bool isLeftSide) {
+    glPushMatrix();
+    if (isFlat) {
+        // Severely deflated flattened tire pressed into mud rut
+        glScalef(1.0f, 0.44f, 1.25f);
+    }
+
+    // Cylinder along X axis (axle direction):
+    // For left side, outer face points to -X; for right side, outer face points to +X.
+    glRotatef(isLeftSide ? 90.0f : -90.0f, 0.0f, 0.0f, 1.0f);
+
+    float tireR = 0.42f;
+    float tireW = 0.22f;
+
+    // Outer Tire Tread (Black Rubber)
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_BARK);
+    drawCylinder(tireR, tireR, tireW, 18, 1.0f, 1.0f);
+
+    // Outer Sidewall Face (at y = tireW)
+    glPushMatrix();
+    glTranslatef(0.0f, tireW + 0.002f, 0.0f);
+
+    // Outer Whitewall Annulus Ring (r = 0.22f to 0.36f in XZ plane)
+    applyMaterial(MAT_WHITEWALL_RUBBER);
+    bindTexture(TEX_NONE);
+    int ringSegs = 20;
+    glBegin(GL_QUADS);
+    for (int s = 0; s < ringSegs; ++s) {
+        float a1 = (float)s * (2.0f * 3.14159265f / ringSegs);
+        float a2 = (float)(s + 1) * (2.0f * 3.14159265f / ringSegs);
+        float rIn = 0.22f, rOut = 0.36f;
+        glNormal3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(rIn * cosf(a1), 0.0f, rIn * sinf(a1));
+        glVertex3f(rOut * cosf(a1), 0.0f, rOut * sinf(a1));
+        glVertex3f(rOut * cosf(a2), 0.0f, rOut * sinf(a2));
+        glVertex3f(rIn * cosf(a2), 0.0f, rIn * sinf(a2));
+    }
+    glEnd();
+
+    // Recessed Steel Rim (dish)
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
+    bindTexture(TEX_RUST);
+    drawCylinder(0.22f, 0.22f, 0.04f, 14, 0.5f, 0.5f);
+
+    if (hasHubcap) {
+        // Polished Chrome Baby-Moon / Dog-Dish Hubcap
+        glTranslatef(0.0f, 0.02f, 0.0f);
+        applyMaterial(MAT_CHROME_TRIM);
+        bindTexture(TEX_NONE);
+        drawSphere(0.13f, 12, 10);
+        // Center vintage embossed star emblem
+        glTranslatef(0.0f, 0.03f, 0.0f);
+        applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+        drawSphere(0.04f, 8, 6);
+    } else {
+        // Missing hubcap on crash wheel: Exposed rusty axle snout & 5 lug nuts
+        applyMaterial(MAT_BLACK_IRON);
+        bindTexture(TEX_NONE);
+        drawCylinder(0.065f, 0.065f, 0.045f, 10);
+        // 5 Lug Nuts
+        applyMaterial(MAT_CHROME_TRIM);
+        for (int l = 0; l < 5; ++l) {
+            float la = (float)l * (2.0f * 3.14159265f / 5.0f);
+            glPushMatrix();
+            glTranslatef(0.12f * cosf(la), 0.02f, 0.12f * sinf(la));
+            drawBox(0.022f, 0.025f, 0.022f);
+            glPopMatrix();
+        }
+    }
+    glPopMatrix(); // End outer sidewall face
+    glPopMatrix();
+}
+
+// Master Rusted Car Render Routine
+void drawRustedCar(float x, float z, float rotY) {
+    float groundY = getTerrainHeight(x, z);
 
     glPushMatrix();
-    // Partially sunk into mud, with authentic deflated tyre listing & forward pitch
-    glTranslatef(x, groundY - 0.10f, z);
+    // Partially sunk into mud with deflated tyre listing & front-right pitch
+    glTranslatef(x, groundY - 0.12f, z);
     glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-    glRotatef(-5.0f, 0.0f, 0.0f, 1.0f); // Roll listing to the right (flat tyre side)
-    glRotatef( 3.4f, 1.0f, 0.0f, 0.0f); // Pitch dipped down at front-right
+    glRotatef(-5.4f, 0.0f, 0.0f, 1.0f); // Roll tilt towards flat front-right tyre
+    glRotatef( 3.8f, 1.0f, 0.0f, 0.0f); // Pitch dipped down at front bumper
 
     // ------------------------------------------------------------------------
-    // A. WET MUD RUT & SUNKEN GROUND DEPRESSION UNDER FLAT TYRE
+    // 1. GROUND DEBRIS, MUD DEPRESSION, OIL SLICK & SPLINTERED FENCE
     // ------------------------------------------------------------------------
+    // Deep Mud Depression under flat front-right tire
     applyMaterial(MAT_WET_GROUND);
     bindTexture(TEX_GROUND);
     glPushMatrix();
-    glTranslatef(1.02f, 0.04f, 1.35f); // Directly under front-right deflated tyre
-    drawBox(0.95f, 0.05f, 1.10f, 1.0f, 1.0f);
-    // Surrounding splashed mud ridge
+    glTranslatef(1.04f, 0.03f, 1.35f);
+    drawBox(1.10f, 0.05f, 1.25f, 1.0f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
-    drawBox(1.15f, 0.03f, 1.30f, 1.0f, 1.0f);
+    drawBox(1.30f, 0.03f, 1.45f, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // Motor Oil Puddle under cracked engine oil pan
+    applyMaterial(MAT_OIL_SLICK);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.35f, 0.045f, 1.15f);
+    drawBox(1.15f, 0.02f, 1.45f);
+    glPopMatrix();
+
+    // Fallen Chrome Hubcap (knocked off in the crash, lying half in the mud rut)
+    glPushMatrix();
+    glTranslatef(1.55f, 0.06f, 1.85f);
+    glRotatef(28.0f, 0.2f, 0.0f, 1.0f);
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    drawSphere(0.13f, 10, 8);
+    glPopMatrix();
+
+    // Splintered Wooden Fence Post wedged right into the crushed front bumper
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glPushMatrix();
+    glTranslatef(0.88f, 0.52f, 2.52f);
+    glRotatef(38.0f, 1.0f, 0.2f, -0.4f); // Smashed backwards by impact
+    drawBox(0.18f, 1.35f, 0.18f, 0.5f, 2.0f);
+    // Pointed jagged splinter break at top
+    glTranslatef(0.0f, 0.72f, 0.0f);
+    drawBox(0.10f, 0.28f, 0.08f);
+    glPopMatrix();
+
+    // Snapped Horizontal Fence Rail wedged under front-right fender
+    glPushMatrix();
+    glTranslatef(0.72f, 0.24f, 2.10f);
+    glRotatef(-18.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(12.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.45f, 0.11f, 0.06f, 2.0f, 0.5f);
     glPopMatrix();
 
     // ------------------------------------------------------------------------
-    // B. LOWER CHASSIS, UNDERCARRIAGE & RUSTY EXHAUST SYSTEM
+    // 2. LADDER CHASSIS, SUSPENSION & RUSTED DUAL EXHAUST
     // ------------------------------------------------------------------------
-    applyMaterial(MAT_RUSTY_METAL);
+    applyMaterial(MAT_BLACK_IRON);
+    bindTexture(TEX_NONE);
+
+    // Twin Heavy Steel Ladder Frame Rails
+    for (int side = -1; side <= 1; side += 2) {
+        glPushMatrix();
+        glTranslatef(side * 0.65f, 0.38f, 0.0f);
+        drawBox(0.14f, 0.16f, 4.30f);
+        glPopMatrix();
+    }
+    // Chassis Crossmembers
+    for (int c = -2; c <= 2; ++c) {
+        glPushMatrix();
+        glTranslatef(0.0f, 0.38f, c * 0.95f);
+        drawBox(1.35f, 0.14f, 0.14f);
+        glPopMatrix();
+    }
+
+    // Rear Solid Axle & Differential "Pumpkin"
+    glPushMatrix();
+    glTranslatef(0.0f, 0.42f, -1.35f);
+    drawCylinder(0.045f, 0.045f, 1.95f, 8); // Axle tube
+    drawSphere(0.16f, 10, 8);               // Differential pumpkin
+    glPopMatrix();
+
+    // Severed Front-Right Steering Tie-Rod hanging down
+    glPushMatrix();
+    glTranslatef(0.70f, 0.26f, 1.25f);
+    glRotatef(35.0f, 1.0f, 0.0f, 0.5f);
+    drawCylinder(0.016f, 0.016f, 0.35f, 6);
+    glPopMatrix();
+
+    // Rusted Dual Exhaust System (twin mufflers + drooping tailpipes)
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
     bindTexture(TEX_RUST);
-
-    // Lower Chassis Frame / Rocker panels (Beveled to catch light)
-    glPushMatrix();
-    glTranslatef(0.0f, 0.40f, 0.0f);
-    drawBeveledBox(1.95f, 0.26f, 4.40f, 0.04f, 2.0f, 1.5f);
-    glPopMatrix();
-
-    // Undercarriage Transmission Tunnel
-    glPushMatrix();
-    glTranslatef(0.0f, 0.50f, 0.0f);
-    drawBox(0.45f, 0.16f, 3.40f);
-    glPopMatrix();
-
-    // Rusted Exhaust Pipe & Muffler trailing underneath to the rear
-    glPushMatrix();
-    glTranslatef(-0.48f, 0.28f, 0.60f);
-    // Exhaust pipe from engine bay
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.032f, 0.032f, 1.60f, 8);
-    // Rusted oval muffler box
-    glTranslatef(0.0f, 1.60f, 0.0f);
-    drawBeveledBox(0.32f, 0.16f, 0.65f, 0.03f);
-    // Tailpipe leading past rear bumper
-    glTranslatef(0.0f, 0.65f, 0.0f);
-    drawCylinder(0.030f, 0.030f, 0.65f, 8);
-    // Slanted down-turned tailpipe tip
-    glTranslatef(0.0f, 0.65f, 0.0f);
-    glRotatef(-25.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.030f, 0.028f, 0.18f, 8);
-    glPopMatrix();
+    for (int ex = -1; ex <= 1; ex += 2) {
+        glPushMatrix();
+        glTranslatef(ex * 0.42f, 0.28f, 0.40f);
+        // Header pipe
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+        drawCylinder(0.030f, 0.030f, 1.45f, 8);
+        // Oval Muffler
+        glTranslatef(0.0f, 1.45f, 0.0f);
+        drawBeveledBox(0.28f, 0.15f, 0.62f, 0.03f);
+        // Tailpipe
+        glTranslatef(0.0f, 0.62f, 0.0f);
+        drawCylinder(0.028f, 0.028f, 0.85f, 8);
+        // Slanted tailpipe tip drooping under rear bumper
+        glTranslatef(0.0f, 0.85f, 0.0f);
+        glRotatef(ex * 8.0f - 18.0f, 1.0f, 0.0f, 0.0f);
+        drawCylinder(0.028f, 0.025f, 0.20f, 8);
+        glPopMatrix();
+    }
 
     // ------------------------------------------------------------------------
-    // C. MAIN BODY PANELS, SCULPTED FENDERS, HOOD & TRUNK
+    // 3. SCULPTED 1957 CRUISER BODY PANELS, TAILFINS & CHROME SPEAR
     // ------------------------------------------------------------------------
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-
-    // Main Lower Body Tub (Wheel wells, lower doors, quarter panels)
+    // Main Lower Body Tub (Two-tone weathered turquoise paint with rust sills)
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(0.0f, 0.68f, 0.0f);
-    drawBeveledBox(2.18f, 0.38f, 4.62f, 0.06f, 2.0f, 1.8f);
+    drawBeveledBox(2.18f, 0.38f, 4.65f, 0.06f, 2.0f, 1.8f);
     glPopMatrix();
 
-    // 4 Curved Flared Wheel Well Arches (Fender Flares with mud splatter)
+    // Rusted Rocker Panel Skirts along lower perimeter
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
+    bindTexture(TEX_RUST);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.52f, 0.0f);
+    drawBeveledBox(2.20f, 0.12f, 4.60f, 0.02f);
+    glPopMatrix();
+
+    // Upper Waistline Body Panels: Rear Tub & Left/Right Front Fenders
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
+    // Rear Cabin & Quarter Panel Waistline (Behind firewall)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.94f, -0.82f);
+    drawBeveledBox(2.08f, 0.22f, 2.80f, 0.04f, 2.0f, 1.2f);
+    glPopMatrix();
+
+    // Left Front Fender (Flanking the engine bay)
+    glPushMatrix();
+    glTranslatef(-0.95f, 0.94f, 1.45f);
+    drawBeveledBox(0.24f, 0.26f, 1.72f, 0.03f, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // Right Front Fender (Crumpled slightly inward from collision)
+    glPushMatrix();
+    glTranslatef(0.93f, 0.92f, 1.45f);
+    glRotatef(3.5f, 0.0f, 1.0f, 0.2f); // Collision warp
+    drawBeveledBox(0.24f, 0.26f, 1.70f, 0.03f, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // 1957 Iconic Chrome "Sweep-Spear" Side Trim Moldings & Cream Two-Tone Inserts
+    for (int side = -1; side <= 1; side += 2) {
+        // Horizontal chrome spear running down each car flank
+        applyMaterial(MAT_CHROME_TRIM);
+        bindTexture(TEX_NONE);
+        glPushMatrix();
+        glTranslatef(side * 1.10f, 0.82f, 0.15f);
+        drawBox(0.025f, 0.035f, 4.10f);
+
+        // Downward swooping spear fin at rear quarter panel
+        glTranslatef(0.0f, -0.06f, -1.45f);
+        drawBox(0.028f, 0.035f, 1.25f);
+
+        // Cream white two-tone accent panel inside rear spear pocket!
+        applyMaterial(MAT_WHITEWALL_RUBBER);
+        glTranslatef(side * -0.01f, 0.04f, 0.0f);
+        drawBox(0.015f, 0.08f, 1.15f);
+        glPopMatrix();
+    }
+
+    // 4 Curved Flared Wheel Well Arches
     float archX[2] = { -1.10f, 1.10f };
     float archZ[2] = { -1.35f, 1.35f };
     for (int ix = 0; ix < 2; ++ix) {
         for (int iz = 0; iz < 2; ++iz) {
             glPushMatrix();
             glTranslatef(archX[ix], 0.72f, archZ[iz]);
+            applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+            bindTexture(TEX_NONE);
             drawBeveledBox(0.12f, 0.28f, 1.12f, 0.03f, 0.5f, 0.5f);
+            // Chrome Wheel Opening Lip Molding
+            applyMaterial(MAT_CHROME_TRIM);
+            glTranslatef(archX[ix] > 0 ? 0.06f : -0.06f, -0.10f, 0.0f);
+            drawBox(0.020f, 0.025f, 1.05f);
             glPopMatrix();
         }
     }
 
-    // Upper Body Waistline / Shoulder Crease (Beveled transition)
-    glPushMatrix();
-    glTranslatef(0.0f, 0.94f, 0.0f);
-    drawBeveledBox(2.08f, 0.22f, 4.42f, 0.04f, 2.0f, 1.2f);
-    glPopMatrix();
+    // ICONIC 1957 REAR TAILFINS with Chrome Edge Caps
+    for (int side = -1; side <= 1; side += 2) {
+        // Sculpted fin blade rising towards rear
+        glPushMatrix();
+        glTranslatef(side * 0.98f, 1.16f, -1.65f);
+        glRotatef(side * -3.0f, 0.0f, 1.0f, 0.0f);
+        glRotatef(8.5f, 1.0f, 0.0f, 0.0f); // Sloped fin wedge
+        applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+        bindTexture(TEX_NONE);
+        drawBeveledBox(0.16f, 0.32f, 1.35f, 0.03f, 1.0f, 1.0f);
+        // Chrome Fin Top Edge Molding
+        applyMaterial(MAT_CHROME_TRIM);
+        glTranslatef(0.0f, 0.17f, 0.0f);
+        drawBox(0.045f, 0.030f, 1.38f);
 
-    // Sloped Front Engine Hood with Raised Central Power Crease
-    glPushMatrix();
-    glTranslatef(0.0f, 0.98f, 1.35f);
-    glRotatef(-4.8f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(1.98f, 0.14f, 1.72f, 0.04f, 1.5f, 1.0f); // Hood main plate
-    // Central raised power bulge / crease line
-    glTranslatef(0.0f, 0.05f, 0.0f);
-    drawBeveledBox(0.65f, 0.04f, 1.62f, 0.02f);
-    // Chrome Hood Center Ornament / Emblem base
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    glTranslatef(0.0f, 0.03f, 0.76f);
-    drawBox(0.06f, 0.05f, 0.14f);
-    glPopMatrix();
+        // Rocket Bullet Ruby Red Taillight Pods embedded at rear fin tip!
+        glTranslatef(0.0f, -0.08f, -0.72f);
+        drawCylinder(0.075f, 0.075f, 0.06f, 12); // Chrome Bezel
+        applyMaterial(MAT_PUMPKIN_SKIN);
+        glTranslatef(0.0f, 0.0f, -0.05f);
+        drawCylinder(0.060f, 0.015f, 0.10f, 10); // Ruby Bullet Lens
+        glPopMatrix();
+    }
 
-    // Sloped Rear Trunk Deck Lid
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.98f, -1.55f);
-    glRotatef(3.2f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(1.92f, 0.14f, 1.32f, 0.04f, 1.5f, 1.0f);
-    // Chrome Trunk Keyhole Cylinder
-    applyMaterial(MAT_CHROME_TRIM);
+    // Rear Trunk Deck Lid (slightly popped ajar on its latch)
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
     bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.04f, -1.55f);
+    glRotatef(5.5f, 1.0f, 0.0f, 0.0f); // Popped ajar ~5 degrees
+    drawBeveledBox(1.88f, 0.12f, 1.32f, 0.04f, 1.5f, 1.0f);
+    // Chrome Trunk Script & Keyhole Lock Cylinder
+    applyMaterial(MAT_CHROME_TRIM);
     glTranslatef(0.0f, -0.04f, -0.66f);
     drawCylinder(0.025f, 0.025f, 0.03f, 8);
-    glPopMatrix();
-
-    // Rear Quarter Panel Fuel Filler Door Flap
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    glPushMatrix();
-    glTranslatef(1.05f, 0.92f, -1.45f);
-    drawBox(0.02f, 0.14f, 0.14f);
+    drawBox(0.24f, 0.02f, 0.02f); // Chrome script bar
     glPopMatrix();
 
     // ------------------------------------------------------------------------
-    // D. FRONT GRILLE, HEADLIGHTS, BUMPERS & CRUMPLED ACCENTS
+    // 4. CRASH-DAMAGED FRONT BUMPER, MANGLED GRILLE & HEADLIGHTS
     // ------------------------------------------------------------------------
-    // Front Radiator Grille Shell Housing
-    glPushMatrix();
-    glTranslatef(0.0f, 0.72f, 2.34f);
-    drawBeveledBox(1.88f, 0.44f, 0.10f, 0.03f, 1.0f, 0.5f);
-
-    // Deep Dark Radiator Core Mesh behind grille
-    applyMaterial(MAT_RUBBER_TYRE);
+    // Front Radiator Grille Bulkhead Support
+    applyMaterial(MAT_ENGINE_IRON);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glTranslatef(0.0f, 0.0f, 0.02f);
-    drawBox(1.70f, 0.36f, 0.02f);
+    glTranslatef(0.0f, 0.72f, 2.30f);
+    drawBox(1.82f, 0.44f, 0.10f);
     glPopMatrix();
 
-    // Chrome Grille Matrix: Vertical Slats & Horizontal Crossbars
+    // Classic Chrome Radiator Grille: Intact on left, crushed & mangled on right!
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
-    for (int i = -4; i <= 4; ++i) {
+    for (int i = -5; i <= 5; ++i) {
+        float gx = i * 0.16f;
         glPushMatrix();
-        glTranslatef(i * 0.18f, 0.0f, 0.055f);
-        drawBox(0.028f, 0.34f, 0.035f);
+        if (gx > 0.15f) {
+            // Right side of grille: violently bent and crushed backwards by crash!
+            glTranslatef(gx, 0.72f, 2.35f - (gx - 0.15f) * 0.40f);
+            glRotatef((gx - 0.15f) * 38.0f, 0.0f, 1.0f, 0.2f);
+            drawBox(0.024f, 0.32f, 0.035f);
+        } else {
+            // Left side: straight vertical grille bars
+            glTranslatef(gx, 0.72f, 2.35f);
+            drawBox(0.024f, 0.34f, 0.035f);
+        }
         glPopMatrix();
     }
+    // Horizontal Grille Ribs
     for (int j = -1; j <= 1; ++j) {
         glPushMatrix();
-        glTranslatef(0.0f, j * 0.11f, 0.055f);
-        drawBox(1.68f, 0.025f, 0.035f);
+        glTranslatef(-0.45f, 0.72f + j * 0.11f, 2.36f);
+        drawBox(0.95f, 0.024f, 0.030f);
         glPopMatrix();
     }
-    // Center Vintage Insignia Emblem Badge
+
+    // Heavy Front Wraparound Chrome Bumper:
+    // Left side is straight; Right side is violently bent back ~24 degrees!
+    // Left Half of Front Bumper (Intact)
     glPushMatrix();
-    glTranslatef(0.0f, 0.06f, 0.075f);
-    drawSphere(0.055f, 10, 8);
+    glTranslatef(-0.58f, 0.45f, 2.45f);
+    drawBeveledBox(1.25f, 0.16f, 0.12f, 0.03f);
+    // Left Dagmar / Bumper Bullet Overrider
+    glTranslatef(-0.15f, 0.06f, 0.12f);
+    drawCylinder(0.075f, 0.025f, 0.22f, 10);
     glPopMatrix();
 
+    // Right Half of Front Bumper (Bent backwards, crumpled by fence impact!)
+    glPushMatrix();
+    glTranslatef(0.04f, 0.44f, 2.44f);
+    glRotatef(24.0f, 0.0f, 1.0f, 0.0f); // Bent back 24 degrees
+    glRotatef(-8.0f, 0.0f, 0.0f, 1.0f); // Drooping down from crushed bracket
+    glTranslatef(0.58f, 0.0f, 0.0f);
+    drawBeveledBox(1.22f, 0.16f, 0.12f, 0.03f);
+    // Right Dagmar Overrider (Knocked sideways & dented)
+    glTranslatef(-0.15f, 0.05f, 0.10f);
+    glRotatef(-28.0f, 0.0f, 1.0f, 0.5f);
+    drawCylinder(0.070f, 0.020f, 0.18f, 8);
     glPopMatrix();
 
-    // Dual Round Headlights (Left Intact with Glass, Right Broken with Exposed Bulb!)
-    float headLightX[2] = { -0.74f, 0.74f };
-    // 1. Left Headlight (Intact, chrome bezel with fluted reflective glass lens)
+    // Dual Round Headlights:
+    // 1. Left Headlight: Intact cold glass lens & chrome bezel
     glPushMatrix();
-    glTranslatef(headLightX[0], 0.78f, 2.34f);
-    // Chrome Bezel Housing
+    glTranslatef(-0.76f, 0.78f, 2.34f);
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
-    drawCylinder(0.165f, 0.165f, 0.06f, 14, 1.0f, 0.2f);
-    // Chrome Reflector Bowl inside
-    glTranslatef(0.0f, 0.0f, 0.02f);
-    drawSphere(0.13f, 10, 8);
-    // Glass Convex Lens (High specular glint)
-    glTranslatef(0.0f, 0.0f, 0.04f);
+    drawCylinder(0.165f, 0.165f, 0.06f, 14); // Bezel
+    glTranslatef(0.0f, 0.0f, 0.03f);
+    drawSphere(0.13f, 10, 8);                // Reflector bowl
+    glTranslatef(0.0f, 0.0f, 0.03f);
     applyMaterial(MAT_CAR_GLASS);
-    drawSphere(0.145f, 12, 10);
-    // Soft specular lens flare halo
-    drawBillboardHalo(0.0f, 0.0f, 0.08f, 0.45f, 0.85f, 0.92f, 1.0f, 0.35f);
+    drawSphere(0.145f, 12, 10);              // Fluted convex glass lens
     glPopMatrix();
 
-    // 2. Right Headlight (Broken/Abandoned: dented chrome rim, shattered shards, exposed bulb!)
+    // 2. Right Headlight: Smashed collision point! Shattered glass & dangling filament bulb
     glPushMatrix();
-    glTranslatef(headLightX[1], 0.78f, 2.34f);
-    glRotatef(6.0f, 0.0f, 1.0f, 0.2f); // Askew/dented
-    // Dented Chrome Bezel
+    glTranslatef(0.76f, 0.78f, 2.30f);
+    glRotatef(12.0f, 0.0f, 1.0f, 0.3f);
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
-    drawCylinder(0.165f, 0.150f, 0.05f, 12, 1.0f, 0.2f);
-    // Dark Empty Lamp Bucket
-    applyMaterial(MAT_RUSTY_METAL);
+    drawCylinder(0.165f, 0.145f, 0.05f, 10); // Dented bezel
+    // Empty rusted lamp bucket
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
     bindTexture(TEX_RUST);
     glTranslatef(0.0f, 0.0f, 0.015f);
     drawSphere(0.12f, 8, 6);
-    // Tiny Exposed Tungsten Filament Bulb on Wire
+    // Tiny exposed tungsten bulb dangling on bent wire
     applyMaterial(MAT_BULB_EMISSIVE);
     bindTexture(TEX_NONE);
-    glTranslatef(0.0f, 0.0f, 0.025f);
-    drawSphere(0.035f, 8, 6);
-    drawBillboardHalo(0.0f, 0.0f, 0.02f, 0.22f, 1.0f, 0.70f, 0.25f, 0.30f);
-    // Broken Glass Shards on rim edge
+    glTranslatef(0.02f, -0.04f, 0.035f);
+    drawSphere(0.032f, 8, 6);
+    // Broken glass shards clinging to lower bezel rim
     applyMaterial(MAT_CAR_GLASS);
-    glTranslatef(0.08f, -0.06f, 0.01f);
-    drawBox(0.04f, 0.06f, 0.015f);
+    glTranslatef(0.06f, -0.05f, 0.01f);
+    drawBox(0.045f, 0.055f, 0.015f);
     glPopMatrix();
 
-    // Heavy Front Bumper Bar with Overriders (Bumperettes) & Frame Brackets
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.44f, 2.42f);
-    drawBeveledBox(2.28f, 0.14f, 0.12f, 0.03f, 2.0f, 0.3f);
-    // Frame Mounting Brackets
-    glTranslatef(-0.55f, 0.0f, -0.10f);
-    drawBox(0.08f, 0.10f, 0.12f);
-    glTranslatef(1.10f, 0.0f, 0.0f);
-    drawBox(0.08f, 0.10f, 0.12f);
-    // Chrome / Rusted Overrider Guards with Rubber Buffer Pads
+    // Heavy Rear Chrome Bumper & Askew License Plate
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
-    glTranslatef(0.0f, 0.06f, 0.14f);
-    drawBeveledBox(0.08f, 0.28f, 0.08f, 0.02f);
-    glTranslatef(-1.10f, 0.0f, 0.0f);
-    drawBeveledBox(0.08f, 0.28f, 0.08f, 0.02f);
-    glPopMatrix();
-
-    // Heavy Rear Bumper Bar & Bent Rusted License Plate
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
     glPushMatrix();
     glTranslatef(0.0f, 0.44f, -2.36f);
-    drawBeveledBox(2.22f, 0.14f, 0.12f, 0.03f, 2.0f, 0.3f);
+    drawBeveledBox(2.26f, 0.16f, 0.12f, 0.03f);
     // Rear Overriders
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    glTranslatef(-0.55f, 0.05f, -0.04f);
+    glTranslatef(-0.62f, 0.06f, -0.04f);
     drawBeveledBox(0.08f, 0.26f, 0.08f, 0.02f);
-    glTranslatef(1.10f, 0.0f, 0.0f);
+    glTranslatef(1.24f, 0.0f, 0.0f);
     drawBeveledBox(0.08f, 0.26f, 0.08f, 0.02f);
-
-    // Vintage License Plate hanging askew by one loose bolt ("H0RR0R-70")
+    // Vintage Rusted License Plate hanging crooked by one screw
     applyMaterial(MAT_STONE);
-    bindTexture(TEX_NONE);
-    glTranslatef(-0.55f, 0.02f, -0.05f);
-    glRotatef(14.0f, 0.0f, 0.0f, 1.0f); // Tilted askew
+    glTranslatef(-0.62f, 0.02f, -0.06f);
+    glRotatef(16.0f, 0.0f, 0.0f, 1.0f);
     drawBox(0.42f, 0.20f, 0.015f);
-    // Dark stamp border on plate
-    applyMaterial(MAT_DARK_WOOD);
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
     drawBox(0.38f, 0.16f, 0.018f);
     glPopMatrix();
 
-    // Red Glass Tail Light Lenses with Chrome Bezels
-    for (int i = 0; i < 2; ++i) {
-        // Chrome Bezel
-        applyMaterial(MAT_CHROME_TRIM);
-        bindTexture(TEX_NONE);
+    // ------------------------------------------------------------------------
+    // 5. POPPED-AJAR CRUMPLED HOOD & FULLY EXPOSED V8 ENGINE BAY
+    // ------------------------------------------------------------------------
+    // Engine Bay Enclosure (Inner fender walls & Firewall)
+    applyMaterial(MAT_ENGINE_IRON);
+    bindTexture(TEX_NONE);
+    // Rear Firewall
+    glPushMatrix();
+    glTranslatef(0.0f, 0.88f, 0.58f);
+    drawBox(1.72f, 0.52f, 0.06f);
+    glPopMatrix();
+    // Inner Fender Aprons
+    for (int side = -1; side <= 1; side += 2) {
         glPushMatrix();
-        glTranslatef(headLightX[i], 0.82f, -2.34f);
-        drawBox(0.20f, 0.14f, 0.04f);
-        // Red Glass Lens
-        applyMaterial(MAT_PUMPKIN_SKIN);
-        glTranslatef(0.0f, 0.0f, -0.02f);
-        drawBox(0.16f, 0.10f, 0.03f);
+        glTranslatef(side * 0.86f, 0.84f, 1.45f);
+        drawBox(0.06f, 0.46f, 1.70f);
         glPopMatrix();
     }
 
+    // --- FULLY DETAILED EXPOSED V8 ENGINE BAY ---
+    // Cast Iron V8 Engine Block
+    applyMaterial(MAT_ENGINE_IRON);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.74f, 1.35f);
+    drawBox(0.44f, 0.38f, 0.68f); // Central Block
+
+    // Twin Angled Cylinder Heads & Ribbed Vintage Red Valve Covers
+    for (int side = -1; side <= 1; side += 2) {
+        glPushMatrix();
+        glTranslatef(side * 0.24f, 0.16f, 0.0f);
+        glRotatef(side * -45.0f, 0.0f, 0.0f, 1.0f);
+        // Cylinder head
+        applyMaterial(MAT_ENGINE_IRON);
+        drawBox(0.18f, 0.14f, 0.62f);
+        // Vintage Red Valve Cover
+        applyMaterial(MAT_VALVE_RED);
+        glTranslatef(0.0f, 0.09f, 0.0f);
+        drawBeveledBox(0.16f, 0.08f, 0.60f, 0.02f);
+        // Chrome Oil Fill Breather Cap on left valve cover
+        if (side == -1) {
+            applyMaterial(MAT_CHROME_TRIM);
+            glTranslatef(0.0f, 0.05f, 0.16f);
+            drawCylinder(0.032f, 0.032f, 0.045f, 8);
+        }
+        glPopMatrix();
+    }
+
+    // Aluminum Intake Manifold & 4-Barrel Carburetor
+    applyMaterial(MAT_STONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.22f, 0.0f);
+    drawBox(0.28f, 0.08f, 0.48f); // Intake manifold
+    glTranslatef(0.0f, 0.07f, 0.02f);
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
+    drawBox(0.16f, 0.09f, 0.16f); // Carburetor body
+    glPopMatrix();
+
+    // Classic Round Pancake Chrome Air Cleaner with Wing Nut
+    applyMaterial(MAT_CHROME_TRIM);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.38f, 0.02f);
+    drawCylinder(0.22f, 0.22f, 0.065f, 18); // Pancake filter housing
+    glTranslatef(0.0f, 0.065f, 0.0f);
+    drawCylinder(0.012f, 0.012f, 0.030f, 6);  // Center stud & wingnut
+    drawBox(0.06f, 0.012f, 0.015f);
+    glPopMatrix();
+
+    // Front Timing Cover & Engine Crankshaft Pulley
+    applyMaterial(MAT_BLACK_IRON);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.35f);
+    drawCylinder(0.08f, 0.08f, 0.05f, 10);
+    glPopMatrix();
+
+    // Engine Cooling Fan with 4 steel blades (one bent back from crash)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.08f, 0.43f);
+    for (int b = 0; b < 4; ++b) {
+        glPushMatrix();
+        glRotatef(b * 90.0f, 0.0f, 0.0f, 1.0f);
+        if (b == 1) glRotatef(-24.0f, 1.0f, 0.0f, 0.0f); // Bent fan blade
+        glTranslatef(0.0f, 0.12f, 0.0f);
+        drawBox(0.06f, 0.16f, 0.010f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    // Heavy Brass Radiator Core (Front bulkhead)
+    applyMaterial(MAT_BRASS_CORE);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.10f, 0.70f);
+    // Left half of radiator core
+    glTranslatef(-0.35f, 0.0f, 0.0f);
+    drawBox(0.68f, 0.46f, 0.08f);
+    // Right half of radiator core (dented & pushed back by crash impact)
+    glTranslatef(0.70f, -0.02f, -0.06f);
+    glRotatef(18.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.68f, 0.44f, 0.08f);
+    glPopMatrix();
+
+    // Curved Upper Black Rubber Radiator Hose
+    applyMaterial(MAT_RUBBER_TYRE);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.16f, 0.32f, 0.48f);
+    drawCylinder(0.032f, 0.032f, 0.32f, 8); // Hose section
+    // Chrome Hose Clamps
+    applyMaterial(MAT_CHROME_TRIM);
+    drawCylinder(0.036f, 0.036f, 0.020f, 8);
+    glTranslatef(0.0f, 0.0f, 0.28f);
+    drawCylinder(0.036f, 0.036f, 0.020f, 8);
+    glPopMatrix();
+
+    // 12V Vintage Battery Box on inner driver fender tray
+    applyMaterial(MAT_BLACK_IRON);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    glTranslatef(-0.62f, 0.16f, 0.15f);
+    drawBox(0.24f, 0.22f, 0.32f); // Hard rubber case
+    // Lead Terminals with green corrosion wash
+    applyMaterial(MAT_CHROME_TRIM);
+    glTranslatef(-0.06f, 0.12f, 0.08f);
+    drawCylinder(0.016f, 0.016f, 0.030f, 6); // Positive post
+    glTranslatef(0.12f, 0.0f, -0.16f);
+    drawCylinder(0.016f, 0.016f, 0.030f, 6); // Negative post
+    glPopMatrix();
+    glPopMatrix(); // End V8 Engine Bay
+
+    // THE POPPED-AJAR CRUMPLED HOOD (Buckled latch, popped open at 35 degrees!)
+    // Tilted high so the entire V8 engine, red valve covers & radiator are visible!
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
+    glPushMatrix();
+    // Pivot at cowl hinge line
+    glTranslatef(0.0f, 1.06f, 0.58f);
+    glRotatef(-28.0f, 1.0f, 0.0f, 0.0f); // Popped UPWARDS 28 degrees!
+    glRotatef(-4.8f, 0.0f, 0.0f, 1.0f); // Twisted askew by broken right latch
+    glTranslatef(0.0f, 0.0f, 0.88f);
+
+    // Left Half of Hood (Flatter)
+    glPushMatrix();
+    glTranslatef(-0.48f, 0.0f, 0.0f);
+    drawBeveledBox(0.98f, 0.06f, 1.76f, 0.03f, 1.5f, 1.0f);
+    glPopMatrix();
+
+    // Right Half of Hood (Crumpled & buckled upward in middle from crash)
+    glPushMatrix();
+    glTranslatef(0.48f, 0.03f, 0.0f);
+    glRotatef(6.5f, 0.0f, 1.0f, 0.0f);
+    drawBeveledBox(0.96f, 0.06f, 1.74f, 0.03f, 1.5f, 1.0f);
+    glPopMatrix();
+
+    // Center Raised Hood Ridge & Chrome Jet Airplane Ornament
+    applyMaterial(MAT_CHROME_TRIM);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawBox(0.06f, 0.03f, 1.70f); // Center chrome ridge
+    // Winged Jet Hood Ornament at front prow
+    glTranslatef(0.0f, 0.04f, 0.82f);
+    drawBox(0.04f, 0.06f, 0.16f); // Fuselage
+    drawBox(0.24f, 0.015f, 0.05f); // Wings
+    glPopMatrix();
+    glPopMatrix(); // End Popped Hood
+
     // ------------------------------------------------------------------------
-    // E. CABIN, BEVELED ROOF, PILLARS & DARK REFLECTIVE WINDOWS
+    // 6. CABIN, WRAP-AROUND WINDSHIELD & SHATTERED SAFETY GLASS
     // ------------------------------------------------------------------------
-    // Tapered Cabin Roof with Projecting Rain Gutters / Drip Rails
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
+    // Tapered Cabin Roof with Drip Rails
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(0.0f, 1.68f, -0.32f);
-    drawBeveledBox(1.74f, 0.06f, 2.10f, 0.025f, 1.5f, 1.5f);
-    // Left & Right Rain Gutters
+    drawBeveledBox(1.74f, 0.06f, 2.12f, 0.025f, 1.5f, 1.5f);
+    // Drip Rails along roof gutters
+    applyMaterial(MAT_CHROME_TRIM);
     glTranslatef(-0.88f, -0.02f, 0.0f);
-    drawBox(0.04f, 0.04f, 2.12f);
+    drawBox(0.035f, 0.035f, 2.14f);
     glTranslatef(1.76f, 0.0f, 0.0f);
-    drawBox(0.04f, 0.04f, 2.12f);
+    drawBox(0.035f, 0.035f, 2.14f);
     glPopMatrix();
 
-    // A-Pillars (Front windshield frame struts, sloped at 34 deg)
-    glPushMatrix();
-    glTranslatef(-0.84f, 1.34f, 0.44f);
-    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(0.06f, 0.74f, 0.06f, 0.015f);
-    glTranslatef(1.68f, 0.0f, 0.0f);
-    drawBeveledBox(0.06f, 0.74f, 0.06f, 0.015f);
-    glPopMatrix();
+    // Roof Pillars (A, B, C)
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
+    // A-Pillars (Wrap-around panoramic windshield frame)
+    for (int side = -1; side <= 1; side += 2) {
+        glPushMatrix();
+        glTranslatef(side * 0.84f, 1.34f, 0.44f);
+        glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+        drawBeveledBox(0.06f, 0.74f, 0.06f, 0.015f);
+        glPopMatrix();
 
-    // B-Pillars (Middle vertical side frame)
-    glPushMatrix();
-    glTranslatef(-0.84f, 1.34f, -0.32f);
-    drawBeveledBox(0.06f, 0.66f, 0.06f, 0.015f);
-    glTranslatef(1.68f, 0.0f, 0.0f);
-    drawBeveledBox(0.06f, 0.66f, 0.06f, 0.015f);
-    glPopMatrix();
+        // B-Pillars
+        glPushMatrix();
+        glTranslatef(side * 0.84f, 1.34f, -0.32f);
+        drawBeveledBox(0.06f, 0.66f, 0.06f, 0.015f);
+        glPopMatrix();
 
-    // C-Pillars (Rear window frame struts / sail panels, sloped at -28 deg)
-    glPushMatrix();
-    glTranslatef(-0.84f, 1.34f, -1.06f);
-    glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(0.08f, 0.72f, 0.08f, 0.02f);
-    glTranslatef(1.68f, 0.0f, 0.0f);
-    drawBeveledBox(0.08f, 0.72f, 0.08f, 0.02f);
-    glPopMatrix();
+        // C-Pillars (Swept rear sail panels)
+        glPushMatrix();
+        glTranslatef(side * 0.84f, 1.34f, -1.06f);
+        glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
+        drawBeveledBox(0.08f, 0.72f, 0.08f, 0.02f);
+        glPopMatrix();
+    }
 
-    // Front Windshield (Dark reflective tinted glass)
+    // Front Panoramic Safety Glass Windshield
     applyMaterial(MAT_CAR_GLASS);
     bindTexture(TEX_NONE);
     glPushMatrix();
@@ -747,216 +1244,213 @@ void drawRustedCar(float x, float z, float rotY) {    float groundY = getTerrain
     glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
     drawBox(1.60f, 0.65f, 0.035f);
 
-    // Cracked Windshield Spiderweb Fractures (Intricate etched impact lines)
+    // INTRICATE REALISTIC SPIDERWEB IMPACT CRACKS
+    // Delicate thin hairline fractures & concentric shockwave rings
     glDisable(GL_LIGHTING);
-    glLineWidth(2.0f);
-    glColor4f(0.88f, 0.92f, 1.00f, 0.82f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(0.85f, 0.92f, 1.00f, 0.75f);
+    glLineWidth(1.4f);
+
+    float cx = -0.32f, cy = 0.08f, cz = 0.022f; // Impact epicenter
     glBegin(GL_LINES);
-    // Impact epicenter at driver's eye level (-0.36, 0.12)
-    float cx = -0.36f, cy = 0.12f, cz = 0.024f;
-    // 8 Long Radial Shatter Cracks
-    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.42f, cy + 0.24f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.48f, cy + 0.20f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.32f, cy - 0.28f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.38f, cy - 0.26f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.52f, cy - 0.06f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.62f, cy - 0.10f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx + 0.18f, cy + 0.30f, cz);
-    glVertex3f(cx, cy, cz); glVertex3f(cx - 0.18f, cy - 0.32f, cz);
+    // 14 Radial Fracture Rays radiating across windshield
+    for (int r = 0; r < 14; ++r) {
+        float angle = (float)r * (2.0f * 3.14159265f / 14.0f);
+        float rLen = 0.35f + 0.18f * sinf((float)r * 1.7f);
+        glVertex3f(cx, cy, cz);
+        glVertex3f(cx + rLen * cosf(angle), cy + rLen * sinf(angle) * 0.65f, cz);
 
-    // Inner Concentric Shatter Rings (Shockwave ripples)
-    glVertex3f(cx - 0.08f, cy + 0.04f, cz); glVertex3f(cx + 0.06f, cy + 0.08f, cz);
-    glVertex3f(cx + 0.06f, cy + 0.08f, cz); glVertex3f(cx + 0.09f, cy - 0.05f, cz);
-    glVertex3f(cx + 0.09f, cy - 0.05f, cz); glVertex3f(cx - 0.06f, cy - 0.08f, cz);
-    glVertex3f(cx - 0.06f, cy - 0.08f, cz); glVertex3f(cx - 0.08f, cy + 0.04f, cz);
-
-    // Outer Concentric Shatter Ring
-    glVertex3f(cx - 0.18f, cy + 0.08f, cz); glVertex3f(cx + 0.14f, cy + 0.16f, cz);
-    glVertex3f(cx + 0.14f, cy + 0.16f, cz); glVertex3f(cx + 0.20f, cy - 0.12f, cz);
-    glVertex3f(cx + 0.20f, cy - 0.12f, cz); glVertex3f(cx - 0.14f, cy - 0.16f, cz);
-    glVertex3f(cx - 0.14f, cy - 0.16f, cz); glVertex3f(cx - 0.18f, cy + 0.08f, cz);
+        // Branching sub-fractures
+        if (r % 2 == 0) {
+            float bx = cx + rLen * 0.55f * cosf(angle);
+            float by = cy + rLen * 0.55f * sinf(angle) * 0.65f;
+            float bAngle = angle + 0.45f;
+            glVertex3f(bx, by, cz);
+            glVertex3f(bx + 0.16f * cosf(bAngle), by + 0.16f * sinf(bAngle) * 0.65f, cz);
+        }
+    }
     glEnd();
+
+    // 3 Concentric Shockwave Rings (Smooth ripple arcs)
+    for (int ring = 1; ring <= 3; ++ring) {
+        float ringRad = (float)ring * 0.085f;
+        glBegin(GL_LINE_LOOP);
+        for (int a = 0; a < 14; ++a) {
+            float ang = (float)a * (2.0f * 3.14159265f / 14.0f);
+            glVertex3f(cx + ringRad * cosf(ang), cy + ringRad * sinf(ang) * 0.65f, cz);
+        }
+        glEnd();
+    }
+    glDisable(GL_BLEND);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // Windshield Wipers: Driver's wiper frozen mid-sweep, passenger wiper at cowl
-    applyMaterial(MAT_RUSTY_METAL);
+    // Windshield Wipers: Driver's frozen mid-sweep, Passenger's broken on cowl
+    applyMaterial(MAT_CAR_RUST_WEATHERED);
     bindTexture(TEX_NONE);
-    // Driver Wiper Arm (Frozen halfway up windshield at 48 deg)
+    // Driver Wiper
     glPushMatrix();
     glTranslatef(-0.38f, 1.14f, 0.72f);
     glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(-48.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.022f, 0.42f, 0.022f); // Arm
+    glRotatef(-46.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.020f, 0.42f, 0.020f);
     glTranslatef(0.015f, 0.18f, 0.015f);
-    drawBox(0.012f, 0.36f, 0.018f); // Blade
+    drawBox(0.012f, 0.36f, 0.016f);
     glPopMatrix();
-
-    // Passenger Wiper Arm (Bent/resting on lower cowl)
+    // Passenger Wiper
     glPushMatrix();
     glTranslatef(0.38f, 1.10f, 0.72f);
     glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(-15.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.022f, 0.38f, 0.022f);
+    glRotatef(-12.0f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.020f, 0.38f, 0.020f);
     glPopMatrix();
 
-    // Rear Window Glass (Dark reflective sloped glass)
+    // Rear Window Glass with Dusty Vintage Cobweb
     applyMaterial(MAT_CAR_GLASS);
-    bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(0.0f, 1.34f, -1.05f);
     glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
     drawBox(1.58f, 0.64f, 0.035f);
     glPopMatrix();
+    drawCobweb(0.60f, 1.38f, -0.92f, 0.45f, 30.0f);
 
-    // Right Side Windows (Front passenger & rear quarter glass)
-    glPushMatrix();
-    glTranslatef(0.85f, 1.34f, 0.02f);
-    drawBox(0.035f, 0.58f, 0.62f); // Front right window
-    glTranslatef(0.0f, 0.0f, -0.68f);
-    drawBox(0.035f, 0.58f, 0.62f); // Rear right window
-    glPopMatrix();
+    // Right Side Passenger Window: Completely Smashed Out!
+    // Open void with jagged glass teeth along lower sill
+    applyMaterial(MAT_CAR_GLASS);
+    for (int tooth = -3; tooth <= 3; ++tooth) {
+        glPushMatrix();
+        glTranslatef(0.85f, 1.08f, tooth * 0.10f);
+        drawBox(0.015f, 0.04f + 0.02f * (tooth % 2), 0.06f);
+        glPopMatrix();
+    }
 
-    // Left Rear Quarter Window
-    glPushMatrix();
-    glTranslatef(-0.85f, 1.34f, -0.66f);
-    drawBox(0.035f, 0.58f, 0.62f);
-    glPopMatrix();
-
-    // Interior Rear-View Mirror hanging from center roof header
-    applyMaterial(MAT_CHROME_TRIM);
+    // ------------------------------------------------------------------------
+    // 7. OPEN DRIVER'S DOOR (Ajar at 36 deg) & SNAPPED DANGLING SIDE MIRROR
+    // ------------------------------------------------------------------------
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glTranslatef(0.0f, 1.62f, 0.32f);
-    drawCylinder(0.015f, 0.015f, 0.08f, 6); // Stem
-    glTranslatef(0.0f, -0.06f, 0.0f);
-    glRotatef(12.0f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(0.18f, 0.06f, 0.03f, 0.01f); // Housing
-    applyMaterial(MAT_CAR_GLASS);
-    glTranslatef(0.0f, 0.0f, 0.016f);
-    drawBox(0.16f, 0.045f, 0.01f); // Mirror face
-    glPopMatrix();
-
-    // ------------------------------------------------------------------------
-    // F. OPEN DRIVER'S DOOR (Ajar at 38 deg) & SNAPPED DANGLING SIDE MIRROR
-    // ------------------------------------------------------------------------
-    // Open Driver's Door (Swung open at 38 degrees on rusty hinges)
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    glPushMatrix();
     glTranslatef(-0.95f, 0.68f, 0.44f); // Door hinge pivot on A-pillar
-    glRotatef(38.0f, 0.0f, 1.0f, 0.0f);  // Swung outward into the yard
+    glRotatef(36.0f, 0.0f, 1.0f, 0.0f);  // Swung open into the yard
     glTranslatef(0.0f, 0.0f, -0.44f);
 
-    // Upper and Lower Heavy Door Hinges
-    applyMaterial(MAT_DARK_WOOD);
+    // Heavy Rusty Door Hinges
+    applyMaterial(MAT_BLACK_IRON);
     bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(0.0f, 0.22f, 0.42f);
-    drawCylinder(0.03f, 0.03f, 0.06f, 8);
+    drawCylinder(0.028f, 0.028f, 0.06f, 8);
     glTranslatef(0.0f, -0.44f, 0.0f);
-    drawCylinder(0.03f, 0.03f, 0.06f, 8);
+    drawCylinder(0.028f, 0.028f, 0.06f, 8);
     glPopMatrix();
 
-    // Outer Lower Door Panel (Beveled sheet metal)
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
+    // Outer Lower Door Panel
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
+    bindTexture(TEX_NONE);
     drawBeveledBox(0.08f, 0.58f, 0.88f, 0.02f, 0.5f, 1.0f);
 
-    // Chrome Outer Push-Button Door Handle
+    // Exterior Push-Button Chrome Door Handle
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(-0.055f, 0.18f, -0.32f);
     drawBox(0.035f, 0.04f, 0.14f);
-    drawSphere(0.018f, 8, 6); // Push button
+    drawSphere(0.018f, 8, 6);
     glPopMatrix();
 
-    // Door Window Frame Border
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
+    // Window Frame Arch & Rolled-Down Window Pane
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
     glTranslatef(0.0f, 0.52f, 0.0f);
-    drawBox(0.06f, 0.48f, 0.06f); // Front vertical post
+    drawBox(0.055f, 0.48f, 0.055f); // Front post
     glTranslatef(0.0f, 0.0f, -0.82f);
-    drawBox(0.06f, 0.48f, 0.06f); // Rear vertical post
+    drawBox(0.055f, 0.48f, 0.055f); // Rear post
     glTranslatef(0.0f, 0.22f, 0.41f);
-    drawBox(0.06f, 0.06f, 0.88f); // Top header sash
+    drawBox(0.055f, 0.055f, 0.88f); // Top header
 
-    // Partially Rolled-Down / Broken Driver's Glass
-    applyMaterial(MAT_CAR_GLASS);
-    bindTexture(TEX_NONE);
-    glTranslatef(0.0f, -0.20f, 0.0f);
-    drawBox(0.025f, 0.24f, 0.74f);
-
-    // Inner Door Trim Card (Armrest & interior chrome handle)
+    // Inner Door Trim Panel (Molded armrest & manual window crank)
     applyMaterial(MAT_CAR_INTERIOR);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glTranslatef(0.048f, -0.32f, 0.0f);
-    drawBox(0.025f, 0.44f, 0.80f); // Trim panel
-    // Molded Armrest
+    glTranslatef(0.048f, -0.52f, 0.0f);
+    drawBox(0.025f, 0.44f, 0.80f); // Trim card
+    // Armrest
     glTranslatef(0.02f, -0.05f, 0.0f);
     drawBeveledBox(0.05f, 0.08f, 0.35f, 0.015f);
-    // Inner Chrome Door Latch Handle & Window Crank
+    // Chrome Door Latch & Window Crank
     applyMaterial(MAT_CHROME_TRIM);
-    glTranslatef(0.02f, 0.12f, 0.15f);
+    glTranslatef(0.02f, 0.14f, 0.15f);
     drawBox(0.03f, 0.035f, 0.08f);
+    // Crank handle
+    glTranslatef(0.0f, -0.16f, -0.30f);
+    drawCylinder(0.016f, 0.016f, 0.020f, 6);
+    drawBox(0.020f, 0.070f, 0.015f);
     glPopMatrix();
 
-    // Snapped Dangling Side Mirror (Torn from bracket, hanging by twisted wire)
+    // Snapped Dangling Side Mirror (Torn from bracket, hanging by twin wires)
     glPushMatrix();
     glTranslatef(-0.06f, -0.24f, 0.40f);
-    // Broken mounting bracket stub
-    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_NONE);
-    drawBox(0.03f, 0.04f, 0.04f);
+    applyMaterial(MAT_BLACK_IRON);
+    drawBox(0.03f, 0.04f, 0.04f); // Broken mounting stub
 
-    // Dangling wire lines
+    // Dangling Copper Wires
     glDisable(GL_LIGHTING);
-    glColor3f(0.85f, 0.45f, 0.20f); // Copper wire
+    glColor3f(0.85f, 0.48f, 0.22f);
     glLineWidth(1.8f);
     glBegin(GL_LINES);
     glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(-0.05f, -0.14f, 0.06f);
+    glVertex3f(-0.06f, -0.16f, 0.05f);
+    glVertex3f(0.01f, 0.0f, -0.01f);
+    glVertex3f(-0.05f, -0.17f, 0.04f);
     glEnd();
     glEnable(GL_LIGHTING);
 
-    // Dangling Mirror Housing (Hanging askew at 52 deg)
-    glTranslatef(-0.05f, -0.14f, 0.06f);
-    glRotatef(52.0f, 1.0f, 0.2f, 0.8f);
+    // Dangling Round Chrome Mirror Housing
+    glTranslatef(-0.06f, -0.16f, 0.05f);
+    glRotatef(55.0f, 1.0f, 0.2f, 0.8f);
     applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    drawBeveledBox(0.025f, 0.13f, 0.19f, 0.01f); // Chrome housing
-    // Mirror Glass Face (High specular reflection)
+    drawCylinder(0.085f, 0.085f, 0.022f, 12);
     applyMaterial(MAT_CAR_GLASS);
-    glTranslatef(-0.015f, 0.0f, 0.0f);
-    drawBox(0.01f, 0.11f, 0.17f);
+    glTranslatef(0.0f, 0.0f, 0.012f);
+    drawSphere(0.080f, 10, 8); // Convex mirror face
     glPopMatrix();
-
     glPopMatrix(); // End Open Driver's Door
 
     // ------------------------------------------------------------------------
-    // G. DETAILED VINTAGE INTERIOR (Viewable through open door & windows)
+    // 8. DETAILED VINTAGE INTERIOR & TORN BENCH SEATS WITH SPRINGS
     // ------------------------------------------------------------------------
-    // Dusty Dashboard with Gauge Cluster & Glovebox
-    applyMaterial(MAT_CAR_INTERIOR);
+    // Sculpted 1957 Dashboard
+    applyMaterial(MAT_CAR_PAINT_TURQUOISE);
     bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(0.0f, 1.08f, 0.38f);
     drawBeveledBox(1.68f, 0.22f, 0.42f, 0.02f);
-    // Instrument Gauge Binnacle (Speedometer dial & fuel/temp gauge)
-    applyMaterial(MAT_DARK_WOOD);
+
+    // Arched Instrument Speedometer Binnacle
+    applyMaterial(MAT_CAR_INTERIOR);
     glPushMatrix();
     glTranslatef(-0.42f, 0.04f, -0.18f);
-    drawCylinder(0.07f, 0.07f, 0.04f, 12); // Speedometer housing
-    glTranslatef(0.20f, 0.0f, 0.0f);
-    drawCylinder(0.05f, 0.05f, 0.04f, 10); // Aux gauge
-    // Speedometer needle
-    applyMaterial(MAT_PUMPKIN_SKIN);
-    glTranslatef(-0.20f, 0.0f, 0.042f);
-    drawBox(0.008f, 0.05f, 0.008f);
+    drawBox(0.38f, 0.12f, 0.05f);
+    // Chrome Bezel & Speedometer Needle
+    applyMaterial(MAT_CHROME_TRIM);
+    drawBox(0.35f, 0.02f, 0.06f);
+    applyMaterial(MAT_VALVE_RED);
+    glTranslatef(0.0f, 0.02f, 0.035f);
+    drawBox(0.010f, 0.055f, 0.010f); // Speedometer needle
     glPopMatrix();
-    // Glovebox Door with Chrome Button
+
+    // Center Chrome Radio Grille & Vintage Knobs
+    applyMaterial(MAT_CHROME_TRIM);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.02f, -0.18f);
+    drawBox(0.26f, 0.08f, 0.03f);
+    glTranslatef(-0.08f, 0.0f, 0.02f);
+    drawSphere(0.018f, 6, 6);
+    glTranslatef(0.16f, 0.0f, 0.0f);
+    drawSphere(0.018f, 6, 6);
+    glPopMatrix();
+
+    // Glovebox Door with Push Button
     applyMaterial(MAT_CAR_INTERIOR);
     glPushMatrix();
     glTranslatef(0.45f, -0.04f, -0.18f);
@@ -965,53 +1459,36 @@ void drawRustedCar(float x, float z, float rotY) {    float groundY = getTerrain
     glTranslatef(0.14f, 0.0f, -0.015f);
     drawSphere(0.015f, 6, 6);
     glPopMatrix();
-    glPopMatrix();
+    glPopMatrix(); // End Dashboard
 
-    // 3-Spoke Classic Dished Steering Wheel on Tilted Column
-    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_NONE);
+    // STEERING WHEEL ASSEMBLY (Hollow dished 2-spoke wheel - NO SOLID SPHERE!)
     glPushMatrix();
-    glTranslatef(-0.42f, 1.14f, 0.16f);
-    glRotatef(-35.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.028f, 0.028f, 0.28f, 8); // Column
-    glTranslatef(0.0f, 0.28f, 0.0f);
-    // Wheel Rim
-    applyMaterial(MAT_RUSTY_METAL);
-    drawSphere(0.19f, 14, 10);
-    // 3 Chrome Spokes
-    applyMaterial(MAT_CHROME_TRIM);
-    for (int s = 0; s < 3; ++s) {
-        glPushMatrix();
-        glRotatef(s * 120.0f, 0.0f, 1.0f, 0.0f);
-        drawBox(0.018f, 0.012f, 0.16f);
-        glPopMatrix();
-    }
-    // Center Horn Button
-    drawSphere(0.04f, 8, 8);
+    glTranslatef(-0.42f, 0.98f, 0.26f);
+    glRotatef(-36.0f, 1.0f, 0.0f, 0.0f); // Tilted towards driver
+    drawVintageSteeringWheel();
     glPopMatrix();
 
-    // Floor Shifter Lever & Foot Pedals
+    // Floor Gear Shifter Lever & Pedals
     applyMaterial(MAT_CHROME_TRIM);
     bindTexture(TEX_NONE);
     glPushMatrix();
     glTranslatef(-0.08f, 0.58f, 0.05f);
-    // Wrinkled Rubber Shift Boot
+    // Accordion rubber shift boot
     applyMaterial(MAT_RUBBER_TYRE);
     drawCylinder(0.08f, 0.03f, 0.08f, 8);
-    // Chrome Shifter Lever
+    // Chrome Lever
     applyMaterial(MAT_CHROME_TRIM);
     glTranslatef(0.0f, 0.08f, 0.0f);
     glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
-    drawCylinder(0.015f, 0.015f, 0.26f, 6);
+    drawCylinder(0.014f, 0.014f, 0.28f, 6);
     // Spherical Shift Knob
-    glTranslatef(0.0f, 0.26f, 0.0f);
-    applyMaterial(MAT_DARK_WOOD);
-    drawSphere(0.035f, 8, 8);
+    glTranslatef(0.0f, 0.28f, 0.0f);
+    applyMaterial(MAT_STONE);
+    drawSphere(0.032f, 8, 8);
     glPopMatrix();
 
     // Suspended Foot Pedals (Clutch, Brake, Accelerator)
     applyMaterial(MAT_RUBBER_TYRE);
-    bindTexture(TEX_NONE);
     for (int p = -1; p <= 1; ++p) {
         glPushMatrix();
         glTranslatef(-0.42f + p * 0.10f, 0.62f, 0.35f);
@@ -1019,117 +1496,91 @@ void drawRustedCar(float x, float z, float rotY) {    float groundY = getTerrain
         glPopMatrix();
     }
 
-    // Torn Split-Bench Front Seat (Worn upholstery, exposed yellow foam & rusted springs!)
+    // FRONT SPLIT-BENCH SEAT (Torn Upholstery with Exposed Foam & Coiled Wire Springs!)
     applyMaterial(MAT_CAR_INTERIOR);
     bindTexture(TEX_BARK);
     glPushMatrix();
     glTranslatef(0.0f, 0.78f, -0.15f);
-    drawBeveledBox(1.64f, 0.24f, 0.56f, 0.03f); // Seat bottom cushion
+    // Seat base cushion
+    drawBeveledBox(1.64f, 0.24f, 0.58f, 0.03f);
+    // Backrest
     glTranslatef(0.0f, 0.28f, -0.24f);
-    drawBeveledBox(1.64f, 0.46f, 0.16f, 0.03f); // Backrest
+    drawBeveledBox(1.64f, 0.46f, 0.16f, 0.03f);
 
-    // Severe Tear on Driver's Seat Cushion (Exposed foam & rusted spring wire)
+    // Gaping Tear on Driver's Cushion: Spilling Yellow Foam & Coiled Springs
     applyMaterial(MAT_SEAT_FOAM);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glTranslatef(-0.42f, -0.20f, 0.18f);
-    drawBox(0.38f, 0.12f, 0.26f); // Exposed foam core
-    // Rusted coiled seat springs poking out
-    applyMaterial(MAT_RUSTY_METAL);
-    for (int sp = 0; sp < 3; ++sp) {
+    glTranslatef(-0.42f, -0.18f, 0.22f);
+    drawBox(0.42f, 0.14f, 0.28f); // Exposed polyurethane foam core
+
+    // 4 COILED RUSTY WIRE SPRINGS BURSTING OUT THROUGH THE FABRIC!
+    for (int sp = 0; sp < 4; ++sp) {
         glPushMatrix();
-        glTranslatef((sp - 1) * 0.09f, 0.08f, 0.0f);
-        drawCylinder(0.025f, 0.025f, 0.06f, 6);
+        float sx = -0.12f + (float)(sp % 2) * 0.20f;
+        float sz = -0.08f + (float)(sp / 2) * 0.18f;
+        glTranslatef(sx, 0.06f, sz);
+        glRotatef((sp == 1 ? 18.0f : -12.0f), 0.0f, 0.0f, 1.0f);
+        drawSeatSpring(0.032f, 0.14f, 4);
         glPopMatrix();
     }
     glPopMatrix();
-    glPopMatrix();
+    glPopMatrix(); // End Front Seat
 
-    // Rear Passenger Bench Seat
+    // Rear Passenger Bench Seat (Sun-faded cushions & fallen autumn leaves)
     applyMaterial(MAT_CAR_INTERIOR);
     bindTexture(TEX_BARK);
     glPushMatrix();
     glTranslatef(0.0f, 0.78f, -0.92f);
-    drawBeveledBox(1.64f, 0.24f, 0.52f, 0.03f); // Rear cushion
+    drawBeveledBox(1.64f, 0.24f, 0.52f, 0.03f); // Base
     glTranslatef(0.0f, 0.28f, -0.22f);
-    drawBeveledBox(1.64f, 0.44f, 0.14f, 0.03f); // Rear backrest
+    drawBeveledBox(1.64f, 0.44f, 0.14f, 0.03f); // Backrest
+
+    // Fallen Dead Autumn Leaves scattered on rear bench
+    applyMaterial(MAT_FALLEN_LEAF);
+    bindTexture(TEX_NONE);
+    for (int lf = 0; lf < 6; ++lf) {
+        glPushMatrix();
+        glTranslatef(-0.55f + lf * 0.22f, -0.12f, 0.14f + (lf % 2) * 0.08f);
+        glRotatef(lf * 38.0f, 0.0f, 1.0f, 0.0f);
+        drawBox(0.08f, 0.01f, 0.06f);
+        glPopMatrix();
+    }
     glPopMatrix();
 
     // ------------------------------------------------------------------------
-    // H. WHEELS & DEFLATED SQUASHED FRONT-RIGHT TYRE
+    // 9. VINTAGE WHITEWALL WHEELS & PUNCTURED COLLAPSED FRONT-RIGHT TYRE
     // ------------------------------------------------------------------------
-    float wheelX = 1.02f;
-    float wheelZ_front = 1.35f;
-    float wheelZ_rear  = -1.35f;
+    float wheelDistX = 1.04f;
+    float wheelFrontZ = 1.35f;
+    float wheelRearZ  = -1.35f;
 
-    // 1. Rear-Left Wheel (Inflated)
+    // 1. Rear-Left Wheel (Inflated, Whitewall, Chrome Hubcap)
     glPushMatrix();
-    glTranslatef(-wheelX - 0.12f, 0.42f, wheelZ_rear);
-    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-    applyMaterial(MAT_RUBBER_TYRE);
-    bindTexture(TEX_BARK);
-    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
-    // Rusted steel deep-dish rim & chrome hubcap
-    glTranslatef(0.0f, -0.01f, 0.0f);
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    drawSphere(0.12f, 10, 8);
+    glTranslatef(-wheelDistX, 0.42f, wheelRearZ);
+    drawWhitewallWheel(false, true, true);
     glPopMatrix();
 
-    // 2. Rear-Right Wheel (Inflated)
+    // 2. Rear-Right Wheel (Inflated, Whitewall, Chrome Hubcap)
     glPushMatrix();
-    glTranslatef(wheelX - 0.12f, 0.42f, wheelZ_rear);
-    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-    applyMaterial(MAT_RUBBER_TYRE);
-    bindTexture(TEX_BARK);
-    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
-    glTranslatef(0.0f, 0.21f, 0.0f);
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    drawSphere(0.12f, 10, 8);
+    glTranslatef(wheelDistX - 0.22f, 0.42f, wheelRearZ);
+    drawWhitewallWheel(false, true, false);
     glPopMatrix();
 
-    // 3. Front-Left Wheel (Inflated)
+    // 3. Front-Left Wheel (Inflated, Whitewall, Chrome Hubcap)
     glPushMatrix();
-    glTranslatef(-wheelX - 0.12f, 0.42f, wheelZ_front);
-    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-    applyMaterial(MAT_RUBBER_TYRE);
-    bindTexture(TEX_BARK);
-    drawCylinder(0.42f, 0.42f, 0.24f, 16, 1.0f, 1.0f);
-    glTranslatef(0.0f, -0.01f, 0.0f);
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    drawSphere(0.12f, 10, 8);
+    glTranslatef(-wheelDistX, 0.42f, wheelFrontZ);
+    drawWhitewallWheel(false, true, true);
     glPopMatrix();
 
-    // 4. Front-Right Wheel (Deflated, Severely Flat & Squashed into Mud Rut)
+    // 4. Front-Right Wheel (SEVERELY PUNCTURED, FLATTENED PANCAKE TIRE IN MUD RUT)
+    // Hubcap knocked off, broken tie-rod, sitting sunken in depression
     glPushMatrix();
-    glTranslatef(wheelX - 0.14f, 0.22f, wheelZ_front);
-    glScalef(1.36f, 0.44f, 1.28f); // Severely flattened oval pancake squashed tyre
-    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
-    applyMaterial(MAT_RUBBER_TYRE);
-    bindTexture(TEX_BARK);
-    drawCylinder(0.42f, 0.42f, 0.28f, 16, 1.0f, 1.0f);
-    // Sunken rusted rim resting on flattened rubber
-    glTranslatef(0.0f, 0.24f, 0.0f);
-    applyMaterial(MAT_RUSTY_METAL);
-    bindTexture(TEX_RUST);
-    drawCylinder(0.24f, 0.24f, 0.04f, 12, 0.5f, 0.5f);
-    // Dented tarnished hubcap
-    applyMaterial(MAT_CHROME_TRIM);
-    bindTexture(TEX_NONE);
-    drawSphere(0.10f, 8, 6);
+    glTranslatef(wheelDistX - 0.22f, 0.20f, wheelFrontZ);
+    drawWhitewallWheel(true, false, false); // isFlat = true, hasHubcap = false, isLeft = false
     glPopMatrix();
 
     glPopMatrix(); // End Car
 }
+
 

@@ -21,6 +21,8 @@ bool g_light0PointOn       = true;  // Porch Bulb
 bool g_light1DirectionalOn = true;  // Moonlight
 bool g_light2SpotOn        = false; // Flashlight
 bool g_light3AreaOn        = true;  // Window Glow
+bool g_light4CandleOn      = true;  // 2nd Floor Alchemist Candelabra & Candlelight
+bool g_light5LanternOn     = true;  // 2nd Floor Hanging Brass Lantern
 bool g_pumpkinLightsOn     = true;  // Jack-o'-Lantern Candle Lights
 
 bool g_texturesEnabled     = true;
