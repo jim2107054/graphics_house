@@ -15,6 +15,7 @@
 #include "entities/Particles.h"
 #include "entities/Creatures.h"
 #include "entities/House.h"
+#include "entities/Clouds.h"
 #include "ui/HUD.h"
 #include "ui/Screenshot.h"
 #include <iostream>
@@ -235,6 +236,7 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
 
     // 2. RENDER 3D SCENE OBJECTS
     drawMoonAndStars();
+    drawDynamicClouds();
     drawGround();
     drawHouse();
     drawRustedCar(8.2f, 6.8f, -22.0f);

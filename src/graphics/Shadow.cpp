@@ -9,6 +9,7 @@
 #include "../entities/Terrain.h"
 #include "../entities/Graveyard.h"
 #include "../entities/Creatures.h"
+#include "../entities/Clouds.h"
 
 void buildShadowMatrix(float shadowMat[16], const float groundPlane[4], const float lightPos[4]) {
     float dot = groundPlane[0] * lightPos[0] +
@@ -46,6 +47,7 @@ void renderShadowCasters() {
     drawEnvironmentalClutter();
     drawGraveyardCrosses();
     drawPumpkinArray();
+    drawCloudShadowCasters();
 }
 
 void renderBulbShadowCasters() {

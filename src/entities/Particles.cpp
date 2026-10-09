@@ -33,17 +33,17 @@ void initFallingLeaves() {    g_fallingLeaves.resize(MAX_FALLING_LEAVES);
         g_fallingLeaves[i].x = ox;
         g_fallingLeaves[i].y = 1.8f + ((float)(rand() % 30) / 10.0f); // 1.8m to 4.8m (natural tree canopy height)
         g_fallingLeaves[i].z = oz;
-        g_fallingLeaves[i].vy = 0.40f + ((float)(rand() % 40) / 100.0f); // 0.40 to 0.80 m/s slow flutter drift
+        g_fallingLeaves[i].vy = 0.16f + ((float)(rand() % 16) / 100.0f); // 0.16 to 0.32 m/s gentle autumn flutter
         g_fallingLeaves[i].rotX = (float)(rand() % 360);
         g_fallingLeaves[i].rotY = (float)(rand() % 360);
         g_fallingLeaves[i].rotZ = (float)(rand() % 360);
-        g_fallingLeaves[i].rotSpeedX = 25.0f + ((float)(rand() % 60));
-        g_fallingLeaves[i].rotSpeedY = 35.0f + ((float)(rand() % 75));
-        g_fallingLeaves[i].rotSpeedZ = 20.0f + ((float)(rand() % 50));
+        g_fallingLeaves[i].rotSpeedX = 10.0f + ((float)(rand() % 25));
+        g_fallingLeaves[i].rotSpeedY = 14.0f + ((float)(rand() % 30));
+        g_fallingLeaves[i].rotSpeedZ =  8.0f + ((float)(rand() % 20));
         g_fallingLeaves[i].size = 0.15f + ((float)(rand() % 10) / 100.0f);
         g_fallingLeaves[i].swayPhase = (float)(rand() % 628) / 100.0f;
-        g_fallingLeaves[i].swayAmp = 0.5f + ((float)(rand() % 50) / 100.0f);
-        g_fallingLeaves[i].swayFreq = 1.1f + ((float)(rand() % 60) / 100.0f);
+        g_fallingLeaves[i].swayAmp = 0.35f + ((float)(rand() % 30) / 100.0f);
+        g_fallingLeaves[i].swayFreq = 0.55f + ((float)(rand() % 30) / 100.0f);
 
         // Dark muted reddish-brown / desaturated orange-brown (RGB 90,55,35 to 130,80,45)
         int tone = rand() % 3;
@@ -59,16 +59,16 @@ void initFallingLeaves() {    g_fallingLeaves.resize(MAX_FALLING_LEAVES);
 
 
 
-void updateFallingLeaves(float dt) {    // Wind direction: Right → Left (negative X) with slight forward drift
-    const float windSpeedX = -1.0f;  // m/s lateral wind drift
-    const float windSpeedZ = -0.15f; // Slight forward drift
+void updateFallingLeaves(float dt) {    // Gentle breeze: Right → Left (negative X) with very soft drift
+    const float windSpeedX = -0.32f;  // m/s gentle lateral wind drift (slowed down from -1.0)
+    const float windSpeedZ = -0.05f; // Slight forward drift
 
     for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
         FallingLeafParticle& l = g_fallingLeaves[i];
         l.y -= l.vy * dt;
 
         // Apply wind drift to origin tracking
-        l.originX += windSpeedX * dt * (0.8f + 0.4f * std::sin(g_time * 0.5f + l.swayPhase));
+        l.originX += windSpeedX * dt * (0.8f + 0.3f * std::sin(g_time * 0.35f + l.swayPhase));
         l.originZ += windSpeedZ * dt;
 
         // Fluttering sway oscillation (relative to drifting origin)
@@ -86,6 +86,10 @@ void updateFallingLeaves(float dt) {    // Wind direction: Right → Left (negat
         if (l.y <= ground || l.originX < -20.0f) {
             // Respawn in the upper canopy of natural trees on the RIGHT side (wind source)
             l.y = 3.6f + ((float)(rand() % 15) / 10.0f); // 3.6m to 5.1m (matching natural small tree height)
+            l.vy = 0.16f + ((float)(rand() % 16) / 100.0f); // Keep slow gentle fall (0.16 - 0.32 m/s)
+            l.rotSpeedX = 10.0f + ((float)(rand() % 25));
+            l.rotSpeedY = 14.0f + ((float)(rand() % 30));
+            l.rotSpeedZ =  8.0f + ((float)(rand() % 20));
             float rChoice = (float)(rand() % 100) / 100.0f;
             if (rChoice < 0.60f) {
                 l.originX = 5.0f + ((float)(rand() % 40) / 10.0f);
@@ -151,9 +155,9 @@ static const Material MAT_BAT_FUR = {
 };
 
 static const Material MAT_BAT_MEMBRANE = {
-    { 0.04f, 0.03f, 0.03f, 1.0f },
-    { 0.18f, 0.14f, 0.12f, 1.0f },
-    { 0.35f, 0.28f, 0.24f, 1.0f }, // Leathery skin specular highlights under moonlight
+    { 0.08f, 0.07f, 0.07f, 1.0f },
+    { 0.26f, 0.22f, 0.20f, 1.0f },
+    { 0.48f, 0.42f, 0.40f, 1.0f }, // Leathery skin specular highlights under moonlight
     { 0.00f, 0.00f, 0.00f, 1.0f },
     48.0f
 };
@@ -517,64 +521,144 @@ void drawBat(float x, float y, float z, float roll, float flapAngle, float scale
     drawRealisticBat(x, y, z, -90.0f, 0.0f, roll, flapAngle, scale);
 }
 
+// Helper: evaluate 3D position of an ascending bat along a parametric trajectory
+struct SwarmBatDef {
+    int cluster;       // 0: Manor Belfry/Roof Eruption, 1: Graveyard Ascent
+    float timeOffset;  // Staggered launch phase
+    float startAngle;  // Angular seed in the ascending vortex
+    float radiusMul;   // Radial spread from vortex core
+    float heightOffset;// Vertical offset in the swarm
+    float scale;       // Anatomical scale
+    float flapFreq;    // Wingbeat rate (Hz)
+    float jitterAmp;   // Erratic chiropteran darting amplitude
+    float jitterFreq;  // Erratic darting frequency
+};
+
+static const SwarmBatDef G_BAT_SWARM[22] = {
+    // --- Cluster 0: Manor Roof/Belfry Eruption Swarm (16 bats spiraling up across the moon) ---
+    { 0,   0.00f,  0.00f, 1.00f,  0.00f, 0.74f, 7.8f, 0.20f, 2.6f },
+    { 0,   1.50f,  0.85f, 1.15f,  0.45f, 0.68f, 8.4f, 0.18f, 2.9f },
+    { 0,   3.00f,  1.70f, 0.88f, -0.35f, 0.64f, 7.2f, 0.22f, 2.4f },
+    { 0,   4.50f,  2.55f, 1.25f,  0.80f, 0.72f, 8.0f, 0.19f, 2.7f },
+    { 0,   6.00f,  3.40f, 0.95f, -0.60f, 0.60f, 8.6f, 0.16f, 3.1f },
+    { 0,   7.50f,  4.25f, 1.10f,  0.25f, 0.78f, 7.5f, 0.21f, 2.5f },
+    { 0,   9.00f,  5.10f, 1.30f,  0.90f, 0.66f, 8.2f, 0.24f, 2.8f },
+    { 0,  10.50f,  5.95f, 0.82f, -0.75f, 0.62f, 7.6f, 0.17f, 3.0f },
+    { 0,  12.00f,  0.45f, 1.05f,  0.15f, 0.73f, 8.3f, 0.20f, 2.6f },
+    { 0,  13.50f,  1.30f, 1.22f,  0.65f, 0.67f, 7.7f, 0.22f, 2.9f },
+    { 0,  15.00f,  2.15f, 0.90f, -0.45f, 0.61f, 8.8f, 0.18f, 3.2f },
+    { 0,  16.50f,  3.00f, 1.18f,  0.50f, 0.76f, 7.9f, 0.21f, 2.5f },
+    { 0,  18.00f,  3.85f, 1.35f,  0.85f, 0.70f, 8.5f, 0.23f, 2.8f },
+    { 0,  19.50f,  4.70f, 0.85f, -0.80f, 0.58f, 7.4f, 0.17f, 3.1f },
+    { 0,  21.00f,  5.55f, 1.12f,  0.30f, 0.69f, 8.1f, 0.20f, 2.6f },
+    { 0,  22.50f,  0.20f, 1.28f,  0.70f, 0.71f, 8.4f, 0.19f, 2.9f },
+
+    // --- Cluster 1: Graveyard & Dark Woods Ascent Swarm (6 bats climbing steeply over tombstones) ---
+    { 1,   0.80f,  0.50f, 1.00f,  0.00f, 0.72f, 8.0f, 0.22f, 2.7f },
+    { 1,   4.60f,  1.80f, 1.20f,  0.50f, 0.66f, 7.5f, 0.19f, 2.9f },
+    { 1,   8.40f,  3.10f, 0.85f, -0.40f, 0.75f, 8.2f, 0.23f, 2.5f },
+    { 1,  12.20f,  4.40f, 1.15f,  0.65f, 0.63f, 8.7f, 0.18f, 3.1f },
+    { 1,  16.00f,  5.70f, 0.90f, -0.55f, 0.68f, 7.8f, 0.20f, 2.8f },
+    { 1,  19.80f,  0.90f, 1.25f,  0.40f, 0.73f, 8.3f, 0.22f, 2.6f }
+};
+
+static void evalSwarmBatPosition(const SwarmBatDef& b, float tParam, float& outX, float& outY, float& outZ) {
+    if (b.cluster == 0) {
+        // Manor Roof/Belfry Swarm: Ascends in a slow, graceful swirling expanding helix
+        float cycleDuration = 25.0f; // Calmed down to 25 seconds per full ascent (over 2x slower!)
+        float s = std::fmod(tParam + b.timeOffset, cycleDuration) / cycleDuration; // 0.0 to 1.0
+
+        // 1. Vortex Core moves upward and northward across the moon
+        float cx = -2.2f + 5.8f * s;
+        float cz =  1.2f - 22.0f * s;
+        // Steep, smooth vertical climb from roof level (9.5m) up to upper sky (38.5m)
+        float cy =  9.5f + 26.0f * s + 3.0f * s * s;
+
+        // 2. Swirling spiral trajectory in X-Z
+        float spiralAngle = b.startAngle + s * 3.4f * 3.14159265f;
+        float spiralRadius = (3.2f + 13.5f * s) * b.radiusMul;
+
+        // 3. Natural smooth chiropteran flutter / undulating drift
+        float jitX = b.jitterAmp * std::sin(tParam * b.jitterFreq + b.timeOffset * 2.1f);
+        float jitZ = b.jitterAmp * std::cos(tParam * b.jitterFreq * 0.85f + b.timeOffset);
+
+        outX = cx + spiralRadius * std::cos(spiralAngle) + jitX;
+        outZ = cz + spiralRadius * std::sin(spiralAngle) * 0.72f + jitZ;
+        outY = cy + b.heightOffset + 0.25f * std::sin(tParam * 2.0f + b.timeOffset);
+
+    } else {
+        // Graveyard Ascent: Erupts from foggy tombstones and climbs over the car & woods into the sky
+        float cycleDuration = 23.0f; // Calmed down to 23 seconds per ascent
+        float s = std::fmod(tParam + b.timeOffset, cycleDuration) / cycleDuration; // 0.0 to 1.0
+
+        float cx = -14.0f + 16.5f * s + 2.5f * std::sin(s * 3.14159265f);
+        float cz =   7.5f - 24.0f * s;
+        // Ascends from graveyard ground (3.2m) up to high sky (32.0m)
+        float cy =   3.2f + 25.5f * s + 3.2f * s * s;
+
+        float jitX = b.jitterAmp * std::sin(tParam * b.jitterFreq + b.timeOffset);
+        float jitZ = b.jitterAmp * std::cos(tParam * b.jitterFreq + b.timeOffset);
+
+        outX = cx + jitX;
+        outZ = cz + jitZ;
+        outY = cy + b.heightOffset + 0.25f * std::sin(tParam * 2.2f + b.timeOffset);
+    }
+}
+
 void drawAllBats() {
     // ------------------------------------------------------------------------
-    // COLONY OF NOCTURNAL BATS: DYNAMIC HORROR FLIGHT
-    // Flying continuously across the moonlit sky with varied swoops,
-    // altitudes, banking rolls, and true aerodynamic flight orientation!
+    // COLONY OF NOCTURNAL BATS: ASCENDING HORROR SWARM (বাদুড়ের ঝাঁক)
+    // 22 articulated bats erupting from the haunted roof and graveyard,
+    // spiraling UPWARD into the night sky across the moon and clouds!
     // ------------------------------------------------------------------------
-    struct BatColonyMember {
-        float startX;      // Spawn X
-        float endX;        // Despawn X
-        float baseY;       // Nominal altitude
-        float baseZ;       // Yard depth
-        float scale;       // Scale
-        float flapFreq;    // Flapping frequency
-        float swoopAmp;    // Vertical swoop amplitude
-        float swoopFreq;   // Vertical swoop frequency
-        float timeOffset;  // Staggered launch offset
-    };
+    float dt = 0.035f;
 
-    static const BatColonyMember COLONY[6] = {
-        // 1. Alpha Leader Bat (Graceful broad wingbeats across mid-yard)
-        {  32.0f, -32.0f, 5.9f, 13.2f, 0.55f, 13.0f, 0.45f, 2.2f, 0.0f },
-        // 2. High Moonlit Sentry (High altitude crossing the glowing full moon disk)
-        {  34.0f, -34.0f, 8.4f, 10.5f, 0.48f, 14.5f, 0.35f, 1.8f, 2.8f },
-        // 3. Low Graveyard Hunter (Swooping low over the tomb crosses and pumpkins)
-        {  30.0f, -30.0f, 3.8f, 14.8f, 0.50f, 15.0f, 0.85f, 2.8f, 5.2f },
-        // 4. Manor Turret Scout (Gliding near the Gothic roof ridge)
-        {  33.0f, -33.0f, 7.2f, 11.8f, 0.46f, 12.5f, 0.40f, 2.0f, 7.5f },
-        // 5. Agile Follower (Staggered trailing formation)
-        {  31.0f, -31.0f, 6.4f, 13.8f, 0.44f, 14.0f, 0.55f, 2.4f, 9.8f },
-        // 6. Low Wrecked-Car Scout (Dipping near the old rusted truck)
-        {  35.0f, -35.0f, 4.4f, 12.2f, 0.48f, 15.5f, 0.70f, 2.6f, 11.6f }
-    };
+    for (int i = 0; i < 22; ++i) {
+        const SwarmBatDef& b = G_BAT_SWARM[i];
 
-    float cycleDuration = 14.0f; // Each wave takes 14s to cross
+        float cycleDuration = (b.cluster == 0) ? 25.0f : 23.0f;
+        float s = std::fmod(g_time + b.timeOffset, cycleDuration) / cycleDuration;
 
-    for (int i = 0; i < 6; ++i) {
-        const BatColonyMember& b = COLONY[i];
-        float t = std::fmod(g_time + b.timeOffset, cycleDuration) / cycleDuration;
+        // Fade scale near birth and exit for seamless continuous swarming
+        float scaleMul = 1.0f;
+        if (s < 0.07f) {
+            scaleMul = s / 0.07f;
+        } else if (s > 0.93f) {
+            scaleMul = (1.0f - s) / 0.07f;
+        }
+        float curScale = b.scale * scaleMul;
+        if (curScale <= 0.01f) continue;
 
-        // Position
-        float bx = b.startX + t * (b.endX - b.startX);
-        float by = b.baseY + b.swoopAmp * std::sin(g_time * b.swoopFreq + b.timeOffset);
-        float bz = b.baseZ + 0.35f * std::cos(g_time * 1.5f + b.timeOffset);
+        // Current 3D position
+        float bx, by, bz;
+        evalSwarmBatPosition(b, g_time, bx, by, bz);
 
-        // True flight dynamics:
-        // Heading towards -X is yaw = -90.0f
-        // Pitch calculated from vertical velocity
-        float vy = b.swoopAmp * b.swoopFreq * std::cos(g_time * b.swoopFreq + b.timeOffset);
-        float vx = -((b.startX - b.endX) / cycleDuration);
-        float pitch = -std::atan2(vy, std::abs(vx)) * (180.0f / 3.14159265f);
+        // Forward position to compute true 3D flight trajectory vector
+        float bx_next, by_next, bz_next;
+        evalSwarmBatPosition(b, g_time + dt, bx_next, by_next, bz_next);
 
-        // Banking roll when swooping
-        float roll = -15.0f + 12.0f * std::sin(g_time * 1.8f + b.timeOffset);
+        float vx = (bx_next - bx) / dt;
+        float vy = (by_next - by) / dt;
+        float vz = (bz_next - bz) / dt;
 
-        // Flapping angle with downstroke power
-        float flapAngle = std::sin(g_time * b.flapFreq + b.timeOffset) * 38.0f;
+        float speedH = std::sqrt(vx * vx + vz * vz);
+        if (speedH < 0.001f) speedH = 0.001f;
 
-        drawRealisticBat(bx, by, bz, -90.0f, pitch, roll, flapAngle, b.scale);
+        // True 3D Flight Orientation:
+        // Snout, eyes and fangs face 100% in the direction of flight!
+        float flightYaw   = std::atan2(vx, vz) * (180.0f / 3.14159265f);
+        // Pitch upward into the climb:
+        float flightPitch = -std::atan2(vy, speedH) * (180.0f / 3.14159265f);
+
+        // Aerodynamic Banking: Roll tilts wings into the turn + gentle flutter
+        float turnRate = (vx * bz - vz * bx) * 0.02f;
+        float flightRoll = -std::clamp(turnRate * 25.0f, -22.0f, 22.0f) +
+                           std::sin(g_time * 2.8f + b.timeOffset) * 6.0f;
+
+        // Natural, eerie chiropteran wingbeats (~7 to 9 Hz) with flexible camber
+        float flapAngle = std::sin(g_time * (b.flapFreq * 2.0f * 3.14159265f) + b.timeOffset) * 44.0f;
+
+        drawRealisticBat(bx, by, bz, flightYaw, flightPitch, flightRoll, flapAngle, curScale);
     }
 }
 
