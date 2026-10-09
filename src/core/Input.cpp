@@ -70,8 +70,19 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
         case 'u':
         case 'U':
             g_cinematicMode = !g_cinematicMode;
-            if (g_cinematicMode) g_cinematicTime = 0.0f;
-            std::cout << "[CAMERA] Guided Showcase Tour : " << (g_cinematicMode ? "ACTIVE (8-Stage Comprehensive Tour)" : "DISABLED (Manual Exploration)") << std::endl;
+            if (g_cinematicMode) {
+                g_cinematicTime = 0.0f;
+                std::cout << "[CAMERA] Full Guided Showcase Tour : ACTIVE (10-Stage Multi-Angle Live Tour with Auto-Feature Demos)" << std::endl;
+            } else {
+                g_light0PointOn = true;
+                g_light1DirectionalOn = true;
+                g_light2SpotOn = false;
+                g_light3AreaOn = true;
+                g_pumpkinLightsOn = true;
+                g_texturesEnabled = true;
+                g_fogEnabled = true;
+                std::cout << "[CAMERA] Guided Showcase Tour : DISABLED (Free Manual Exploration - All Lights Restored)" << std::endl;
+            }
             break;
         case 'l':
         case 'L':

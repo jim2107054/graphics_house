@@ -14,6 +14,8 @@ struct Camera {
 
 extern Camera g_cam;
 extern int g_camFloorState;
+extern const float TOTAL_TOUR_DURATION;
+extern std::string g_tourActionBadge;
 
 bool isHouseLocationFree(float worldX, float worldZ);
 void processKeyboardInput(float dt);

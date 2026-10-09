@@ -171,6 +171,308 @@ void drawCobweb(float x, float y, float z, float size, float rotY) {    bindText
     glPopAttrib();
 }
 
+// ============================================================================
+// REALISTIC VICTORIAN WOODWORK & GOTHIC FURNITURE PROCEDURAL HELPERS
+// ============================================================================
+
+// Lathe-turned furniture leg (table leg, desk leg, chair leg)
+static void drawTurnedFurnitureLeg(float height, float width, bool broken = false) {
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+
+    if (broken) {
+        // Jagged splintered stump
+        glPushMatrix();
+        glTranslatef(0.0f, height * 0.25f, 0.0f);
+        drawBox(width, height * 0.5f, width);
+        glTranslatef(0.0f, height * 0.25f, 0.0f);
+        drawBox(width * 0.45f, height * 0.18f, width * 0.45f);
+        glPopMatrix();
+        return;
+    }
+
+    glPushMatrix();
+    // 1. Turned bun foot on floor (y = 0)
+    float footR = width * 0.42f;
+    glTranslatef(0.0f, footR, 0.0f);
+    drawSphere(footR, 10, 8);
+
+    // 2. Slender lower column (grows upward along +Y)
+    float shaftH = height * 0.36f;
+    drawCylinder(width * 0.30f, width * 0.34f, shaftH, 10);
+
+    // 3. Middle turned ring
+    glTranslatef(0.0f, shaftH, 0.0f);
+    drawSphere(width * 0.48f, 10, 8);
+
+    // 4. Upper baluster vase (grows upward along +Y)
+    float vaseH = height * 0.28f;
+    drawCylinder(width * 0.48f, width * 0.36f, vaseH, 10);
+
+    // 5. Upper turned collar bead
+    glTranslatef(0.0f, vaseH, 0.0f);
+    drawSphere(width * 0.52f, 10, 8);
+
+    // 6. Top square mounting block
+    float blockH = height - (footR + shaftH + vaseH);
+    if (blockH < height * 0.12f) blockH = height * 0.12f;
+    glTranslatef(0.0f, blockH * 0.5f, 0.0f);
+    drawBox(width, blockH, width);
+    glPopMatrix();
+}
+
+// Lathe-turned Victorian staircase and balustrade spindle
+static void drawTurnedBalusterSpindle(float height, float width) {
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+
+    glPushMatrix();
+    // 1. Lower square plinth block (resting on step tread at y = 0)
+    float plinthH = height * 0.18f;
+    glTranslatef(0.0f, plinthH * 0.5f, 0.0f);
+    drawBox(width, plinthH, width);
+
+    // 2. Lower turned transition bead
+    glTranslatef(0.0f, plinthH * 0.5f, 0.0f);
+    drawSphere(width * 0.56f, 8, 6);
+
+    // 3. Lower baluster vase/bulb (grows upward along +Y)
+    float bulbH = height * 0.24f;
+    drawCylinder(width * 0.38f, width * 0.48f, bulbH, 8);
+
+    // 4. Center turned ring
+    glTranslatef(0.0f, bulbH, 0.0f);
+    drawSphere(width * 0.48f, 8, 6);
+
+    // 5. Slender tapered upper column (grows upward along +Y)
+    float colH = height * 0.32f;
+    drawCylinder(width * 0.32f, width * 0.28f, colH, 8);
+
+    // 6. Upper collar & top square block meeting the handrail
+    float topH = height - (plinthH + bulbH + colH);
+    if (topH < height * 0.12f) topH = height * 0.12f;
+    glTranslatef(0.0f, colH + topH * 0.5f, 0.0f);
+    drawBox(width, topH, width);
+    glPopMatrix();
+}
+
+// Master Victorian Newel Post (Heavy carved post with fluting and finial)
+static void drawMasterNewelPost(float height, float width) {
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
+
+    glPushMatrix();
+    // 1. Heavy stepped plinth base
+    float baseH = height * 0.26f;
+    glTranslatef(0.0f, baseH * 0.5f, 0.0f);
+    drawBox(width * 1.15f, baseH, width * 1.15f);
+    glTranslatef(0.0f, baseH * 0.5f + 0.02f, 0.0f);
+    drawBox(width * 1.25f, 0.04f, width * 1.25f); // Base torus molding
+
+    // 2. Main shaft with recessed fluting relief
+    float shaftH = height * 0.56f;
+    glTranslatef(0.0f, shaftH * 0.5f + 0.02f, 0.0f);
+    drawBox(width, shaftH, width);
+    // Subtle front/side panel recesses
+    glColor4f(0.18f, 0.14f, 0.10f, 1.0f);
+    glPushMatrix(); glTranslatef(0.0f, 0.0f, width * 0.51f); drawBox(width * 0.65f, shaftH * 0.82f, 0.015f); glPopMatrix();
+    glPushMatrix(); glTranslatef(0.0f, 0.0f, -width * 0.51f); drawBox(width * 0.65f, shaftH * 0.82f, 0.015f); glPopMatrix();
+    glPushMatrix(); glTranslatef(width * 0.51f, 0.0f, 0.0f); drawBox(0.015f, shaftH * 0.82f, width * 0.65f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-width * 0.51f, 0.0f, 0.0f); drawBox(0.015f, shaftH * 0.82f, width * 0.65f); glPopMatrix();
+
+    // 3. Molded neck & stepped cap
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
+    glTranslatef(0.0f, shaftH * 0.5f + 0.03f, 0.0f);
+    drawBox(width * 1.18f, 0.06f, width * 1.18f);
+    glTranslatef(0.0f, 0.05f, 0.0f);
+    drawBox(width * 1.30f, 0.05f, width * 1.30f);
+
+    // 4. Carved Acorn / Spherical Finial on collar
+    glTranslatef(0.0f, 0.04f, 0.0f);
+    drawBox(width * 0.75f, 0.03f, width * 0.75f);
+    glTranslatef(0.0f, width * 0.45f, 0.0f);
+    drawSphere(width * 0.48f, 12, 10);
+    glTranslatef(0.0f, width * 0.38f, 0.0f);
+    drawSphere(width * 0.22f, 8, 6); // Acorn tip
+    glPopMatrix();
+}
+
+// Realistic Victorian Spindle Dining Chair
+static void drawRealisticDiningChair(bool overturned, float tiltAngle = 0.0f) {
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.25f, 0.20f, 0.16f, 1.0f);
+
+    glPushMatrix();
+    if (overturned) {
+        glTranslatef(0.0f, 0.22f, 0.0f);
+        glRotatef(88.0f, 1.0f, 0.0f, 0.0f);
+        glRotatef(-34.0f, 0.0f, 0.0f, 1.0f);
+    } else if (std::abs(tiltAngle) > 0.1f) {
+        glRotatef(tiltAngle, 0.0f, 0.0f, 1.0f);
+    }
+
+    // 1. Contoured Saddle Seat Pan with beveled rim
+    glPushMatrix();
+    glTranslatef(0.0f, 0.45f, 0.0f);
+    drawBeveledBox(0.48f, 0.045f, 0.46f, 0.015f);
+    // Beveled rim trim
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+    glTranslatef(0.0f, -0.03f, 0.0f);
+    drawBox(0.44f, 0.035f, 0.42f); // Seat apron under-skirt
+    glPopMatrix();
+
+    // 2. Front Turned Legs
+    glPushMatrix();
+    glTranslatef(-0.19f, 0.0f, 0.17f);
+    drawTurnedFurnitureLeg(0.43f, 0.044f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.19f, 0.0f, 0.17f);
+    drawTurnedFurnitureLeg(0.43f, 0.044f, overturned); // Broken leg if overturned
+    glPopMatrix();
+
+    // 3. Rear Saber Legs (Slightly splayed backward for authentic Victorian posture)
+    glPushMatrix();
+    glTranslatef(-0.18f, 0.21f, -0.17f);
+    glRotatef(5.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.044f, 0.43f, 0.044f);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.18f, 0.21f, -0.17f);
+    glRotatef(5.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.044f, 0.43f, 0.044f);
+    glPopMatrix();
+
+    // 4. Leg Stretchers (H-Stretcher connecting the legs for stability)
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+    glPushMatrix();
+    // Left side stretcher
+    glTranslatef(-0.185f, 0.16f, 0.0f);
+    drawBox(0.024f, 0.024f, 0.34f);
+    // Right side stretcher
+    glTranslatef(0.37f, 0.0f, 0.0f);
+    drawBox(0.024f, 0.024f, 0.34f);
+    // Center cross stretcher
+    glTranslatef(-0.185f, 0.0f, 0.0f);
+    drawBox(0.35f, 0.024f, 0.024f);
+    glPopMatrix();
+
+    // 5. Backrest (Gracefully curved crest rail + 5 turned vertical spindles)
+    glPushMatrix();
+    glTranslatef(0.0f, 0.47f, -0.17f);
+    // Two outer stiles
+    glTranslatef(-0.19f, 0.25f, 0.0f);
+    glRotatef(-3.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.038f, 0.50f, 0.038f);
+    glRotatef(3.5f, 0.0f, 0.0f, 1.0f);
+    glTranslatef(0.38f, 0.0f, 0.0f);
+    glRotatef(3.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(0.038f, 0.50f, 0.038f);
+    glRotatef(-3.5f, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-0.19f, 0.0f, 0.0f);
+
+    // Carved Top Crest Rail (Arched curve)
+    glTranslatef(0.0f, 0.26f, 0.0f);
+    drawBox(0.46f, 0.075f, 0.042f);
+    glTranslatef(0.0f, 0.045f, 0.0f);
+    drawBox(0.24f, 0.035f, 0.038f); // Center carved crown crest
+
+    // 4 Turned backrest spindles
+    glTranslatef(0.0f, -0.28f, 0.0f);
+    float spindleXs[4] = { -0.12f, -0.04f, 0.04f, 0.12f };
+    for (int sp = 0; sp < 4; ++sp) {
+        glPushMatrix();
+        glTranslatef(spindleXs[sp], 0.0f, 0.0f);
+        drawTurnedBalusterSpindle(0.42f, 0.024f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Antique Leather-bound Book with Ribbed Spine
+static void drawAntiqueBook(float width, float height, float thickness, float r, float g, float b, float tiltZ = 0.0f) {
+    glPushMatrix();
+    if (std::abs(tiltZ) > 0.01f) {
+        glRotatef(tiltZ, 0.0f, 0.0f, 1.0f);
+    }
+
+    // 1. Text Block (Aged yellowed pages)
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.85f, 0.81f, 0.68f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.012f, height * 0.5f, 0.0f);
+    drawBox(width - 0.02f, height - 0.02f, thickness - 0.012f);
+    glPopMatrix();
+
+    // 2. Leather Hardcover Boards (Front, back, and spine)
+    applyMaterial(MAT_DARK_WOOD);
+    glColor4f(r, g, b, 1.0f);
+    // Back cover
+    glPushMatrix();
+    glTranslatef(0.0f, height * 0.5f, -thickness * 0.5f + 0.005f);
+    drawBox(width, height, 0.01f);
+    // Front cover
+    glTranslatef(0.0f, 0.0f, thickness - 0.01f);
+    drawBox(width, height, 0.01f);
+    glPopMatrix();
+
+    // 3. Rounded Leather Spine with 4 embossed horizontal ribs
+    glPushMatrix();
+    glTranslatef(-width * 0.5f + 0.005f, height * 0.5f, 0.0f);
+    drawBox(0.012f, height, thickness);
+    // Embossed gold/leather ribs on spine
+    glColor4f(r * 1.25f, g * 1.2f, b * 1.15f, 1.0f);
+    for (int rib = 0; rib < 4; ++rib) {
+        float ribY = -height * 0.35f + (float)rib * (height * 0.24f);
+        glPushMatrix();
+        glTranslatef(-0.005f, ribY, 0.0f);
+        drawBox(0.008f, 0.012f, thickness * 0.95f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Ancient Weathered Human Skull prop
+static void drawAntiqueSkull() {
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.80f, 0.77f, 0.67f, 1.0f);
+
+    glPushMatrix();
+    // Cranium
+    drawSphere(0.085f, 12, 10);
+    // Facial block / maxilla
+    glTranslatef(0.0f, -0.038f, 0.045f);
+    drawBox(0.082f, 0.055f, 0.055f);
+
+    // Deep Dark Eye Sockets
+    glDisable(GL_LIGHTING);
+    glColor3f(0.06f, 0.05f, 0.04f);
+    glPushMatrix(); glTranslatef(-0.026f, 0.015f, 0.030f); drawSphere(0.018f, 6, 6); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.026f, 0.015f, 0.030f); drawSphere(0.018f, 6, 6); glPopMatrix();
+    // Nasal aperture
+    glPushMatrix(); glTranslatef(0.0f, -0.006f, 0.030f); drawSphere(0.011f, 5, 5); glPopMatrix();
+
+    // Teeth row
+    glColor3f(0.88f, 0.85f, 0.75f);
+    glTranslatef(0.0f, -0.022f, 0.028f);
+    drawBox(0.058f, 0.014f, 0.012f);
+    glEnable(GL_LIGHTING);
+
+    glPopMatrix();
+}
+
 // ----------------------------------------------------------------------------
 // HAUNTED HOUSE INTERIOR (Intensely Dilapidated Old Abandoned Interior)
 // ----------------------------------------------------------------------------
@@ -303,220 +605,409 @@ void drawHouseInterior() {    // 1. Weathered, Rotten Floorboards with Missing P
     drawSphere(0.085f, 10, 8);
     glPopMatrix();
 
-    // 7. Smashed & Dilapidated Wooden Dining Table (Split & Tilted on Broken Leg)
+    // 7. REALISTIC DILAPIDATED VICTORIAN DINING TABLE (Turned Legs, Plank Grooves, Splintered Break & Melted Wax)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.26f, 0.22f, 0.18f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.8f, 0.74f, 1.7f);
-    glRotatef(8.5f, 0.0f, 0.0f, 1.0f); // Tilted because right legs are broken/collapsed
+    glRotatef(8.0f, 0.0f, 0.0f, 1.0f); // Tilted due to collapsed right legs
 
-    // Tabletop (Split into two broken halves)
+    // Table Apron / Perimeter Skirt Frame
     glPushMatrix();
-    glTranslatef(-0.35f, 0.68f, 0.0f);
-    drawBox(0.75f, 0.055f, 0.85f);
-    glTranslatef(0.72f, -0.04f, 0.0f);
-    glRotatef(6.0f, 1.0f, 0.0f, 0.0f);
-    drawBox(0.68f, 0.055f, 0.82f);
+    glTranslatef(-0.02f, 0.60f, 0.0f);
+    // Left & Right apron rails
+    glPushMatrix(); glTranslatef(-0.66f, 0.0f, 0.0f); drawBox(0.045f, 0.08f, 0.82f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.62f, 0.0f, 0.0f); drawBox(0.045f, 0.08f, 0.78f); glPopMatrix();
+    // Front & Back apron rails
+    glPushMatrix(); glTranslatef(0.0f, 0.0f,  0.40f); drawBox(1.32f, 0.08f, 0.045f); glPopMatrix();
+    glPushMatrix(); glTranslatef(0.0f, 0.0f, -0.40f); drawBox(1.32f, 0.08f, 0.045f); glPopMatrix();
     glPopMatrix();
 
-    // Intact Left Legs
+    // Tabletop (Two fractured halves with plank seam lines)
+    // Left intact section
     glPushMatrix();
-    glTranslatef(-0.65f, 0.32f, -0.32f); drawBox(0.07f, 0.64f, 0.07f);
-    glTranslatef( 0.0f,  0.0f,   0.64f); drawBox(0.07f, 0.64f, 0.07f);
-    // Broken Snapped Right Legs (short stubs propped on bricks)
-    glTranslatef( 1.30f, -0.15f,  0.0f);  drawBox(0.07f, 0.34f, 0.07f);
-    glTranslatef( 0.0f,   0.0f,  -0.64f); drawBox(0.07f, 0.28f, 0.07f);
+    glTranslatef(-0.36f, 0.67f, 0.0f);
+    drawBeveledBox(0.78f, 0.055f, 0.92f, 0.015f);
+    // Plank grooves
+    glColor4f(0.18f, 0.15f, 0.12f, 1.0f);
+    glPushMatrix(); glTranslatef(0.0f, 0.028f, -0.22f); drawBox(0.78f, 0.005f, 0.012f); glPopMatrix();
+    glPushMatrix(); glTranslatef(0.0f, 0.028f,  0.22f); drawBox(0.78f, 0.005f, 0.012f); glPopMatrix();
     glPopMatrix();
+
+    // Right fractured tilted section
+    glColor4f(0.25f, 0.21f, 0.17f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.38f, 0.63f, 0.0f);
+    glRotatef(6.5f, 1.0f, 0.0f, 0.0f);
+    drawBeveledBox(0.72f, 0.055f, 0.88f, 0.015f);
+    // Splintered fracture edges at seam
+    glColor4f(0.30f, 0.24f, 0.18f, 1.0f);
+    glPushMatrix(); glTranslatef(-0.35f, 0.0f, 0.0f); drawBox(0.04f, 0.05f, 0.84f); glPopMatrix();
     glPopMatrix();
+
+    // Victorian Lathe-Turned Table Legs
+    // Intact Left Front Leg
+    glPushMatrix();
+    glTranslatef(-0.66f, 0.0f, 0.38f);
+    drawTurnedFurnitureLeg(0.64f, 0.075f);
+    glPopMatrix();
+
+    // Intact Left Rear Leg
+    glPushMatrix();
+    glTranslatef(-0.66f, 0.0f, -0.38f);
+    drawTurnedFurnitureLeg(0.64f, 0.075f);
+    glPopMatrix();
+
+    // Broken Snapped Right Legs (splintered stumps)
+    glPushMatrix();
+    glTranslatef(0.64f, -0.05f, 0.38f);
+    drawTurnedFurnitureLeg(0.36f, 0.075f, true);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0.64f, -0.05f, -0.38f);
+    drawTurnedFurnitureLeg(0.30f, 0.075f, true);
+    glPopMatrix();
+
+    glPopMatrix(); // End Table
 
     // Broken Red Clay Bricks under collapsed table leg
     applyMaterial(MAT_STONE);
     bindTexture(TEX_NONE);
-    glColor4f(0.55f, 0.25f, 0.18f, 1.0f);
+    glColor4f(0.58f, 0.26f, 0.18f, 1.0f);
     glPushMatrix();
-    glTranslatef(-4.1f, 0.80f, 1.4f);
-    drawBox(0.24f, 0.10f, 0.14f);
-    glTranslatef(0.08f, 0.08f, 0.18f);
-    glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.22f, 0.08f, 0.12f);
+    glTranslatef(-4.1f, 0.79f, 1.4f);
+    drawBox(0.24f, 0.09f, 0.14f);
+    glTranslatef(0.04f, 0.08f, 0.04f);
+    glRotatef(18.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.22f, 0.08f, 0.13f);
+    // Crushed brick shards
+    glTranslatef(0.14f, -0.04f, 0.16f);
+    drawBox(0.08f, 0.04f, 0.07f);
     glPopMatrix();
 
-    // 8. Melting Wax Candle & Dusty Shattered Wine Bottle on Table
+    // 8. Melting Wax Candle, Pool of Drippings & Shattered Wine Bottle
     glPushMatrix();
-    glTranslatef(-4.95f, 1.44f, 1.55f);
-    // Brass candle holder base
+    glTranslatef(-4.95f, 1.43f, 1.55f);
+    // Antique brass saucer base with finger loop
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_NONE);
-    glColor4f(0.48f, 0.38f, 0.20f, 1.0f);
-    drawCylinder(0.065f, 0.045f, 0.03f, 8);
-    // White wax candle column with melted wax drips
-    glColor4f(0.88f, 0.85f, 0.75f, 1.0f);
-    glTranslatef(0.0f, 0.03f, 0.0f);
-    drawCylinder(0.022f, 0.020f, 0.12f, 6);
-    // Candle flame (flickering orange-yellow teardrop)
+    glColor4f(0.55f, 0.44f, 0.22f, 1.0f);
+    drawCylinder(0.07f, 0.045f, 0.025f, 10);
+    // Finger loop handle
+    glPushMatrix();
+    glTranslatef(-0.065f, 0.02f, 0.0f);
+    drawCylinder(0.022f, 0.022f, 0.015f, 8);
+    glPopMatrix();
+
+    // Melted Wax Pool on table
+    glColor4f(0.88f, 0.85f, 0.74f, 0.95f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.005f, 0.0f);
+    drawCylinder(0.12f, 0.10f, 0.01f, 8);
+    // Wax drips running over edge
+    glTranslatef(0.08f, -0.02f, 0.0f);
+    drawSphere(0.018f, 6, 6);
+    glTranslatef(0.02f, -0.03f, 0.0f);
+    drawSphere(0.012f, 5, 5);
+    glPopMatrix();
+
+    // White wax candle column with melted drips
+    glTranslatef(0.0f, 0.025f, 0.0f);
+    drawCylinder(0.024f, 0.021f, 0.14f, 8);
+    // Wax drip ridges along side of candle
+    glPushMatrix();
+    glTranslatef(0.016f, 0.05f, 0.005f); drawSphere(0.012f, 6, 6);
+    glTranslatef(-0.032f, 0.04f, -0.008f); drawSphere(0.010f, 6, 6);
+    glPopMatrix();
+
+    // Flickering candle flame
     glDisable(GL_LIGHTING);
-    glTranslatef(0.0f, 0.12f, 0.0f);
+    glTranslatef(0.0f, 0.14f, 0.0f);
     glColor4f(1.0f, 0.65f, 0.15f, 0.95f * intBulbFlicker);
-    drawSphere(0.025f, 6, 6);
-    glColor4f(1.0f, 0.92f, 0.45f, 1.0f);
-    drawSphere(0.012f, 6, 6);
+    drawSphere(0.026f, 8, 6);
+    glColor4f(1.0f, 0.94f, 0.48f, 1.0f);
+    drawSphere(0.013f, 6, 6);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // Fallen shattered bottle on floor
+    // Fallen shattered bottle with dark liquid spill
     applyMaterial(MAT_CAR_INTERIOR);
     bindTexture(TEX_NONE);
-    glColor4f(0.18f, 0.25f, 0.16f, 1.0f);
     glPushMatrix();
     glTranslatef(-4.2f, 0.80f, 2.1f);
+    // Dark liquid puddle stain on floorboards
+    glColor4f(0.12f, 0.08f, 0.08f, 0.85f);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.005f, 0.0f);
+    drawCylinder(0.24f, 0.20f, 0.008f, 8);
+    glPopMatrix();
+
+    // Green glass bottle body
+    glColor4f(0.16f, 0.26f, 0.15f, 1.0f);
     glRotatef(82.0f, 0.0f, 0.0f, 1.0f);
     glRotatef(25.0f, 0.0f, 1.0f, 0.0f);
-    drawCylinder(0.042f, 0.042f, 0.20f, 8);
-    // Broken neck
-    glTranslatef(0.0f, 0.20f, 0.0f);
-    drawCylinder(0.042f, 0.016f, 0.06f, 8);
+    drawCylinder(0.042f, 0.042f, 0.18f, 8);
+    // Shattered jagged neck
+    glTranslatef(0.0f, 0.18f, 0.0f);
+    drawCylinder(0.042f, 0.018f, 0.05f, 8);
+    // Glass shards
+    glTranslatef(0.04f, 0.04f, 0.0f);
+    drawBox(0.03f, 0.015f, 0.025f);
     glPopMatrix();
 
-    // 9. Broken & Overturned Chairs
-    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_WALL);
-    glColor4f(0.28f, 0.24f, 0.20f, 1.0f);
-    // Chair 1 (Completely overturned on floor with shattered legs)
+    // 9. REALISTIC VICTORIAN SPINDLE CHAIRS (Contoured Saddle Seat, Turned Legs, H-Stretcher & Spindles)
+    // Chair 1: Completely overturned on floor
     glPushMatrix();
-    glTranslatef(-3.6f, 0.88f, 1.65f);
-    glRotatef(88.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(-35.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.48f, 0.04f, 0.48f); // Seat
-    // Broken legs sticking out
-    glTranslatef(-0.19f, -0.18f, -0.19f); drawBox(0.045f, 0.36f, 0.045f);
-    glTranslatef( 0.38f,  0.0f,   0.0f);  drawBox(0.045f, 0.20f, 0.045f);
-    // Backrest posts
-    glTranslatef(-0.19f, 0.45f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
-    glTranslatef( 0.38f, 0.0f,   0.0f);  drawBox(0.045f, 0.40f, 0.045f);
+    glTranslatef(-3.6f, 0.76f, 1.65f);
+    drawRealisticDiningChair(true);
     glPopMatrix();
 
-    // Chair 2 (Tilted askew on opposite side)
+    // Chair 2: Tilted askew on opposite side
     glPushMatrix();
     glTranslatef(-5.95f, 0.74f, 1.85f);
     glRotatef(82.0f, 0.0f, 1.0f, 0.0f);
-    glRotatef(14.0f, 0.0f, 0.0f, 1.0f);
-    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.04f, 0.48f);
-    glPushMatrix();
-    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef( 0.38f,  0.0f,    0.0f);  drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef( 0.0f,   0.0f,    0.38f); drawBox(0.045f, 0.45f, 0.045f);
-    glTranslatef(-0.38f,  0.10f,   0.0f);  drawBox(0.045f, 0.25f, 0.045f);
-    glPopMatrix();
-    glTranslatef(-0.19f, 0.26f, -0.19f); drawBox(0.045f, 0.52f, 0.045f);
-    glTranslatef( 0.38f, 0.0f,   0.0f);   drawBox(0.045f, 0.52f, 0.045f);
-    glTranslatef(-0.19f, 0.24f,  0.0f);   drawBox(0.46f, 0.06f, 0.04f);
+    drawRealisticDiningChair(false, 11.5f);
     glPopMatrix();
 
-    // 10. Decaying & Leaning Antique Bookshelf with Fallen Dusty Books
+    // 10. REALISTIC ANTIQUE BOOKSHELF WITH DETAILED MULTI-COLORED BOOKS, SCROLLS & SKULL
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-8.20f, 0.74f, -2.20f);
+    glRotatef(7.5f, 0.0f, 0.0f, 1.0f); // Leaning precariously against wall
+    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+
+    // Bookcase Outer Carcase & Architectural Moldings
+    glPushMatrix();
+    glTranslatef(0.0f, 1.20f, 0.0f);
+    // Backing panel with beadboard groove texture
+    drawBox(1.42f, 2.40f, 0.035f);
+    // Fluted side pilasters
+    glTranslatef(-0.69f, 0.0f, 0.20f); drawBox(0.06f, 2.40f, 0.40f);
+    glTranslatef( 1.38f, 0.0f, 0.0f);  drawBox(0.06f, 2.40f, 0.40f);
+    // Molded base plinth
+    glTranslatef(-0.69f, -1.16f, 0.02f); drawBox(1.50f, 0.12f, 0.44f);
+    // Top Crown Molding Cornice
+    glTranslatef(0.0f, 2.34f, 0.0f); drawBox(1.54f, 0.09f, 0.46f);
+    glTranslatef(0.0f, -0.05f, 0.0f); drawBox(1.46f, 0.04f, 0.42f);
+    // Fixed Solid Shelves
+    glTranslatef(0.0f, -0.55f, -0.02f); drawBox(1.34f, 0.045f, 0.38f); // Shelf 4 (Upper)
+    glTranslatef(0.0f, -0.55f,  0.00f); drawBox(1.34f, 0.045f, 0.38f); // Shelf 3 (Middle upper)
+    glTranslatef(0.0f, -0.55f,  0.00f); // Shelf 2 (Middle lower - tilted/broken)
+    glPushMatrix();
+    glRotatef(9.5f, 0.0f, 0.0f, 1.0f);
+    drawBox(1.30f, 0.045f, 0.38f);
+    glPopMatrix();
+    glTranslatef(0.0f, -0.55f, 0.00f); drawBox(1.34f, 0.045f, 0.38f); // Shelf 1 (Bottom)
+    glPopMatrix();
+
+    // RICH MULTI-COLORED ANTIQUE BOOKS & OCCULT PROPS ON SHELVES
+    // Shelf 1 (Bottom shelf): Heavy tomes, leather folios
+    glPushMatrix();
+    glTranslatef(-0.48f, 0.24f, 0.18f);
+    drawAntiqueBook(0.24f, 0.32f, 0.08f, 0.38f, 0.12f, 0.10f); // Dark red folio
+    glTranslatef(0.10f, 0.0f, 0.0f);
+    drawAntiqueBook(0.22f, 0.30f, 0.06f, 0.14f, 0.22f, 0.32f); // Deep navy book
+    glTranslatef(0.08f, 0.0f, 0.0f);
+    drawAntiqueBook(0.23f, 0.28f, 0.07f, 0.15f, 0.25f, 0.16f); // Dark forest green
+    glTranslatef(0.12f, 0.0f, 0.0f);
+    drawAntiqueBook(0.20f, 0.26f, 0.06f, 0.32f, 0.22f, 0.12f, 16.0f); // Leaning leather book
+    // Stack of horizontal books
+    glTranslatef(0.28f, 0.0f, 0.0f);
+    glPushMatrix();
+    glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
+    drawAntiqueBook(0.22f, 0.06f, 0.26f, 0.26f, 0.14f, 0.10f);
+    glTranslatef(0.07f, 0.0f, 0.0f);
+    drawAntiqueBook(0.20f, 0.05f, 0.24f, 0.18f, 0.22f, 0.28f);
+    glPopMatrix();
+    glPopMatrix();
+
+    // Shelf 2 (Middle broken shelf): ANCIENT HUMAN SKULL & Aged Parchment Scroll
+    glPushMatrix();
+    glTranslatef(-0.25f, 0.88f, 0.20f);
+    glRotatef(20.0f, 0.0f, 1.0f, 0.0f);
+    drawAntiqueSkull(); // Creepy Weathered Skull!
+    glPopMatrix();
+
+    // Rolled Parchment Scroll tied with string
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.85f, 0.80f, 0.62f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.28f, 0.84f, 0.20f);
+    glRotatef(35.0f, 0.0f, 1.0f, 0.0f);
+    drawCylinder(0.035f, 0.035f, 0.26f, 8);
+    // Dark ribbon tie
+    glColor4f(0.35f, 0.10f, 0.10f, 1.0f);
+    glTranslatef(0.0f, 0.12f, 0.0f);
+    drawCylinder(0.037f, 0.037f, 0.02f, 8);
+    glPopMatrix();
+
+    // Shelf 3: Row of occult grimoires & vintage brass magnifying glass
+    glPushMatrix();
+    glTranslatef(-0.45f, 1.34f, 0.18f);
+    drawAntiqueBook(0.20f, 0.27f, 0.06f, 0.32f, 0.10f, 0.18f);
+    glTranslatef(0.08f, 0.0f, 0.0f);
+    drawAntiqueBook(0.21f, 0.25f, 0.05f, 0.18f, 0.16f, 0.28f);
+    glTranslatef(0.07f, 0.0f, 0.0f);
+    drawAntiqueBook(0.22f, 0.28f, 0.08f, 0.22f, 0.18f, 0.12f);
+    // Antique brass magnifying glass
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.62f, 0.50f, 0.22f, 1.0f);
+    glTranslatef(0.28f, 0.04f, 0.0f);
+    glRotatef(75.0f, 1.0f, 0.0f, 0.0f);
+    drawCylinder(0.055f, 0.055f, 0.015f, 10); // Brass rim
+    glTranslatef(0.0f, -0.08f, 0.0f);
+    drawCylinder(0.012f, 0.010f, 0.10f, 6);   // Turned handle
+    glPopMatrix();
+
+    // Books fallen on floor in front of bookcase
+    glPushMatrix();
+    glTranslatef(0.35f, 0.06f, 0.55f);
+    drawAntiqueBook(0.24f, 0.06f, 0.18f, 0.35f, 0.15f, 0.10f, 38.0f);
+    glTranslatef(0.12f, 0.04f, -0.06f);
+    drawAntiqueBook(0.22f, 0.05f, 0.16f, 0.12f, 0.20f, 0.26f, -18.0f);
+    glPopMatrix();
+
+    glPopMatrix(); // End Bookcase
+
+    // 11. REALISTIC ANTIQUE GRANDFATHER CLOCK (Swan-neck Pediment, Brass Weights, Dial & Pendulum)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
     glPushMatrix();
-    glTranslatef(-8.20f, 0.74f, -2.20f);
-    glRotatef(8.0f, 0.0f, 0.0f, 1.0f); // Leaning precariously against the wall
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-
-    // Outer frame (1.4m wide, 2.4m tall, 0.45m deep)
-    glPushMatrix();
-    glTranslatef(0.0f, 1.20f, 0.0f);
-    // Backing panel
-    drawBox(1.40f, 2.40f, 0.04f);
-    // Side panels
-    glTranslatef(-0.68f, 0.0f, 0.20f); drawBox(0.05f, 2.40f, 0.40f);
-    glTranslatef( 1.36f, 0.0f, 0.0f);  drawBox(0.05f, 2.40f, 0.40f);
-    // Top & bottom
-    glTranslatef(-0.68f, 1.18f, 0.0f); drawBox(1.40f, 0.06f, 0.40f);
-    glTranslatef( 0.0f, -2.36f, 0.0f); drawBox(1.40f, 0.06f, 0.40f);
-    // Shelves (one broken/tilted)
-    glTranslatef( 0.0f, 0.65f, 0.0f); drawBox(1.32f, 0.04f, 0.38f);
-    glTranslatef( 0.0f, 0.65f, 0.0f); glRotatef(12.0f, 0.0f, 0.0f, 1.0f); drawBox(1.25f, 0.04f, 0.38f);
-    glPopMatrix();
-
-    // Scattered Antique Books on shelves & fallen on floor
-    applyMaterial(MAT_STONE);
-    bindTexture(TEX_NONE);
-    // Red leather book
-    glColor4f(0.48f, 0.18f, 0.14f, 1.0f);
-    glPushMatrix();
-    glTranslatef(-0.35f, 1.95f, 0.18f);
-    glRotatef(18.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.08f, 0.26f, 0.20f);
-    glPopMatrix();
-    // Blue leather book
-    glColor4f(0.18f, 0.24f, 0.38f, 1.0f);
-    glPushMatrix();
-    glTranslatef(0.20f, 1.30f, 0.18f);
-    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.09f, 0.24f, 0.20f);
-    glPopMatrix();
-    // Fallen books on floor
-    glColor4f(0.35f, 0.28f, 0.18f, 1.0f);
-    glPushMatrix();
-    glTranslatef(0.45f, 0.06f, 0.55f);
-    glRotatef(42.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.24f, 0.06f, 0.18f);
-    glTranslatef(0.10f, 0.05f, -0.05f);
-    glRotatef(-20.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.22f, 0.05f, 0.16f);
-    glPopMatrix();
-
-    glPopMatrix();
-
-    // 11. Old Broken Grandfather Clock in Corner (Cracked face & askew pendulum)
-    applyMaterial(MAT_DARK_WOOD);
-    bindTexture(TEX_WALL);
-    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
-    glPushMatrix();
     glTranslatef(-8.35f, 0.74f, 4.20f);
     glRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
-    glRotatef(4.5f, 0.0f, 0.0f, 1.0f); // Tilted
+    glRotatef(3.5f, 0.0f, 0.0f, 1.0f); // Tilted into haunted corner
 
-    // Clock Base & Waist Body
+    // Stepped Molded Plinth Base with bracket feet
     glPushMatrix();
-    glTranslatef(0.0f, 0.35f, 0.0f); drawBox(0.60f, 0.70f, 0.40f);
-    glTranslatef(0.0f, 0.85f, 0.0f); drawBox(0.48f, 1.00f, 0.34f);
-    // Clock Hood / Head
-    glTranslatef(0.0f, 0.72f, 0.0f); drawBox(0.58f, 0.48f, 0.38f);
-    // Top Arch Cap
-    glTranslatef(0.0f, 0.28f, 0.0f); drawBox(0.50f, 0.12f, 0.36f);
+    glTranslatef(0.0f, 0.16f, 0.0f);
+    drawBox(0.64f, 0.32f, 0.44f);
+    glTranslatef(0.0f, 0.18f, 0.0f);
+    drawBox(0.58f, 0.06f, 0.40f); // Base torus molding
     glPopMatrix();
 
-    // Clock Dial Face (Yellowed, cracked parchment)
+    // Waist Section (Trunk) with Recessed Door Frame
+    glPushMatrix();
+    glTranslatef(0.0f, 0.88f, 0.0f);
+    drawBox(0.48f, 1.02f, 0.34f);
+    // Door molding border
+    glColor4f(0.18f, 0.14f, 0.11f, 1.0f);
+    glTranslatef(0.0f, 0.0f, 0.165f);
+    drawBox(0.36f, 0.88f, 0.02f);
+    // Antique dark glass aperture in door
+    applyMaterial(MAT_CAR_INTERIOR);
+    bindTexture(TEX_NONE);
+    glColor4f(0.08f, 0.10f, 0.12f, 0.85f);
+    drawBox(0.26f, 0.76f, 0.015f);
+    glPopMatrix();
+
+    // Twin Polished Brass Driving Weights hanging on chains inside waist
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.68f, 0.54f, 0.24f, 1.0f);
+    glPushMatrix();
+    // Left driving weight
+    glTranslatef(-0.07f, 0.82f, 0.08f);
+    drawCylinder(0.030f, 0.030f, 0.24f, 8);
+    // Right driving weight
+    glTranslatef(0.14f, -0.06f, 0.0f);
+    drawCylinder(0.030f, 0.030f, 0.24f, 8);
+    glPopMatrix();
+
+    // Crooked Brass Pendulum in waist
+    glPushMatrix();
+    glTranslatef(0.02f, 1.08f, 0.07f);
+    glRotatef(16.0f, 0.0f, 0.0f, 1.0f); // Stuck askew
+    drawCylinder(0.012f, 0.012f, 0.62f, 6);
+    glTranslatef(0.0f, 0.62f, 0.0f);
+    drawSphere(0.078f, 10, 8); // Brass pendulum bob
+    glPopMatrix();
+
+    // Clock Bonnet / Hood (Head)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.76f, 0.0f);
+    drawBox(0.60f, 0.56f, 0.40f);
+    // Fluted side colonnettes flanking dial
+    glTranslatef(-0.26f, 0.0f, 0.18f);
+    drawCylinder(0.022f, 0.022f, 0.52f, 6);
+    glTranslatef( 0.52f, 0.0f, 0.0f);
+    drawCylinder(0.022f, 0.022f, 0.52f, 6);
+    glPopMatrix();
+
+    // Swan-Neck Broken Arch Pediment with 3 Turned Brass Finials
+    glPushMatrix();
+    glTranslatef(0.0f, 2.08f, 0.0f);
+    drawBox(0.56f, 0.08f, 0.38f);
+    glTranslatef(0.0f, 0.07f, 0.0f);
+    drawBox(0.44f, 0.06f, 0.36f); // Upper crest step
+    // 3 Turned Brass Urn Finials
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.68f, 0.54f, 0.24f, 1.0f);
+    // Center finial
+    glPushMatrix();
+    glTranslatef(0.0f, 0.06f, 0.12f);
+    drawSphere(0.038f, 8, 6);
+    glTranslatef(0.0f, 0.04f, 0.0f);
+    drawSphere(0.018f, 6, 6);
+    glPopMatrix();
+    // Left finial
+    glPushMatrix();
+    glTranslatef(-0.25f, 0.02f, 0.12f);
+    drawSphere(0.030f, 8, 6);
+    glPopMatrix();
+    // Right finial
+    glPushMatrix();
+    glTranslatef(0.25f, 0.02f, 0.12f);
+    drawSphere(0.030f, 8, 6);
+    glPopMatrix();
+    glPopMatrix();
+
+    // Clock Face Dial with Brass Bezel, Roman Numeral Ticks & Frozen Hands at Midnight
     applyMaterial(MAT_STONE);
     bindTexture(TEX_NONE);
-    glColor4f(0.78f, 0.74f, 0.60f, 1.0f);
+    glColor4f(0.86f, 0.82f, 0.68f, 1.0f); // Yellowed parchment face
     glPushMatrix();
-    glTranslatef(0.0f, 1.92f, 0.20f);
-    drawSphere(0.16f, 12, 8);
-    // Broken brass clock hands frozen at midnight!
-    applyMaterial(MAT_RUSTY_METAL);
-    glColor4f(0.22f, 0.18f, 0.10f, 1.0f);
-    glTranslatef(0.0f, 0.0f, 0.03f);
-    drawBox(0.015f, 0.14f, 0.01f);
-    glTranslatef(0.0f, 0.0f, 0.005f);
-    drawBox(0.10f, 0.015f, 0.01f);
-    glPopMatrix();
+    glTranslatef(0.0f, 1.76f, 0.205f);
+    drawSphere(0.165f, 14, 10);
 
-    // Crooked brass pendulum in waist aperture
+    // Circular Brass Bezel Rim
     applyMaterial(MAT_RUSTY_METAL);
-    glColor4f(0.55f, 0.45f, 0.22f, 1.0f);
+    glColor4f(0.65f, 0.52f, 0.22f, 1.0f);
     glPushMatrix();
-    glTranslatef(0.04f, 1.05f, 0.08f);
-    glRotatef(18.0f, 0.0f, 0.0f, 1.0f);
-    drawCylinder(0.012f, 0.012f, 0.65f, 6);
-    glTranslatef(0.0f, 0.65f, 0.0f);
-    drawSphere(0.075f, 8, 6);
+    drawCylinder(0.175f, 0.175f, 0.018f, 16);
     glPopMatrix();
 
+    // 12 Roman Numeral Hour Marks around perimeter
+    glDisable(GL_LIGHTING);
+    glColor3f(0.12f, 0.10f, 0.08f);
+    glLineWidth(1.8f);
+    glBegin(GL_LINES);
+    for (int h = 0; h < 12; ++h) {
+        float hAngle = (float)h * (2.0f * (float)M_PI / 12.0f);
+        float r1 = 0.115f;
+        float r2 = 0.145f;
+        glVertex3f(r1 * std::sin(hAngle), r1 * std::cos(hAngle), 0.025f);
+        glVertex3f(r2 * std::sin(hAngle), r2 * std::cos(hAngle), 0.025f);
+    }
+    // Broken Brass Clock Hands stopped at Midnight (12:00)!
+    glVertex3f(0.0f, 0.0f, 0.03f); glVertex3f(0.005f, 0.11f, 0.03f); // Minute hand
+    glVertex3f(0.0f, 0.0f, 0.03f); glVertex3f(0.015f, 0.075f, 0.03f); // Hour hand
+    glEnd();
+    glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // 12. FULLY COMPLETED WOODEN STAIRCASE (Ascending seamlessly from 1st Floor y=0.74f to 2nd Floor y=4.20f)
+    glPopMatrix(); // End Grandfather Clock
+
+    // 12. MASTER REALISTIC WOODEN STAIRCASE (Side Stringers, Bullnose Treads, Turned Balusters, Newel Posts & Under-Stair Panelling)
     int numSteps = 15;
     float stairStartX = -1.35f;
     float stairStartZ =  3.60f;
@@ -524,77 +1015,105 @@ void drawHouseInterior() {    // 1. Weathered, Rotten Floorboards with Missing P
     float stairStartY =  0.74f;
     float stairEndY   =  4.20f;
     float stepWidth   =  1.05f;
-    float stepDepth   =  0.38f;
-    float stepHeight  = (stairEndY - stairStartY) / (float)numSteps; // ~0.2307f per step
 
+    // A. Closed Stringer Carriage Beams (Supporting the steps with positive slope angle)
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.28f, 0.23f, 0.18f, 1.0f);
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
 
+    float totalRunZ   = stairStartZ - stairEndZ;                              // 5.00f (positive distance in Z)
+    float totalRiseY  = stairEndY - stairStartY;                              // 3.46f (positive rise in Y)
+    float stepDepth   = totalRunZ / (float)numSteps;                          // ~0.3333f per step
+    float stepHeight  = totalRiseY / (float)numSteps;                         // ~0.2307f per step
+    float stairAngle  = std::atan2(totalRiseY, totalRunZ) * 180.0f / (float)M_PI; // POSITIVE angle (+34.68 deg)
+    float stairHyp    = std::sqrt(totalRunZ * totalRunZ + totalRiseY * totalRiseY); // ~6.08f span
+    float midY        = (stairStartY + stairEndY) * 0.5f;
+    float midZ        = (stairStartZ + stairEndZ) * 0.5f;
+
+    // Outer open-side stringer beam (along x = stairStartX - stepWidth * 0.50f)
+    glPushMatrix();
+    glTranslatef(stairStartX - stepWidth * 0.50f, midY + stepHeight * 0.5f, midZ);
+    glRotatef(stairAngle, 1.0f, 0.0f, 0.0f);
+    drawBox(0.06f, 0.28f, stairHyp + 0.15f);
+    glPopMatrix();
+
+    // Inner wall-side stringer baseboard trim (along x = stairStartX + stepWidth * 0.50f)
+    glPushMatrix();
+    glTranslatef(stairStartX + stepWidth * 0.50f, midY + stepHeight * 0.5f, midZ);
+    glRotatef(stairAngle, 1.0f, 0.0f, 0.0f);
+    drawBox(0.04f, 0.22f, stairHyp + 0.15f);
+    glPopMatrix();
+
+    // Smooth under-stair soffit board (Underside ceiling cleanly enclosing stair bottom)
+    glPushMatrix();
+    glTranslatef(stairStartX, midY - 0.08f, midZ);
+    glRotatef(stairAngle, 1.0f, 0.0f, 0.0f);
+    drawBox(stepWidth, 0.035f, stairHyp + 0.10f);
+    glPopMatrix();
+
+    // B. Steps: Solid Step Blocks, Overhanging Bullnose Treads, and Vertically Aligned Spindles
     for (int s = 0; s < numSteps; ++s) {
         float t = (float)s / (float)(numSteps - 1);
         float sy = stairStartY + (float)s * stepHeight;
         float sz = stairStartZ + t * (stairEndZ - stairStartZ);
         float sx = stairStartX;
 
-        // Step Tread & Riser Box
+        // 1. Solid Step Body Block (Fills entire step volume with zero hollow gaps)
+        applyMaterial(MAT_DARK_WOOD);
+        bindTexture(TEX_WALL);
+        glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
         glPushMatrix();
         glTranslatef(sx, sy + stepHeight * 0.5f, sz);
-        drawBox(stepWidth, stepHeight, stepDepth, 0.8f, 0.4f);
-
-        // Bullnose step overhang trim
-        applyMaterial(MAT_DARK_WOOD);
-        glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
-        glTranslatef(0.0f, stepHeight * 0.45f, stepDepth * 0.48f);
-        drawBox(stepWidth + 0.04f, 0.035f, 0.06f);
+        drawBox(stepWidth, stepHeight, stepDepth, 1.0f, 0.5f);
         glPopMatrix();
 
-        // Vertical Carved Baluster Spindle on open side of step
+        // 2. Horizontal Tread Board with Bullnose Overhang Nosing
+        glColor4f(0.28f, 0.23f, 0.18f, 1.0f);
         glPushMatrix();
-        glTranslatef(sx - stepWidth * 0.45f, sy + stepHeight + 0.38f, sz);
-        applyMaterial(MAT_DARK_WOOD);
-        glColor4f(0.25f, 0.20f, 0.16f, 1.0f);
-        drawBox(0.04f, 0.76f, 0.04f);
+        glTranslatef(sx, sy + stepHeight + 0.015f, sz);
+        drawBox(stepWidth + 0.05f, 0.035f, stepDepth + 0.05f, 1.0f, 0.4f);
+        // Rounded Bullnose front overhang trim
+        glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
+        glTranslatef(0.0f, -0.01f, (stepDepth + 0.05f) * 0.5f);
+        drawBox(stepWidth + 0.06f, 0.02f, 0.03f);
+        glPopMatrix();
+
+        // 3. Single Upright Lathe-Turned Spindle resting firmly on the step tread
+        glPushMatrix();
+        glTranslatef(sx - stepWidth * 0.46f, sy + stepHeight + 0.035f, sz);
+        drawTurnedBalusterSpindle(0.78f, 0.035f);
         glPopMatrix();
     }
 
-    // Carved Newel Posts (Sturdy square posts with pyramid finials at bottom, mid-landing, and top)
-    // Bottom Newel Post
+    // C. Master Victorian Newel Posts at Bottom and Top Landings
+    // Bottom Starting Newel Post
     glPushMatrix();
-    glTranslatef(stairStartX - stepWidth * 0.45f, stairStartY + 0.55f, stairStartZ + stepDepth * 0.35f);
-    drawBox(0.10f, 1.10f, 0.10f);
-    glTranslatef(0.0f, 0.58f, 0.0f);
-    drawBox(0.13f, 0.06f, 0.13f); // Post cap
-    glTranslatef(0.0f, 0.06f, 0.0f);
-    drawSphere(0.055f, 8, 6);      // Finial ball
+    glTranslatef(stairStartX - stepWidth * 0.46f, stairStartY, stairStartZ + stepDepth * 0.35f);
+    drawMasterNewelPost(1.15f, 0.11f);
     glPopMatrix();
 
-    // Top 2nd Floor Newel Post
+    // Top Landing Newel Post
     glPushMatrix();
-    glTranslatef(stairStartX - stepWidth * 0.45f, stairEndY + 0.55f, stairEndZ - stepDepth * 0.35f);
-    drawBox(0.10f, 1.10f, 0.10f);
-    glTranslatef(0.0f, 0.58f, 0.0f);
-    drawBox(0.13f, 0.06f, 0.13f);
-    glTranslatef(0.0f, 0.06f, 0.0f);
-    drawSphere(0.055f, 8, 6);
+    glTranslatef(stairStartX - stepWidth * 0.46f, stairEndY, stairEndZ - stepDepth * 0.35f);
+    drawMasterNewelPost(1.15f, 0.11f);
     glPopMatrix();
 
-    // Continuous Carved Wooden Handrail running smoothly from bottom to top
+    // D. Continuous Molded Handrail running smoothly at positive stair angle
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
-    glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
     glPushMatrix();
-    float midX = stairStartX - stepWidth * 0.45f;
-    float midY = (stairStartY + stairEndY) * 0.5f + 0.85f;
-    float midZ = (stairStartZ + stairEndZ) * 0.5f;
-    float totalRunZ = std::abs(stairEndZ - stairStartZ);
-    float totalRiseY = (stairEndY - stairStartY);
-    float railAngle = -std::atan2(totalRiseY, totalRunZ) * 180.0f / (float)M_PI;
-    float railLen = std::sqrt(totalRunZ * totalRunZ + totalRiseY * totalRiseY) + 0.20f;
+    float railMidX = stairStartX - stepWidth * 0.46f;
+    float railMidY = midY + stepHeight + 0.035f + 0.78f;
+    float railMidZ = midZ;
 
-    glTranslatef(midX, midY, midZ);
-    glRotatef(railAngle, 1.0f, 0.0f, 0.0f);
-    drawBox(0.065f, 0.075f, railLen);
+    glTranslatef(railMidX, railMidY, railMidZ);
+    glRotatef(stairAngle, 1.0f, 0.0f, 0.0f);
+    // Main handrail body
+    drawBox(0.075f, 0.055f, stairHyp + 0.15f);
+    // Rounded top crown cap
+    glTranslatef(0.0f, 0.025f, 0.0f);
+    drawBox(0.055f, 0.020f, stairHyp + 0.15f);
     glPopMatrix();
 
     // 13. Creepy Vintage Portrait Painting on Left Wall (Hanging crookedly)
@@ -644,44 +1163,54 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawBox(1.30f, 0.08f, 2.10f, 0.8f, 0.8f);
     glPopMatrix();
 
-    // 2. Safety Balustrade / Banister Guardrail around the 2nd Floor Stairwell Opening
+    // 2. MASTER REALISTIC BALUSTRADE & GUARDRAIL AROUND 2ND FLOOR STAIRWELL OPENING
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
 
-    // Left Guardrail Handrail (along x = -1.95f, from z = 3.8f to z = -1.5f)
+    // Left Guardrail Handrail & Base Shoe Rail (along x = -1.95f, from z = 3.80f to z = -1.50f)
     glPushMatrix();
-    glTranslatef(-1.95f, 5.08f, 1.15f);
-    drawBox(0.065f, 0.075f, 5.30f);
+    // Base Shoe Rail on floor
+    glTranslatef(-1.95f, 4.29f, 1.15f);
+    drawBox(0.07f, 0.035f, 5.30f);
+    // Molded Handrail at top
+    glTranslatef(0.0f, 0.82f, 0.0f);
+    drawBox(0.08f, 0.045f, 5.30f);
+    glTranslatef(0.0f, -0.035f, 0.0f);
+    drawBox(0.06f, 0.035f, 5.30f); // Sub-rail
     glPopMatrix();
 
-    // Vertical Guardrail Balusters along left edge
-    for (float bz = 3.70f; bz >= -1.40f; bz -= 0.45f) {
+    // Turned Victorian Baluster Spindles along left guardrail edge
+    for (float bz = 3.65f; bz >= -1.35f; bz -= 0.32f) {
         glPushMatrix();
-        glTranslatef(-1.95f, 4.66f, bz);
-        drawBox(0.035f, 0.76f, 0.035f);
+        glTranslatef(-1.95f, 4.31f, bz);
+        drawTurnedBalusterSpindle(0.78f, 0.034f);
         glPopMatrix();
     }
 
-    // Corner Newel Post at front of stair opening (x = -1.95f, z = 3.80f)
+    // Corner Master Newel Post at front of stair opening (x = -1.95f, z = 3.80f)
     glPushMatrix();
-    glTranslatef(-1.95f, 4.78f, 3.80f);
-    drawBox(0.09f, 1.05f, 0.09f);
-    glTranslatef(0.0f, 0.55f, 0.0f);
-    drawBox(0.12f, 0.05f, 0.12f);
-    drawSphere(0.05f, 8, 6);
+    glTranslatef(-1.95f, 4.24f, 3.80f);
+    drawMasterNewelPost(1.22f, 0.125f);
     glPopMatrix();
 
-    // Back Guardrail Handrail (across z = -1.50f from x = -1.95f to x = -0.65f)
+    // Rear Guardrail Handrail & Base Shoe Rail (across z = -1.50f from x = -1.95f to x = -0.65f)
     glPushMatrix();
-    glTranslatef(-1.30f, 5.08f, -1.50f);
-    drawBox(1.30f, 0.075f, 0.065f);
+    // Base Shoe Rail
+    glTranslatef(-1.30f, 4.29f, -1.50f);
+    drawBox(1.30f, 0.035f, 0.07f);
+    // Molded Handrail
+    glTranslatef(0.0f, 0.82f, 0.0f);
+    drawBox(1.30f, 0.045f, 0.08f);
+    glTranslatef(0.0f, -0.035f, 0.0f);
+    drawBox(1.30f, 0.035f, 0.06f);
     glPopMatrix();
 
-    for (float bx = -1.80f; bx <= -0.80f; bx += 0.35f) {
+    // Turned Baluster Spindles along rear guardrail
+    for (float bx = -1.82f; bx <= -0.78f; bx += 0.26f) {
         glPushMatrix();
-        glTranslatef(bx, 4.66f, -1.50f);
-        drawBox(0.035f, 0.76f, 0.035f);
+        glTranslatef(bx, 4.31f, -1.50f);
+        drawTurnedBalusterSpindle(0.78f, 0.034f);
         glPopMatrix();
     }
 
@@ -713,7 +1242,7 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
         glPopMatrix();
     }
 
-    // 4. GOTHIC ANTIQUE FOUR-POSTER BED (Placed against Left Wall x = -6.8f, z = 1.8f)
+    // 4. REALISTIC GOTHIC ANTIQUE FOUR-POSTER BED (Turned Posts, Arch Tracery, Hanging Drapes & Rumpled Bedding)
     glPushMatrix();
     glTranslatef(-6.80f, 4.24f, 1.80f);
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
@@ -722,74 +1251,134 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     bindTexture(TEX_WALL);
     glColor4f(0.22f, 0.18f, 0.14f, 1.0f);
 
-    // Bed Frame base platform
+    // Bed Frame Base Platform with molded perimeter plinth
     glPushMatrix();
-    glTranslatef(0.0f, 0.35f, 0.0f);
-    drawBox(1.90f, 0.30f, 2.40f);
+    glTranslatef(0.0f, 0.28f, 0.0f);
+    drawBeveledBox(1.92f, 0.24f, 2.42f, 0.02f);
     glPopMatrix();
 
-    // 4 Tall Turned Mahogany Bedposts (2.3m tall) with Finial Balls
+    // 4 Majestic Lathe-Turned Mahogany Bedposts (2.35m tall) with Gothic Spire Finials
     float postBX[4] = { -0.92f,  0.92f, -0.92f,  0.92f };
     float postBZ[4] = { -1.18f, -1.18f,  1.18f,  1.18f };
     for (int p = 0; p < 4; ++p) {
         glPushMatrix();
-        glTranslatef(postBX[p], 1.15f, postBZ[p]);
-        drawBox(0.09f, 2.30f, 0.09f);
-        // Turned corbel rings
-        glTranslatef(0.0f, 1.18f, 0.0f);
-        drawSphere(0.065f, 8, 6);
+        glTranslatef(postBX[p], 0.0f, postBZ[p]);
+
+        // Base square plinth
+        glTranslatef(0.0f, 0.35f, 0.0f);
+        drawBox(0.11f, 0.70f, 0.11f);
+        // Turned ring transition
+        glTranslatef(0.0f, 0.35f + 0.03f, 0.0f);
+        drawSphere(0.065f, 10, 8);
+        // Fluted column lower shaft
+        glTranslatef(0.0f, 0.40f, 0.0f);
+        glPushMatrix();
+        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+        glTranslatef(0.0f, 0.0f, -0.40f);
+        drawCylinder(0.048f, 0.048f, 0.80f, 10);
+        glPopMatrix();
+        // Upper turned baluster bulb
+        glTranslatef(0.0f, 0.40f + 0.04f, 0.0f);
+        drawSphere(0.062f, 10, 8);
+        // Upper column to canopy
+        glTranslatef(0.0f, 0.24f, 0.0f);
+        drawBox(0.085f, 0.48f, 0.085f);
+        // Pointed Gothic Acorn/Spire Finial atop canopy
+        glTranslatef(0.0f, 0.28f, 0.0f);
+        drawSphere(0.052f, 10, 8);
+        glTranslatef(0.0f, 0.06f, 0.0f);
+        drawSphere(0.024f, 8, 6);
         glPopMatrix();
     }
 
-    // Top Wooden Canopy Rails connecting the 4 bedposts
+    // Heavy Molded Wooden Canopy Tester Rails connecting the 4 bedposts
     glPushMatrix();
     glTranslatef(0.0f, 2.30f, 0.0f);
-    glPushMatrix(); glTranslatef( 0.0f, 0.0f, -1.18f); drawBox(1.90f, 0.07f, 0.07f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.0f, 0.0f,  1.18f); drawBox(1.90f, 0.07f, 0.07f); glPopMatrix();
-    glPushMatrix(); glTranslatef(-0.92f, 0.0f,   0.0f); drawBox(0.07f, 0.07f, 2.40f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.92f, 0.0f,   0.0f); drawBox(0.07f, 0.07f, 2.40f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 0.0f, -1.18f); drawBox(1.94f, 0.08f, 0.08f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 0.0f,  1.18f); drawBox(1.94f, 0.08f, 0.08f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-0.92f, 0.0f,   0.0f); drawBox(0.08f, 0.08f, 2.44f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.92f, 0.0f,   0.0f); drawBox(0.08f, 0.08f, 2.44f); glPopMatrix();
     glPopMatrix();
 
-    // Carved Gothic Headboard
-    glPushMatrix();
-    glTranslatef(0.0f, 0.90f, -1.16f);
-    drawBox(1.80f, 0.85f, 0.06f);
-    // Pointed arch crest on headboard
-    glTranslatef(0.0f, 0.48f, 0.0f);
-    drawBox(0.90f, 0.22f, 0.06f);
-    glPopMatrix();
-
-    // Footboard
-    glPushMatrix();
-    glTranslatef(0.0f, 0.65f, 1.16f);
-    drawBox(1.80f, 0.45f, 0.06f);
-    glPopMatrix();
-
-    // Velvet Burgundy Quilt & Torn Antique Mattress
+    // Tattered Gothic Velvet Canopy Drapes hanging from top corners
     applyMaterial(MAT_WEATHERED_WALL);
     bindTexture(TEX_NONE);
-    glColor4f(0.42f, 0.12f, 0.15f, 1.0f); // Dark gothic crimson velvet
+    glColor4f(0.24f, 0.08f, 0.10f, 0.92f); // Deep tattered burgundy velvet
+    // Left rear corner drapes
     glPushMatrix();
-    glTranslatef(0.0f, 0.55f, 0.10f);
-    drawBox(1.72f, 0.20f, 2.15f);
+    glTranslatef(-0.90f, 1.70f, -1.16f);
+    drawBox(0.14f, 1.15f, 0.14f);
+    glTranslatef(0.0f, -0.65f, 0.0f);
+    drawBox(0.12f, 0.25f, 0.12f); // Frayed tail
+    glPopMatrix();
+    // Right rear corner drapes
+    glPushMatrix();
+    glTranslatef( 0.90f, 1.70f, -1.16f);
+    drawBox(0.14f, 1.15f, 0.14f);
+    glPopMatrix();
+    // Front corner drapes
+    glPushMatrix();
+    glTranslatef(-0.90f, 1.75f, 1.16f);
+    drawBox(0.12f, 1.05f, 0.12f);
     glPopMatrix();
 
-    // Dusty Antique Pillows
-    glColor4f(0.68f, 0.65f, 0.58f, 1.0f);
+    // Carved Pointed Gothic Arch Tracery Headboard
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.20f, 0.16f, 0.12f, 1.0f);
     glPushMatrix();
-    glTranslatef(-0.45f, 0.70f, -0.80f);
-    glScalef(0.65f, 0.18f, 0.45f);
-    drawSphere(0.5f, 10, 8);
-    glPopMatrix();
-    glPushMatrix();
-    glTranslatef( 0.45f, 0.70f, -0.80f);
-    glScalef(0.65f, 0.18f, 0.45f);
-    drawSphere(0.5f, 10, 8);
+    glTranslatef(0.0f, 0.92f, -1.16f);
+    drawBox(1.82f, 0.90f, 0.06f);
+    // Pointed Arch Tracery crest
+    glTranslatef(0.0f, 0.52f, 0.0f);
+    drawBox(0.96f, 0.26f, 0.06f);
+    glTranslatef(0.0f, 0.16f, 0.0f);
+    drawBox(0.42f, 0.14f, 0.06f); // Arch apex
     glPopMatrix();
 
-    glPopMatrix(); // End Bed
+    // Carved Low Footboard
+    glPushMatrix();
+    glTranslatef(0.0f, 0.62f, 1.16f);
+    drawBox(1.82f, 0.44f, 0.06f);
+    glTranslatef(0.0f, 0.24f, 0.0f);
+    drawBox(0.60f, 0.10f, 0.06f);
+    glPopMatrix();
 
-    // 5. ALCHEMIST / WITCHCRAFT STUDY DESK & OCCULT GRIMOIRE (x = -7.2f, z = -2.4f)
+    // Velvet Burgundy Quilt, Wrinkled Duvet & Rumpled Bedding
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.38f, 0.11f, 0.14f, 1.0f); // Gothic crimson velvet
+    glPushMatrix();
+    glTranslatef(0.0f, 0.52f, 0.10f);
+    drawBeveledBox(1.74f, 0.22f, 2.18f, 0.03f);
+    // Rumpled Duvet Fold at top
+    glTranslatef(0.0f, 0.12f, -0.40f);
+    drawBeveledBox(1.70f, 0.08f, 0.50f, 0.02f);
+    // Turned-down pale bedsheet lip
+    glColor4f(0.72f, 0.70f, 0.64f, 1.0f);
+    glTranslatef(0.0f, 0.02f, -0.28f);
+    drawBox(1.68f, 0.04f, 0.18f);
+    glPopMatrix();
+
+    // Dusty Antique Pillows with Piped Seam Borders
+    glColor4f(0.74f, 0.72f, 0.65f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.46f, 0.68f, -0.78f);
+    glRotatef(8.0f, 1.0f, 0.0f, 0.0f);
+    glScalef(0.68f, 0.18f, 0.44f);
+    drawSphere(0.5f, 12, 10);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef( 0.46f, 0.68f, -0.78f);
+    glRotatef(8.0f, 1.0f, 0.0f, 0.0f);
+    glScalef(0.68f, 0.18f, 0.44f);
+    drawSphere(0.5f, 12, 10);
+    glPopMatrix();
+
+    glPopMatrix(); // End Four-Poster Bed
+
+    // 5. REALISTIC ALCHEMIST STUDY DESK, CARVED GOTHIC CHAIR & OCCULT ARTIFACTS
     glPushMatrix();
     glTranslatef(-7.20f, 4.24f, -2.40f);
     glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
@@ -798,95 +1387,182 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     bindTexture(TEX_WALL);
     glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
 
-    // Desk Top & Drawers
+    // Desktop Solid Slab with Beveled Rim
     glPushMatrix();
     glTranslatef(0.0f, 0.75f, 0.0f);
-    drawBox(1.60f, 0.08f, 0.85f);
-    // Drawers box
+    drawBeveledBox(1.64f, 0.07f, 0.88f, 0.015f);
+
+    // 3-Drawer Frieze Box underneath desktop
     glTranslatef(0.0f, -0.12f, 0.0f);
-    drawBox(1.50f, 0.16f, 0.80f);
-    // 4 Turned Desk Legs
-    glTranslatef(-0.68f, -0.32f, -0.34f); drawBox(0.08f, 0.64f, 0.08f);
-    glTranslatef( 1.36f,  0.00f,  0.00f); drawBox(0.08f, 0.64f, 0.08f);
-    glTranslatef( 0.00f,  0.00f,  0.68f); drawBox(0.08f, 0.64f, 0.08f);
-    glTranslatef(-1.36f,  0.00f,  0.00f); drawBox(0.08f, 0.64f, 0.08f);
+    drawBox(1.52f, 0.16f, 0.82f);
+    // Antique Brass Drop Handles on the 3 drawers
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.65f, 0.52f, 0.22f, 1.0f);
+    float handleXs[3] = { -0.50f, 0.0f, 0.50f };
+    for (int h = 0; h < 3; ++h) {
+        glPushMatrix();
+        glTranslatef(handleXs[h], 0.0f, 0.42f);
+        drawCylinder(0.018f, 0.018f, 0.015f, 8); // Knob mount
+        glTranslatef(0.0f, -0.02f, 0.005f);
+        drawBox(0.05f, 0.035f, 0.01f);            // Bail drop handle
+        glPopMatrix();
+    }
     glPopMatrix();
 
-    // Wooden High-Back Desk Chair
+    // 4 Turned Desk Legs with Cross Stretchers
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+    float legDX[4] = { -0.70f,  0.70f, -0.70f,  0.70f };
+    float legDZ[4] = { -0.36f, -0.36f,  0.36f,  0.36f };
+    for (int l = 0; l < 4; ++l) {
+        glPushMatrix();
+        glTranslatef(legDX[l], 0.0f, legDZ[l]);
+        drawTurnedFurnitureLeg(0.66f, 0.065f);
+        glPopMatrix();
+    }
+    // Side and Back Stretchers connecting the desk legs
     glPushMatrix();
-    glTranslatef(0.0f, 0.0f, 0.65f);
-    glRotatef(15.0f, 0.0f, 1.0f, 0.0f);
-    // Chair Seat
-    glTranslatef(0.0f, 0.45f, 0.0f); drawBox(0.48f, 0.05f, 0.48f);
-    // Legs
-    glTranslatef(-0.19f, -0.225f, -0.19f); drawBox(0.05f, 0.45f, 0.05f);
-    glTranslatef( 0.38f,  0.000f,  0.00f); drawBox(0.05f, 0.45f, 0.05f);
-    glTranslatef( 0.00f,  0.000f,  0.38f); drawBox(0.05f, 0.45f, 0.05f);
-    glTranslatef(-0.38f,  0.000f,  0.00f); drawBox(0.05f, 0.45f, 0.05f);
-    // Carved Backrest
-    glTranslatef( 0.19f,  0.500f, -0.19f); drawBox(0.44f, 0.55f, 0.04f);
+    glTranslatef( 0.0f, 0.18f, -0.36f); drawBox(1.40f, 0.03f, 0.03f); glPopMatrix();
+    glPushMatrix();
+    glTranslatef(-0.70f, 0.18f,  0.0f); drawBox(0.03f, 0.03f, 0.72f); glPopMatrix();
+    glPushMatrix();
+    glTranslatef( 0.70f, 0.18f,  0.0f); drawBox(0.03f, 0.03f, 0.72f); glPopMatrix();
+
+    // Raised Desktop Letter Gallery / Pigeonhole Cubbies along back of desk
+    glPushMatrix();
+    glTranslatef(0.0f, 0.94f, -0.30f);
+    drawBox(1.58f, 0.32f, 0.24f);
+    // Cubby dividers
+    glColor4f(0.18f, 0.14f, 0.11f, 1.0f);
+    glTranslatef(0.0f, 0.0f, 0.08f);
+    drawBox(1.52f, 0.02f, 0.16f); // Horizontal shelf in gallery
     glPopMatrix();
 
-    // OPEN ANCIENT SPELLBOOK / GRIMOIRE on Desk with visible magical rune pages!
+    // Carved Gothic High-Back Armchair at Desk
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.68f);
+    glRotatef(12.0f, 0.0f, 1.0f, 0.0f);
+    // Tufted Padded Seat Cushion
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.32f, 0.12f, 0.14f, 1.0f); // Aged velvet/leather
+    glPushMatrix();
+    glTranslatef(0.0f, 0.46f, 0.0f);
+    drawBeveledBox(0.50f, 0.065f, 0.50f, 0.02f);
+    glPopMatrix();
+    // 4 Turned Chair Legs
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.19f, 0.15f, 1.0f);
+    glPushMatrix(); glTranslatef(-0.21f, 0.0f, -0.21f); drawTurnedFurnitureLeg(0.44f, 0.044f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.21f, 0.0f, -0.21f); drawTurnedFurnitureLeg(0.44f, 0.044f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-0.21f, 0.0f,  0.21f); drawTurnedFurnitureLeg(0.44f, 0.044f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.21f, 0.0f,  0.21f); drawTurnedFurnitureLeg(0.44f, 0.044f); glPopMatrix();
+    // Carved Gothic Arched Backrest with spires
+    glPushMatrix();
+    glTranslatef(0.0f, 0.78f, -0.22f);
+    drawBox(0.46f, 0.62f, 0.045f);
+    glTranslatef(0.0f, 0.35f, 0.0f);
+    drawBox(0.30f, 0.16f, 0.045f); // Pointed arch peak
+    glPopMatrix();
+    // Scrolled Curved Armrests
+    glPushMatrix();
+    glTranslatef(-0.23f, 0.62f, 0.0f); drawBox(0.045f, 0.035f, 0.44f);
+    glTranslatef( 0.46f, 0.00f, 0.0f); drawBox(0.045f, 0.035f, 0.44f);
+    glPopMatrix();
+    glPopMatrix(); // End Desk Chair
+
+    // OPEN ANCIENT SPELLBOOK / GRIMOIRE with Gilded Brass Corners & Glowing Runes
     applyMaterial(MAT_STONE);
     bindTexture(TEX_NONE);
-    // Leather book cover
-    glColor4f(0.38f, 0.15f, 0.10f, 1.0f);
+    // Heavy leather book cover
+    glColor4f(0.36f, 0.14f, 0.10f, 1.0f);
     glPushMatrix();
-    glTranslatef(-0.25f, 0.81f, 0.05f);
-    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
-    drawBox(0.46f, 0.03f, 0.34f);
+    glTranslatef(-0.25f, 0.80f, 0.05f);
+    glRotatef(-14.0f, 0.0f, 1.0f, 0.0f);
+    drawBox(0.48f, 0.035f, 0.36f);
 
-    // Open Parchment Pages (Left & Right halves)
-    glColor4f(0.85f, 0.80f, 0.65f, 1.0f);
+    // Open Parchment Pages Spread (Curved page arch)
+    glColor4f(0.86f, 0.81f, 0.66f, 1.0f);
     glPushMatrix();
-    glTranslatef(-0.10f, 0.025f, 0.0f);
-    glRotatef( 6.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.20f, 0.02f, 0.30f);
-    glPopMatrix();
-    glPushMatrix();
-    glTranslatef( 0.10f, 0.025f, 0.0f);
-    glRotatef(-6.0f, 0.0f, 0.0f, 1.0f);
-    drawBox(0.20f, 0.02f, 0.30f);
+    glTranslatef(-0.11f, 0.026f, 0.0f);
+    glRotatef(5.5f, 0.0f, 0.0f, 1.0f);
+    drawBeveledBox(0.22f, 0.024f, 0.32f, 0.008f);
     glPopMatrix();
 
-    // Glowing Arcane Glyphs & Runes on open pages
+    glPushMatrix();
+    glTranslatef( 0.11f, 0.026f, 0.0f);
+    glRotatef(-5.5f, 0.0f, 0.0f, 1.0f);
+    drawBeveledBox(0.22f, 0.024f, 0.32f, 0.008f);
+    glPopMatrix();
+
+    // Glowing Animated Arcane Glyphs & Pentagram on open pages
     glDisable(GL_LIGHTING);
     float runeGlow = 0.70f + 0.30f * std::sin(g_time * 4.0f);
-    glColor4f(0.40f, 0.90f, 1.0f, runeGlow);
+    glColor4f(0.35f, 0.88f, 1.0f, runeGlow);
     glBegin(GL_LINES);
-    glVertex3f(-0.16f, 0.045f, -0.08f); glVertex3f(-0.04f, 0.045f, -0.08f);
-    glVertex3f(-0.16f, 0.045f, -0.02f); glVertex3f(-0.04f, 0.045f, -0.02f);
-    glVertex3f(-0.16f, 0.045f,  0.04f); glVertex3f(-0.04f, 0.045f,  0.04f);
-    glVertex3f( 0.04f, 0.045f, -0.08f); glVertex3f( 0.16f, 0.045f, -0.08f);
-    glVertex3f( 0.04f, 0.045f, -0.02f); glVertex3f( 0.16f, 0.045f, -0.02f);
-    glVertex3f( 0.04f, 0.045f,  0.04f); glVertex3f( 0.16f, 0.045f,  0.04f);
+    // Page runes left
+    glVertex3f(-0.18f, 0.045f, -0.10f); glVertex3f(-0.04f, 0.045f, -0.10f);
+    glVertex3f(-0.18f, 0.045f, -0.04f); glVertex3f(-0.04f, 0.045f, -0.04f);
+    glVertex3f(-0.18f, 0.045f,  0.02f); glVertex3f(-0.04f, 0.045f,  0.02f);
+    glVertex3f(-0.18f, 0.045f,  0.08f); glVertex3f(-0.04f, 0.045f,  0.08f);
+    // Page runes right & occult pentagram lines
+    glVertex3f( 0.04f, 0.045f, -0.10f); glVertex3f( 0.18f, 0.045f, -0.10f);
+    glVertex3f( 0.04f, 0.045f, -0.04f); glVertex3f( 0.18f, 0.045f, -0.04f);
+    glVertex3f( 0.11f, 0.045f,  0.08f); glVertex3f( 0.15f, 0.045f, -0.02f);
+    glVertex3f( 0.15f, 0.045f, -0.02f); glVertex3f( 0.07f, 0.045f,  0.04f);
+    glVertex3f( 0.07f, 0.045f,  0.04f); glVertex3f( 0.15f, 0.045f,  0.04f);
+    glVertex3f( 0.15f, 0.045f,  0.04f); glVertex3f( 0.07f, 0.045f, -0.02f);
+    glVertex3f( 0.07f, 0.045f, -0.02f); glVertex3f( 0.11f, 0.045f,  0.08f);
     glEnd();
     glEnable(GL_LIGHTING);
+    glPopMatrix(); // End Grimoire
+
+    // Inkpot with Curved Feather Quill
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor4f(0.18f, 0.16f, 0.14f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.52f, 0.79f, 0.24f);
+    drawCylinder(0.035f, 0.025f, 0.05f, 8); // Inkpot
+    // White feather quill sticking out at angle
+    glColor4f(0.92f, 0.90f, 0.85f, 1.0f);
+    glTranslatef(0.0f, 0.04f, 0.0f);
+    glRotatef(28.0f, 1.0f, 0.0f, 1.0f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.22f, 0.0f);
+    glEnd();
+    // Quill feather vane
+    glBegin(GL_TRIANGLES);
+    glVertex3f(0.0f, 0.08f, 0.0f);
+    glVertex3f(0.025f, 0.18f, 0.0f);
+    glVertex3f(0.0f, 0.22f, 0.0f);
+    glEnd();
     glPopMatrix();
 
-    // ORNATE 3-ARM BRASS CANDELABRA ON DESK WITH 3 BURNING CANDLES
+    // ORNATE 3-ARM BRASS CANDELABRA WITH WAX DRIPS & 3 FLICKERING CANDLES
     glPushMatrix();
     glTranslatef(0.42f, 0.79f, -0.10f);
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_NONE);
-    glColor4f(0.58f, 0.46f, 0.22f, 1.0f); // Antique brass
-
-    // Base & Center stem
+    glColor4f(0.62f, 0.50f, 0.22f, 1.0f); // Antique brass
+    // Molded pedestal base
     drawCylinder(0.08f, 0.04f, 0.04f, 8);
     glTranslatef(0.0f, 0.04f, 0.0f);
-    drawCylinder(0.02f, 0.015f, 0.22f, 6);
+    drawCylinder(0.02f, 0.015f, 0.22f, 6); // Center column
 
     // Left curved branch
     glPushMatrix();
     glTranslatef(-0.10f, 0.16f, 0.0f);
     drawBox(0.12f, 0.018f, 0.018f);
     drawCylinder(0.025f, 0.025f, 0.03f, 6);
-    // Candle wax
     glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
     drawCylinder(0.016f, 0.015f, 0.10f, 6);
-    // Flickering Flame
     glDisable(GL_LIGHTING);
     glTranslatef(0.0f, 0.10f, 0.0f);
     float cFlick1 = 0.85f + 0.15f * std::sin(g_time * 8.0f);
@@ -901,14 +1577,12 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     glPushMatrix();
     glTranslatef(0.10f, 0.16f, 0.0f);
     applyMaterial(MAT_RUSTY_METAL);
-    glColor4f(0.58f, 0.46f, 0.22f, 1.0f);
+    glColor4f(0.62f, 0.50f, 0.22f, 1.0f);
     drawBox(0.12f, 0.018f, 0.018f);
     drawCylinder(0.025f, 0.025f, 0.03f, 6);
-    // Candle wax
     glColor4f(0.92f, 0.90f, 0.80f, 1.0f);
     glTranslatef(0.0f, 0.03f, 0.0f);
     drawCylinder(0.016f, 0.015f, 0.10f, 6);
-    // Flickering Flame
     glDisable(GL_LIGHTING);
     glTranslatef(0.0f, 0.10f, 0.0f);
     float cFlick2 = 0.85f + 0.15f * std::cos(g_time * 9.5f);
@@ -933,10 +1607,9 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawSphere(0.012f * cFlick3, 6, 6);
     glEnable(GL_LIGHTING);
     glPopMatrix();
-
     glPopMatrix(); // End Candelabra
 
-    // Glowing Alchemical Potion Bottles & Crystal Scrying Ball
+    // Glowing Alchemical Potions & Crystal Scrying Orb on Brass Tripod
     glPushMatrix();
     glTranslatef(0.48f, 0.79f, 0.20f);
     // Emerald Potion Bottle
@@ -945,48 +1618,112 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     drawSphere(0.045f, 8, 8);
     glTranslatef(0.0f, 0.05f, 0.0f);
     drawCylinder(0.015f, 0.015f, 0.04f, 6);
-    // Mystical Scrying Orb
-    glTranslatef(-0.16f, -0.01f, 0.0f);
+    // Ruby Red Elixir Phial
+    glTranslatef(0.12f, -0.05f, -0.04f);
+    glColor4f(0.95f, 0.18f, 0.25f, 0.85f);
+    drawCylinder(0.020f, 0.020f, 0.08f, 6);
+    // Mystical Scrying Orb resting on brass tripod claw
+    glTranslatef(-0.28f, 0.02f, 0.04f);
+    applyMaterial(MAT_RUSTY_METAL);
+    glColor4f(0.55f, 0.42f, 0.20f, 1.0f);
+    drawCylinder(0.04f, 0.025f, 0.035f, 6); // Tripod claw base
+    glDisable(GL_LIGHTING);
+    glTranslatef(0.0f, 0.05f, 0.0f);
     float orbPulse = 0.80f + 0.20f * std::sin(g_time * 3.5f);
-    glColor4f(0.70f, 0.35f, 0.95f, 0.88f * orbPulse);
-    drawSphere(0.055f, 10, 8);
+    glColor4f(0.75f, 0.35f, 0.98f, 0.90f * orbPulse);
+    drawSphere(0.058f, 12, 10);
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
     glPopMatrix(); // End Study Desk
 
-    // 6. VINTAGE ROCKING ARMCHAIR BY UPPER DORMER WINDOW (x = -5.2f, z = 3.6f)
+    // 6. REALISTIC VINTAGE ROCKING ARMCHAIR (True Curved Rocker Runners, Bentwood Arms & Spindles)
     glPushMatrix();
     glTranslatef(-5.20f, 4.24f, 3.60f);
-    glRotatef(180.0f, 0.0f, 1.0f, 0.0f); // Facing toward window
+    glRotatef(180.0f, 0.0f, 1.0f, 0.0f); // Facing upper window
 
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
 
-    // Curved Rocker Runners on floor
+    // True Curved Rocker Blades on floorboards (segmented arc runners)
+    float runnerXs[2] = { -0.24f, 0.24f };
+    for (int r = 0; r < 2; ++r) {
+        glPushMatrix();
+        glTranslatef(runnerXs[r], 0.0f, 0.0f);
+        // Segmented smooth rocker curve
+        for (int seg = -5; seg <= 5; ++seg) {
+            float z0 = (float)seg * 0.085f;
+            float arcY = 0.025f + 0.0035f * (float)(seg * seg);
+            glPushMatrix();
+            glTranslatef(0.0f, arcY, z0);
+            drawBox(0.035f, 0.045f, 0.09f);
+            glPopMatrix();
+        }
+        glPopMatrix();
+    }
+
+    // Turned Legs angled into rocker runners with cross stretchers
+    glPushMatrix(); glTranslatef(-0.21f, 0.04f, -0.20f); drawTurnedFurnitureLeg(0.38f, 0.042f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.21f, 0.04f, -0.20f); drawTurnedFurnitureLeg(0.38f, 0.042f); glPopMatrix();
+    glPushMatrix(); glTranslatef(-0.21f, 0.04f,  0.20f); drawTurnedFurnitureLeg(0.38f, 0.042f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.21f, 0.04f,  0.20f); drawTurnedFurnitureLeg(0.38f, 0.042f); glPopMatrix();
+    // Stretchers
+    glPushMatrix(); glTranslatef( 0.0f, 0.14f, -0.20f); drawBox(0.42f, 0.025f, 0.025f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.0f, 0.14f,  0.20f); drawBox(0.42f, 0.025f, 0.025f); glPopMatrix();
+
+    // Contoured Chair Seat & Tufted Velvet Cushion
     glPushMatrix();
-    glTranslatef(-0.24f, 0.04f, 0.0f); drawBox(0.04f, 0.04f, 0.85f);
-    glTranslatef( 0.48f, 0.00f, 0.0f); drawBox(0.04f, 0.04f, 0.85f);
+    glTranslatef(0.0f, 0.42f, 0.0f);
+    drawBeveledBox(0.52f, 0.05f, 0.48f, 0.015f);
+    // Worn burgundy velvet seat cushion
+    applyMaterial(MAT_WEATHERED_WALL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.35f, 0.12f, 0.15f, 1.0f);
+    glTranslatef(0.0f, 0.04f, 0.0f);
+    drawBeveledBox(0.46f, 0.04f, 0.42f, 0.02f);
     glPopMatrix();
 
-    // Chair Seat & Legs
+    // Spindle Backrest with Curved Steam-Bent Crest Rail
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.24f, 0.20f, 0.16f, 1.0f);
     glPushMatrix();
-    glTranslatef(0.0f, 0.42f, 0.0f); drawBox(0.52f, 0.05f, 0.48f);
-    glTranslatef(-0.20f, -0.19f, -0.18f); drawBox(0.045f, 0.38f, 0.045f);
-    glTranslatef( 0.40f,  0.00f,  0.00f); drawBox(0.045f, 0.38f, 0.045f);
-    glTranslatef( 0.00f,  0.00f,  0.36f); drawBox(0.045f, 0.38f, 0.045f);
-    glTranslatef(-0.40f,  0.00f,  0.00f); drawBox(0.045f, 0.38f, 0.045f);
-    // Spindle Backrest
-    glTranslatef( 0.20f,  0.48f, -0.18f); drawBox(0.48f, 0.58f, 0.04f);
-    // Armrests
-    glTranslatef(-0.22f, -0.22f, 0.18f); drawBox(0.045f, 0.04f, 0.40f);
-    glTranslatef( 0.44f,  0.00f, 0.00f); drawBox(0.045f, 0.04f, 0.40f);
+    glTranslatef(0.0f, 0.45f, -0.19f);
+    // Two outer curved back stiles
+    glPushMatrix(); glTranslatef(-0.22f, 0.30f, 0.0f); drawBox(0.04f, 0.60f, 0.04f); glPopMatrix();
+    glPushMatrix(); glTranslatef( 0.22f, 0.30f, 0.0f); drawBox(0.04f, 0.60f, 0.04f); glPopMatrix();
+    // Top Arched Crest Rail
+    glTranslatef(0.0f, 0.60f, 0.0f);
+    drawBox(0.48f, 0.07f, 0.04f);
+    // 5 Turned vertical spindles in backrest
+    glTranslatef(0.0f, -0.32f, 0.0f);
+    float rSpindleX[5] = { -0.15f, -0.075f, 0.0f, 0.075f, 0.15f };
+    for (int s = 0; s < 5; ++s) {
+        glPushMatrix();
+        glTranslatef(rSpindleX[s], 0.0f, 0.0f);
+        drawTurnedBalusterSpindle(0.54f, 0.024f);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    // Bentwood Scrolled Armrests with Turned Arm Supports
+    glPushMatrix();
+    // Left armrest
+    glTranslatef(-0.23f, 0.64f, 0.02f);
+    drawBox(0.045f, 0.035f, 0.42f);
+    glTranslatef(0.0f, -0.11f, 0.16f);
+    drawTurnedBalusterSpindle(0.22f, 0.030f); // Arm post support
+    // Right armrest
+    glTranslatef(0.46f, 0.11f, -0.16f);
+    drawBox(0.045f, 0.035f, 0.42f);
+    glTranslatef(0.0f, -0.11f, 0.16f);
+    drawTurnedBalusterSpindle(0.22f, 0.030f);
     glPopMatrix();
 
     glPopMatrix(); // End Rocking Chair
 
-    // 7. ANTIQUE WOODEN STORAGE CHEST WITH RUSTED IRON STRAPS (x = -3.4f, z = -2.6f)
+    // 7. REALISTIC ANTIQUE STORAGE CHEST WITH BARREL-DOMED LID & STUDDED IRON STRAPS
     glPushMatrix();
     glTranslatef(-3.40f, 4.24f, -2.60f);
     glRotatef(25.0f, 0.0f, 1.0f, 0.0f);
@@ -994,26 +1731,131 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glColor4f(0.26f, 0.20f, 0.15f, 1.0f);
-    // Chest Body Box
+
+    // Chest Body Box with Plank Texture
     glPushMatrix();
     glTranslatef(0.0f, 0.30f, 0.0f);
-    drawBox(1.10f, 0.60f, 0.65f);
-    // Curved Lid
-    glTranslatef(0.0f, 0.33f, 0.0f);
-    drawBox(1.12f, 0.08f, 0.67f);
-    // Iron Reinforcing Straps
+    drawBeveledBox(1.12f, 0.60f, 0.66f, 0.02f);
+
+    // Authentic Barrel-Vaulted Segmented Domed Lid
+    glTranslatef(0.0f, 0.32f, 0.0f);
+    for (int arc = -3; arc <= 3; ++arc) {
+        float arcFrac = (float)arc / 3.0f;
+        float lidZ = arcFrac * 0.31f;
+        float lidY = 0.06f * (1.0f - arcFrac * arcFrac);
+        glPushMatrix();
+        glTranslatef(0.0f, lidY, lidZ);
+        drawBox(1.14f, 0.045f, 0.12f);
+        glPopMatrix();
+    }
+
+    // Heavy Blackened Iron Reinforcing Straps with Raised Rivet Studs
     applyMaterial(MAT_RUSTY_METAL);
     bindTexture(TEX_RUST);
     glColor4f(0.35f, 0.32f, 0.30f, 1.0f);
-    glPushMatrix(); glTranslatef(-0.35f, -0.15f, 0.0f); drawBox(0.06f, 0.70f, 0.68f); glPopMatrix();
-    glPushMatrix(); glTranslatef( 0.35f, -0.15f, 0.0f); drawBox(0.06f, 0.70f, 0.68f); glPopMatrix();
-    // Front Padlock
-    glTranslatef(0.0f, -0.06f, 0.34f);
-    drawBox(0.08f, 0.10f, 0.04f);
+    float strapXs[2] = { -0.36f, 0.36f };
+    for (int st = 0; st < 2; ++st) {
+        glPushMatrix();
+        glTranslatef(strapXs[st], -0.16f, 0.0f);
+        drawBox(0.065f, 0.72f, 0.69f);
+        // Stud rivets
+        glColor4f(0.45f, 0.40f, 0.36f, 1.0f);
+        glTranslatef(0.0f, 0.20f, 0.35f); drawSphere(0.015f, 6, 6);
+        glTranslatef(0.0f, -0.40f, 0.0f); drawSphere(0.015f, 6, 6);
+        glPopMatrix();
+    }
+
+    // Center Iron Hasp & Rusted Padlock
+    glPushMatrix();
+    glTranslatef(0.0f, -0.05f, 0.345f);
+    drawBox(0.07f, 0.14f, 0.03f); // Hasp plate
+    // Padlock
+    glTranslatef(0.0f, -0.06f, 0.015f);
+    drawBox(0.065f, 0.08f, 0.025f);
+    // Shackle ring
+    glTranslatef(0.0f, 0.045f, 0.0f);
+    drawCylinder(0.025f, 0.025f, 0.015f, 8);
+    glPopMatrix();
+
+    // Side Drop Carry Handles (Left & Right sides)
+    glPushMatrix();
+    glTranslatef(-0.57f, -0.12f, 0.0f);
+    drawCylinder(0.045f, 0.045f, 0.02f, 8); // Left handle
+    glTranslatef(1.14f, 0.0f, 0.0f);
+    drawCylinder(0.045f, 0.045f, 0.02f, 8); // Right handle
     glPopMatrix();
     glPopMatrix();
 
-    // 8. HANGING VINTAGE BRASS LANTERN FROM RIDGE TIMBER BEAM
+    glPopMatrix(); // End Storage Chest
+
+    // 8. HAUNTED VICTORIAN ARMOIRE / WARDROBE (Slightly Ajar Door Revealing Pitch Darkness)
+    glPushMatrix();
+    glTranslatef(-2.70f, 4.24f, -3.20f);
+    glRotatef(15.0f, 0.0f, 1.0f, 0.0f);
+
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
+
+    // Armoire Outer Carcase (1.30m wide, 2.30m tall, 0.55m deep)
+    glPushMatrix();
+    glTranslatef(0.0f, 1.15f, 0.0f);
+    // Backing panel
+    drawBox(1.30f, 2.30f, 0.04f);
+    // Side pilaster walls
+    glTranslatef(-0.62f, 0.0f, 0.25f); drawBox(0.06f, 2.30f, 0.50f);
+    glTranslatef( 1.24f, 0.0f, 0.0f);  drawBox(0.06f, 2.30f, 0.50f);
+    // Plinth base
+    glTranslatef(-0.62f, -1.10f, 0.0f); drawBox(1.38f, 0.12f, 0.56f);
+    // Top Arch Crown Molding Cornice
+    glTranslatef(0.0f, 2.24f, 0.0f); drawBox(1.42f, 0.12f, 0.58f);
+    glTranslatef(0.0f, 0.08f, 0.0f); drawBox(0.80f, 0.08f, 0.56f); // Center crest arch
+    glPopMatrix();
+
+    // Pitch Black Void inside wardrobe
+    applyMaterial(MAT_STONE);
+    bindTexture(TEX_NONE);
+    glColor3f(0.02f, 0.015f, 0.01f);
+    glPushMatrix();
+    glTranslatef(0.0f, 1.15f, 0.10f);
+    drawBox(1.16f, 2.10f, 0.35f);
+    glPopMatrix();
+
+    // Left Door (Fully Closed with Carved Panels)
+    applyMaterial(MAT_DARK_WOOD);
+    bindTexture(TEX_WALL);
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
+    glPushMatrix();
+    glTranslatef(-0.29f, 1.15f, 0.50f);
+    drawBox(0.58f, 2.05f, 0.04f);
+    // Carved panels relief
+    glColor4f(0.18f, 0.14f, 0.10f, 1.0f);
+    glTranslatef(0.0f, 0.35f, 0.022f); drawBox(0.44f, 0.85f, 0.012f);
+    glTranslatef(0.0f, -0.70f, 0.0f);   drawBox(0.44f, 0.65f, 0.012f);
+    glPopMatrix();
+
+    // Right Door (CREAKED SLIGHTLY AJAR ~14 DEGREES - Haunted Look!)
+    glPushMatrix();
+    glTranslatef(0.58f, 1.15f, 0.50f); // Hinge at outer right frame
+    glRotatef(14.0f, 0.0f, 1.0f, 0.0f);  // Swung open slightly
+    glTranslatef(-0.29f, 0.0f, 0.0f);
+    glColor4f(0.22f, 0.17f, 0.13f, 1.0f);
+    drawBox(0.58f, 2.05f, 0.04f);
+    // Door panel
+    glColor4f(0.18f, 0.14f, 0.10f, 1.0f);
+    glTranslatef(0.0f, 0.35f, 0.022f); drawBox(0.44f, 0.85f, 0.012f);
+    glTranslatef(0.0f, -0.70f, 0.0f);   drawBox(0.44f, 0.65f, 0.012f);
+    // Antique Brass Keyhole Escutcheon
+    applyMaterial(MAT_RUSTY_METAL);
+    bindTexture(TEX_NONE);
+    glColor4f(0.65f, 0.52f, 0.22f, 1.0f);
+    glTranslatef(-0.24f, 0.35f, 0.015f);
+    drawBox(0.025f, 0.045f, 0.008f);
+    glPopMatrix();
+
+    glPopMatrix(); // End Armoire
+
+    // 9. HANGING VINTAGE BRASS LANTERN FROM RIDGE TIMBER BEAM
     glPushMatrix();
     glTranslatef(-4.80f, 7.20f, 0.50f);
     // Wire
@@ -1039,7 +1881,7 @@ void drawSecondFloorInterior() {    // 1. Weathered Second-Floor Floorboards (y 
     glEnable(GL_LIGHTING);
     glPopMatrix();
 
-    // 9. Cobwebs in 2nd Floor Ceiling Rafter Angles
+    // 10. Cobwebs in 2nd Floor Ceiling Rafter Angles
     drawCobweb(-8.75f, 6.80f,  4.60f, 0.85f,   0.0f);
     drawCobweb(-0.85f, 6.80f,  4.60f, 0.75f,  90.0f);
     drawCobweb(-8.75f, 6.80f, -3.60f, 0.95f, -90.0f);

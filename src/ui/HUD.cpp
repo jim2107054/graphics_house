@@ -251,32 +251,33 @@ void renderSceneHUD() {    bindTexture(TEX_NONE);
 
     // Comprehensive Guided Showcase Tour HUD Card (Bottom Center)
     if (g_cinematicMode) {
-        drawUIPanel(w * 0.5f - 380.0f, h - 85.0f, 760.0f, 68.0f, 0.04f, 0.03f, 0.06f, 0.92f);
+        drawUIPanel(w * 0.5f - 410.0f, h - 90.0f, 820.0f, 74.0f, 0.04f, 0.03f, 0.07f, 0.94f);
         
         // Header title
-        drawString2D(w * 0.5f - 360.0f, h - 60.0f, GLUT_BITMAP_HELVETICA_18, "FULL PROJECT GUIDED SHOWCASE TOUR", 1.0f, 0.55f, 0.20f);
-        drawString2D(w * 0.5f + 190.0f, h - 60.0f, GLUT_BITMAP_HELVETICA_12, "[Press 'C' to Exit Tour]", 0.85f, 0.85f, 0.85f);
+        drawString2D(w * 0.5f - 390.0f, h - 64.0f, GLUT_BITMAP_HELVETICA_18, "FULL PROJECT GUIDED SHOWCASE TOUR", 1.0f, 0.55f, 0.20f);
+        drawString2D(w * 0.5f + 160.0f, h - 64.0f, GLUT_BITMAP_HELVETICA_12, "[Press 'C' to Exit / Manual Explore]", 0.85f, 0.85f, 0.85f);
 
         // Stage description & dynamic action badge
         extern std::string g_tourStageTitle;
         extern std::string g_tourActionBadge;
-        drawString2D(w * 0.5f - 360.0f, h - 35.0f, GLUT_BITMAP_HELVETICA_12, g_tourStageTitle.c_str(), 0.9f, 0.9f, 0.95f);
+        drawString2D(w * 0.5f - 390.0f, h - 38.0f, GLUT_BITMAP_HELVETICA_12, g_tourStageTitle.c_str(), 0.95f, 0.95f, 1.0f);
         
         char actionStr[160];
-        snprintf(actionStr, sizeof(actionStr), "Action: %s", g_tourActionBadge.c_str());
-        drawString2D(w * 0.5f + 10.0f, h - 35.0f, GLUT_BITMAP_HELVETICA_12, actionStr, 0.3f, 1.0f, 0.4f);
+        snprintf(actionStr, sizeof(actionStr), "Live Action: %s", g_tourActionBadge.c_str());
+        drawString2D(w * 0.5f - 10.0f, h - 38.0f, GLUT_BITMAP_HELVETICA_12, actionStr, 0.35f, 1.0f, 0.45f);
 
         // Progress bar line
-        float prog = g_cinematicTime / 64.0f;
+        extern const float TOTAL_TOUR_DURATION;
+        float prog = g_cinematicTime / TOTAL_TOUR_DURATION;
         if (prog > 1.0f) prog = 1.0f;
         glLineWidth(3.0f);
         glBegin(GL_LINES);
         glColor4f(0.3f, 0.3f, 0.3f, 0.8f);
-        glVertex2f(w * 0.5f - 360.0f, h - 22.0f);
-        glVertex2f(w * 0.5f + 360.0f, h - 22.0f);
+        glVertex2f(w * 0.5f - 390.0f, h - 22.0f);
+        glVertex2f(w * 0.5f + 390.0f, h - 22.0f);
         glColor4f(1.0f, 0.6f, 0.1f, 1.0f);
-        glVertex2f(w * 0.5f - 360.0f, h - 22.0f);
-        glVertex2f(w * 0.5f - 360.0f + 720.0f * prog, h - 22.0f);
+        glVertex2f(w * 0.5f - 390.0f, h - 22.0f);
+        glVertex2f(w * 0.5f - 390.0f + 780.0f * prog, h - 22.0f);
         glEnd();
     }
 }
