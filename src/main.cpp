@@ -450,6 +450,32 @@ int main(int argc, char** argv) {    for (int i = 1; i < argc; ++i) {
             g_cam.yaw = std::stof(argv[i + 4]);
             g_cam.pitch = std::stof(argv[i + 5]);
             i += 5;
+        } else if (std::string(argv[i]) == "--hud") {
+            g_showHUD = true;
+        } else if (std::string(argv[i]) == "--no-tex") {
+            g_texturesEnabled = false;
+        } else if (std::string(argv[i]) == "--flashlight") {
+            g_light2SpotOn = true;
+        } else if (std::string(argv[i]) == "--lightning") {
+            g_lightning.active = true;
+            g_lightning.flashIntensity = 1.0f;
+        } else if (std::string(argv[i]) == "--no-moon") {
+            g_light1DirectionalOn = false;
+        } else if (std::string(argv[i]) == "--no-lights") {
+            g_light0PointOn = false;
+            g_light1DirectionalOn = false;
+            g_light2SpotOn = false;
+            g_light3AreaOn = false;
+            g_pumpkinLightsOn = false;
+        } else if (std::string(argv[i]) == "--fov" && i + 1 < argc) {
+            g_cam.fov = std::stof(argv[i + 1]);
+            g_cam.targetFov = g_cam.fov;
+            i++;
+        } else if (std::string(argv[i]) == "--tour-time" && i + 1 < argc) {
+            g_cinematicMode = true;
+            g_cinematicTime = std::stof(argv[i + 1]);
+            updateCinematicCamera(0.0f);
+            i++;
         }
     }
 
