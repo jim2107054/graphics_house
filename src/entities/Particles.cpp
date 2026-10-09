@@ -8,7 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 
-const int MAX_FALLING_LEAVES = 18;
+const int MAX_FALLING_LEAVES = 24;
 std::vector<FallingLeafParticle> g_fallingLeaves;
 
 // Exact positions and dimensions of deciduous (leafy) trees in the scene
@@ -78,19 +78,21 @@ static void spawnLeafFromTree(FallingLeafParticle& l, int treeIdx = -1, bool ini
     l.rotSpeedY = 14.0f + ((float)(rand() % 30));
     l.rotSpeedZ =  8.0f + ((float)(rand() % 20));
 
-    l.size = 0.15f + ((float)(rand() % 10) / 100.0f);
+    l.size = 0.22f + ((float)(rand() % 10) / 100.0f); // 0.22 to 0.32m base scale
     l.swayPhase = (float)(rand() % 628) / 100.0f;
     l.swayAmp = 0.28f + ((float)(rand() % 20) / 100.0f);
     l.swayFreq = 0.55f + ((float)(rand() % 30) / 100.0f);
 
-    // Autumn tones: russet, burnt orange, dried golden-brown
-    int tone = rand() % 3;
+    // Vivid authentic autumn leaf palette:
+    int tone = rand() % 4;
     if (tone == 0) {
-        l.r = 0.38f; l.g = 0.22f; l.b = 0.14f;
+        l.r = 0.65f; l.g = 0.20f; l.b = 0.13f; // Crimson / Scarlet Maple
     } else if (tone == 1) {
-        l.r = 0.48f; l.g = 0.30f; l.b = 0.16f;
+        l.r = 0.74f; l.g = 0.50f; l.b = 0.16f; // Golden Amber Oak
+    } else if (tone == 2) {
+        l.r = 0.60f; l.g = 0.34f; l.b = 0.12f; // Burnt Orange
     } else {
-        l.r = 0.32f; l.g = 0.19f; l.b = 0.12f;
+        l.r = 0.44f; l.g = 0.26f; l.b = 0.14f; // Chestnut Russet
     }
 }
 
@@ -133,9 +135,172 @@ void updateFallingLeaves(float dt) {
     }
 }
 
+// ----------------------------------------------------------------------------
+// BOTANICALLY REALISTIC 3D AUTUMN LEAVES
+// Sculpted multi-lobed deciduous oak/maple blade with central midrib crease,
+// petiole stem, lateral veins, and organic 3D aerodynamic camber.
+// ----------------------------------------------------------------------------
+static void drawRealistic3DLeaf(float length, float width, float r, float g, float b, int variant) {
+    // 1. SLENDER PETIOLE STEM (Attaches leaf to branch)
+    float stemLen = length * 0.26f;
+    float stemR = length * 0.016f;
+
+    glColor4f(r * 0.52f, g * 0.42f, b * 0.30f, 1.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, -0.002f, -stemLen);
+    drawCylinder(stemR * 1.2f, stemR * 0.8f, stemLen, 5, 1.0f, 1.0f);
+    glPopMatrix();
+
+    // 2. 3D SCULPTED MULTI-LOBED LEAF BLADE
+    // Nodes from stem collar (z = 0) to pointed apex (z = 1)
+    struct LeafContourNode {
+        float zFrac; // Normalized distance along central spine (0.0 to 1.0)
+        float wFrac; // Lateral lobe half-width spread
+        float curlY; // Organic 3D cupping / curl out of plane
+    };
+
+    // Oak / Maple inspired lobed contour with distinct lobes and sinuses
+    static const LeafContourNode NODES_OAK[10] = {
+        { 0.00f, 0.02f,  0.000f }, // Stem collar junction
+        { 0.10f, 0.32f,  0.020f }, // Basal taper
+        { 0.24f, 0.78f, -0.018f }, // Lower lateral lobe tip
+        { 0.38f, 0.44f,  0.026f }, // Lower sinus (deep notch)
+        { 0.54f, 1.00f, -0.032f }, // Major middle lobe tip (widest point)
+        { 0.68f, 0.60f,  0.028f }, // Middle sinus (notch)
+        { 0.80f, 0.76f, -0.018f }, // Upper lobe tip
+        { 0.88f, 0.45f,  0.016f }, // Upper sinus
+        { 0.95f, 0.22f,  0.008f }, // Pre-apical taper
+        { 1.00f, 0.00f,  0.000f }  // Pointed leaf apex (tip)
+    };
+
+    // Beech / Elm pointed serrated ovate leaf
+    static const LeafContourNode NODES_OVATE[8] = {
+        { 0.00f, 0.04f,  0.000f },
+        { 0.15f, 0.58f,  0.024f },
+        { 0.35f, 0.94f, -0.022f },
+        { 0.55f, 1.00f,  0.030f },
+        { 0.72f, 0.78f, -0.018f },
+        { 0.86f, 0.46f,  0.014f },
+        { 0.95f, 0.22f,  0.008f },
+        { 1.00f, 0.00f,  0.000f }
+    };
+
+    const LeafContourNode* nodes = (variant % 2 == 0) ? NODES_OAK : NODES_OVATE;
+    int numNodes = (variant % 2 == 0) ? 10 : 8;
+
+    float halfW = width * 0.5f;
+
+    // Both sides of the leaf (Left & Right) connected along the central raised midrib
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < numNodes - 1; ++i) {
+        float z0 = nodes[i].zFrac * length;
+        float z1 = nodes[i + 1].zFrac * length;
+
+        // Central midrib is slightly raised, creating natural V-shaped dihedral
+        float midY0 = 0.022f * length * (1.0f - nodes[i].zFrac);
+        float midY1 = 0.022f * length * (1.0f - nodes[i + 1].zFrac);
+
+        float w0 = nodes[i].wFrac * halfW;
+        float w1 = nodes[i + 1].wFrac * halfW;
+
+        float y0 = nodes[i].curlY * length;
+        float y1 = nodes[i + 1].curlY * length;
+
+        // --- RIGHT LOBE TRIANGLES ---
+        float nxR = -0.32f;
+        float nyR =  0.92f;
+        float nzR =  0.15f;
+
+        glColor4f(r * 0.92f, g * 0.90f, b * 0.88f, 0.98f);
+        glNormal3f(nxR, nyR, nzR);
+        glVertex3f(0.0f, midY0, z0);
+
+        glColor4f(r * 1.08f, g * 1.05f, b * 0.95f, 0.98f);
+        glVertex3f(w0, y0, z0);
+
+        glColor4f(r * 1.05f, g * 1.02f, b * 0.92f, 0.98f);
+        glVertex3f(w1, y1, z1);
+
+        glColor4f(r * 0.92f, g * 0.90f, b * 0.88f, 0.98f);
+        glVertex3f(0.0f, midY0, z0);
+
+        glColor4f(r * 1.05f, g * 1.02f, b * 0.92f, 0.98f);
+        glVertex3f(w1, y1, z1);
+
+        glColor4f(r * 0.90f, g * 0.88f, b * 0.85f, 0.98f);
+        glVertex3f(0.0f, midY1, z1);
+
+        // --- LEFT LOBE TRIANGLES ---
+        float nxL =  0.32f;
+        float nyL =  0.92f;
+        float nzL =  0.15f;
+
+        glColor4f(r * 0.92f, g * 0.90f, b * 0.88f, 0.98f);
+        glNormal3f(nxL, nyL, nzL);
+        glVertex3f(0.0f, midY0, z0);
+
+        glColor4f(r * 1.05f, g * 1.02f, b * 0.92f, 0.98f);
+        glVertex3f(-w1, y1, z1);
+
+        glColor4f(r * 1.08f, g * 1.05f, b * 0.95f, 0.98f);
+        glVertex3f(-w0, y0, z0);
+
+        glColor4f(r * 0.92f, g * 0.90f, b * 0.88f, 0.98f);
+        glVertex3f(0.0f, midY0, z0);
+
+        glColor4f(r * 0.90f, g * 0.88f, b * 0.85f, 0.98f);
+        glVertex3f(0.0f, midY1, z1);
+
+        glColor4f(r * 1.05f, g * 1.02f, b * 0.92f, 0.98f);
+        glVertex3f(-w1, y1, z1);
+    }
+    glEnd();
+
+    // 3. CENTRAL MIDRIB RIDGE & LATERAL SECONDARY VEINS
+    glDisable(GL_LIGHTING);
+    glLineWidth(1.6f);
+    // Delicate golden-amber / ochre vein lines
+    glColor4f(r * 1.25f, g * 1.28f, b * 1.10f, 0.85f);
+    glBegin(GL_LINES);
+
+    // Main Midrib line running down the center
+    for (int i = 0; i < numNodes - 1; ++i) {
+        float z0 = nodes[i].zFrac * length;
+        float z1 = nodes[i + 1].zFrac * length;
+        float y0 = 0.024f * length * (1.0f - nodes[i].zFrac) + 0.001f;
+        float y1 = 0.024f * length * (1.0f - nodes[i + 1].zFrac) + 0.001f;
+        glVertex3f(0.0f, y0, z0);
+        glVertex3f(0.0f, y1, z1);
+    }
+
+    // Lateral secondary veins radiating to lobe tips
+    for (int i = 1; i < numNodes - 1; i += 2) {
+        float zMid = nodes[i].zFrac * length * 0.85f;
+        float yMid = 0.024f * length * (1.0f - nodes[i].zFrac) + 0.001f;
+        float zTip = nodes[i].zFrac * length;
+        float yTip = nodes[i].curlY * length + 0.001f;
+        float wTip = nodes[i].wFrac * halfW * 0.85f;
+
+        // Right secondary vein
+        glVertex3f(0.0f, yMid, zMid);
+        glVertex3f(wTip, yTip, zTip);
+
+        // Left secondary vein
+        glVertex3f(0.0f, yMid, zMid);
+        glVertex3f(-wTip, yTip, zTip);
+    }
+    glEnd();
+    glEnable(GL_LIGHTING);
+}
+
 // Render dynamic airborne falling leaves
-void drawFallingLeaves() {    applyMaterial(MAT_FALLEN_LEAF);
+void drawFallingLeaves() {
+    applyMaterial(MAT_FALLEN_LEAF);
     bindTexture(TEX_NONE);
+
+    glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT);
+    glEnable(GL_LIGHTING);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
     for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
         const FallingLeafParticle& l = g_fallingLeaves[i];
@@ -145,18 +310,16 @@ void drawFallingLeaves() {    applyMaterial(MAT_FALLEN_LEAF);
         glRotatef(l.rotY, 0.0f, 1.0f, 0.0f);
         glRotatef(l.rotZ, 0.0f, 0.0f, 1.0f);
 
-        glColor4f(l.r, l.g, l.b, 0.95f);
-        float hs = l.size * 0.5f;
-        glBegin(GL_QUADS);
-        glNormal3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(-hs, 0.0f, -hs * 0.7f);
-        glVertex3f( hs, 0.0f, -hs * 0.7f);
-        glVertex3f( hs * 0.8f, 0.0f,  hs * 0.7f);
-        glVertex3f(-hs * 0.8f, 0.0f,  hs * 0.7f);
-        glEnd();
+        // Realistic leaf dimensions: length ~0.35m, width ~0.24m
+        float len = l.size * 1.65f;
+        float wid = l.size * 1.15f;
+
+        drawRealistic3DLeaf(len, wid, l.r, l.g, l.b, (int)i);
 
         glPopMatrix();
     }
+
+    glPopAttrib();
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
