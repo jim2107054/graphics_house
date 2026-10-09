@@ -19,6 +19,8 @@
 #include "ui/Screenshot.h"
 #include <iostream>
 
+static int g_autoScreenshotTargetFrames = 3;
+
 void initOpenGL() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -322,7 +324,7 @@ void displayCallback() {
 
     if (!g_autoScreenshotFile.empty()) {
         g_autoScreenshotFrames++;
-        if (g_autoScreenshotFrames >= 3) {
+        if (g_autoScreenshotFrames >= g_autoScreenshotTargetFrames) {
             saveScreenshot(g_autoScreenshotFile.c_str());
             std::cout << "[AUTO SCREENSHOT] Saved to " << g_autoScreenshotFile << std::endl;
             exit(0);
@@ -437,6 +439,9 @@ int main(int argc, char** argv) {    for (int i = 1; i < argc; ++i) {
         } else if (std::string(argv[i]) == "--interior") {
             g_cam.x = -7.50f; g_cam.y = 1.60f; g_cam.z = -9.20f;
             g_cam.yaw = -100.0f; g_cam.pitch = -4.0f;
+        } else if (std::string(argv[i]) == "--frames" && i + 1 < argc) {
+            g_autoScreenshotTargetFrames = std::stoi(argv[i + 1]);
+            i++;
         } else if (std::string(argv[i]) == "--cam" && i + 5 < argc) {
             g_cam.x = std::stof(argv[i + 1]);
             g_cam.y = std::stof(argv[i + 2]);

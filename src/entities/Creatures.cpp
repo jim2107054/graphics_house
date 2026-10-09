@@ -871,51 +871,80 @@ void drawPerchedOwl() {
         // ====================================================================
         float ft = g_time - g_owlTakeoffTime;
 
-        if (ft < 0.28f) {
-            // Phase 1: Startled crouch & wings burst open on the post!
-            float crouch = ft / 0.28f;
+        if (ft < 0.40f) {
+            // Phase 1: Startled crouch, wing burst & spring off the timber post
+            float s = ft / 0.40f;
+            float smoothS = s * s * (3.0f - 2.0f * s);
+
+            // Compute launch takeoff orientation matching initial airborne velocity
+            float launchTargetYaw = std::atan2(-2.4f, -5.2f) * (180.0f / 3.14159265f); // ~ -155.2 deg
+            float launchYaw = -15.0f + smoothS * (launchTargetYaw - (-15.0f));
+
+            float launchY;
+            bool talonsTucked = false;
+            if (s < 0.32f) {
+                float c = s / 0.32f;
+                launchY = perchY + 0.02f - c * 0.04f; // Crouch down into timber
+            } else {
+                float sp = (s - 0.32f) / 0.68f;
+                launchY = perchY - 0.02f + sp * 0.30f; // Spring up off post
+                talonsTucked = (sp > 0.65f);
+            }
+
+            // Rapid wing burst opening to catch nocturnal updraft
+            float burstFlap = -25.0f + std::sin(s * 3.14159265f) * 45.0f;
+
             glPushMatrix();
-            glTranslatef(perchX, perchY + 0.02f - crouch * 0.04f, perchZ);
-            glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
+            glTranslatef(perchX, launchY, perchZ);
+            glRotatef(launchYaw, 0.0f, 1.0f, 0.0f);
 
-            drawOwlTalons(false);
+            drawOwlTalons(talonsTucked);
 
-            glTranslatef(0.0f, 0.04f, 0.0f);
             applyMaterial(MAT_OWL_FEATHER_MANTLE);
             bindTexture(TEX_NONE);
             glPushMatrix();
             glTranslatef(0.0f, 0.14f, 0.0f);
-            glRotatef(-22.0f, 1.0f, 0.0f, 0.0f);
+            glRotatef(-18.0f * (1.0f - smoothS), 1.0f, 0.0f, 0.0f);
             glScalef(1.05f, 1.45f, 1.0f);
             drawSphere(0.125f, 12, 10);
             glPopMatrix();
 
-            // Wings unfurling
-            float spreadFlap = crouch * -25.0f;
-            drawFlyingRaptorWings(spreadFlap);
+            // Wings bursting open
+            drawFlyingRaptorWings(burstFlap);
 
-            // Head looking alertly at player
-            drawOwlHead(-camDx * 8.0f, 0.0f);
+            // Head looking alertly in launch direction
+            drawOwlHead(0.0f, 0.0f);
+
             glPopMatrix();
 
         } else if (ft < 14.0f) {
-            // Phase 2: Escaping flight climbing steeply into the night sky!
-            float t = ft - 0.28f;
+            // Phase 2: Natural raptor flight climbing high, banking left, and escaping out of scene!
+            float t = ft - 0.40f;
 
-            // Escape trajectory climbing towards the dark forest / distant sky
-            float escX = perchX + 4.2f * t + 1.2f * std::sin(t * 1.4f);
-            float escY = perchY + 1.5f * t + 0.32f * t * t; // Smooth parabolic altitude climb
-            float escZ = perchZ - 6.5f * t; // Flying away into the distance
+            // 1. Natural Flight Path:
+            // Curves gracefully to the left (-X) across the cemetery & broken car,
+            // traveling forward past the estate (-Z), and climbing steeply into the night sky (+Y)
+            float escX = perchX - 2.4f * t - 0.45f * t * t;
+            float escZ = perchZ - 5.2f * t;
+            float escY = perchY + 0.28f + 2.5f * t + 0.14f * t * t;
 
-            float vx = 4.2f + 1.68f * std::cos(t * 1.4f);
-            float vy = 1.5f + 0.64f * t;
-            float vz = -6.5f;
+            // 2. Analytical Velocity Components:
+            float vx = -2.4f - 0.90f * t;
+            float vz = -5.2f;
+            float vy = 2.5f + 0.28f * t;
 
             float speedH = std::sqrt(vx * vx + vz * vz);
-            float flightYaw = std::atan2(vx, -vz) * (180.0f / 3.14159265f);
+
+            // 3. Natural Flight Orientation (Head & beak face strictly along velocity vector):
+            // In model space, the owl faces +Z. std::atan2(vx, vz) rotates +Z into (vx, vz) perfectly.
+            float flightYaw   = std::atan2(vx, vz) * (180.0f / 3.14159265f);
             float flightPitch = -std::atan2(vy, speedH) * (180.0f / 3.14159265f);
-            float flightRoll = -16.0f + 8.0f * std::sin(t * 1.8f);
-            float flapAngle = std::sin(t * 8.0f) * 44.0f; // Broad, deep wingbeats
+
+            // Aerodynamic Banking: left wing dips naturally into the leftward turn (positive roll around +Z)
+            float flightRoll  = 20.0f + 4.5f * std::sin(t * 1.8f);
+
+            // Broad, powerful, silent nocturnal wingbeats (~3.3 Hz)
+            float flapAngle   = std::sin(t * (3.3f * 2.0f * 3.14159265f)) * 42.0f;
 
             glPushMatrix();
             glTranslatef(escX, escY, escZ);
@@ -923,30 +952,33 @@ void drawPerchedOwl() {
             glRotatef(flightPitch, 1.0f, 0.0f, 0.0f);
             glRotatef(flightRoll,  0.0f, 0.0f, 1.0f);
 
-            // Tucked talons in flight
+            // Talons securely tucked into belly plumage during flight
             drawOwlTalons(true);
 
-            // Streamlined Torso in flight
+            // Streamlined Raptor Torso along the flight axis
             applyMaterial(MAT_OWL_FEATHER_MANTLE);
             bindTexture(TEX_NONE);
             glPushMatrix();
-            glRotatef(12.0f, 1.0f, 0.0f, 0.0f);
+            glRotatef(8.0f, 1.0f, 0.0f, 0.0f);
             glScalef(0.95f, 0.85f, 1.45f);
             drawSphere(0.125f, 12, 10);
             glPopMatrix();
 
-            // Broad fanned tail rectrices for flight stability
+            // Broad fanned tail rectrices for flight stability & steering
             glPushMatrix();
             glTranslatef(0.0f, 0.02f, -0.16f);
-            glRotatef(18.0f, 1.0f, 0.0f, 0.0f);
+            glRotatef(16.0f, 1.0f, 0.0f, 0.0f);
             drawBeveledBox(0.18f, 0.015f, 0.22f, 0.006f);
             glPopMatrix();
 
             // Massive Spreading Raptor Wings flapping in flight
             drawFlyingRaptorWings(flapAngle);
 
-            // Head looking forward in flight direction
+            // Head streamlined forward looking directly along flight path
+            glPushMatrix();
+            glTranslatef(0.0f, -0.04f, 0.12f);
             drawOwlHead(0.0f, 0.0f);
+            glPopMatrix();
 
             glPopMatrix();
         }
