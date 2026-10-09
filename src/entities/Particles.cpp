@@ -8,60 +8,103 @@
 #include <cmath>
 #include <cstdlib>
 
-const int MAX_FALLING_LEAVES = 15;
+const int MAX_FALLING_LEAVES = 18;
 std::vector<FallingLeafParticle> g_fallingLeaves;
 
-void initFallingLeaves() {    g_fallingLeaves.resize(MAX_FALLING_LEAVES);
-    for (int i = 0; i < MAX_FALLING_LEAVES; ++i) {
-        // Distribute across tree canopies where leaf clusters exist:
-        // Right foreground framing tree (50%), Left foreground framing tree (35%), Path breeze drift (15%)
-        float rChoice = (float)(rand() % 100) / 100.0f;
-        float ox, oz;
-        if (rChoice < 0.50f) {
-            ox = 5.0f + ((float)(rand() % 35) / 10.0f);   // Right foreground natural tree canopy
-            oz = 13.5f + ((float)(rand() % 30) / 10.0f);  // 13.5 to 16.5
-        } else if (rChoice < 0.85f) {
-            ox = -7.5f + ((float)(rand() % 30) / 10.0f); // Left foreground natural tree canopy
-            oz = 13.5f + ((float)(rand() % 30) / 10.0f);  // 13.5 to 16.5
-        } else {
-            ox = -2.0f + ((float)(rand() % 40) / 10.0f);   // Path drift
-            oz = 10.0f + ((float)(rand() % 60) / 10.0f);
-        }
+// Exact positions and dimensions of deciduous (leafy) trees in the scene
+struct LeafyTreeSource {
+    float x;
+    float z;
+    float height;
+    float canopyRadius;
+};
 
-        g_fallingLeaves[i].originX = ox;
-        g_fallingLeaves[i].originZ = oz;
-        g_fallingLeaves[i].x = ox;
-        g_fallingLeaves[i].y = 1.8f + ((float)(rand() % 30) / 10.0f); // 1.8m to 4.8m (natural tree canopy height)
-        g_fallingLeaves[i].z = oz;
-        g_fallingLeaves[i].vy = 0.16f + ((float)(rand() % 16) / 100.0f); // 0.16 to 0.32 m/s gentle autumn flutter
-        g_fallingLeaves[i].rotX = (float)(rand() % 360);
-        g_fallingLeaves[i].rotY = (float)(rand() % 360);
-        g_fallingLeaves[i].rotZ = (float)(rand() % 360);
-        g_fallingLeaves[i].rotSpeedX = 10.0f + ((float)(rand() % 25));
-        g_fallingLeaves[i].rotSpeedY = 14.0f + ((float)(rand() % 30));
-        g_fallingLeaves[i].rotSpeedZ =  8.0f + ((float)(rand() % 20));
-        g_fallingLeaves[i].size = 0.15f + ((float)(rand() % 10) / 100.0f);
-        g_fallingLeaves[i].swayPhase = (float)(rand() % 628) / 100.0f;
-        g_fallingLeaves[i].swayAmp = 0.35f + ((float)(rand() % 30) / 100.0f);
-        g_fallingLeaves[i].swayFreq = 0.55f + ((float)(rand() % 30) / 100.0f);
+static const LeafyTreeSource G_LEAF_TREES[6] = {
+    {  -4.8f, 15.5f, 6.6f, 2.4f }, // Front Left Lawn Tree (near entrance walkway)
+    {  -7.8f, 12.5f, 6.8f, 2.5f }, // Graveyard Knoll Tree (cemetery border)
+    {  15.5f, 16.5f, 6.5f, 2.3f }, // Front Right Border Tree (right entrance knoll)
+    {  13.8f,  7.0f, 7.5f, 2.7f }, // Right Yard Tree (directly above vintage car)
+    { -13.5f,  5.5f, 7.6f, 2.8f }, // Left Cemetery Approach Tree
+    { -15.0f, -3.5f, 8.2f, 3.0f }  // Left Manor Flank Tree
+};
+static const int NUM_LEAF_TREES = 6;
 
-        // Dark muted reddish-brown / desaturated orange-brown (RGB 90,55,35 to 130,80,45)
-        int tone = rand() % 3;
-        if (tone == 0) {
-            g_fallingLeaves[i].r = 0.38f; g_fallingLeaves[i].g = 0.22f; g_fallingLeaves[i].b = 0.14f;
-        } else if (tone == 1) {
-            g_fallingLeaves[i].r = 0.48f; g_fallingLeaves[i].g = 0.30f; g_fallingLeaves[i].b = 0.16f;
-        } else {
-            g_fallingLeaves[i].r = 0.32f; g_fallingLeaves[i].g = 0.19f; g_fallingLeaves[i].b = 0.12f;
-        }
+static void spawnLeafFromTree(FallingLeafParticle& l, int treeIdx = -1, bool initialStagger = false) {
+    if (treeIdx < 0 || treeIdx >= NUM_LEAF_TREES) {
+        // Distribute across trees in the player's primary view:
+        int r = rand() % 100;
+        if (r < 35)      treeIdx = 0; // Front Left Entrance Tree
+        else if (r < 60) treeIdx = 1; // Graveyard Knoll Tree
+        else if (r < 80) treeIdx = 2; // Front Right Border Tree
+        else if (r < 90) treeIdx = 3; // Right Yard Tree (near car)
+        else if (r < 95) treeIdx = 4; // Left Cemetery Tree
+        else             treeIdx = 5; // Left Manor Flank Tree
+    }
+
+    const LeafyTreeSource& tree = G_LEAF_TREES[treeIdx];
+    float groundY = getTerrainHeight(tree.x, tree.z);
+
+    // Pick a branch position strictly inside the tree's foliage canopy (0.50*H to 0.90*H):
+    float angle = ((float)(rand() % 628)) / 100.0f;
+    float dist = 0.35f + ((float)(rand() % 100) / 100.0f) * (tree.canopyRadius - 0.35f);
+
+    float branchX = tree.x + dist * std::cos(angle);
+    float branchZ = tree.z + dist * std::sin(angle);
+    float branchY = groundY + tree.height * (0.52f + 0.36f * ((float)(rand() % 100) / 100.0f));
+
+    l.originX = branchX;
+    l.originZ = branchZ;
+    l.x = branchX;
+    l.z = branchZ;
+
+    if (initialStagger) {
+        // Stagger leaf positions vertically on init so they aren't all at the same height
+        float groundUnder = getTerrainHeight(branchX, branchZ) + 0.05f;
+        float frac = (float)(rand() % 100) / 100.0f;
+        l.y = groundUnder + frac * (branchY - groundUnder);
+    } else {
+        // Newly detached leaf starts directly at the tree branch!
+        l.y = branchY;
+    }
+
+    // Slow, calm falling speed (0.16 to 0.30 m/s)
+    l.vy = 0.16f + ((float)(rand() % 14) / 100.0f);
+
+    // Soft 3D rotations & gentle tumbling
+    l.rotX = (float)(rand() % 360);
+    l.rotY = (float)(rand() % 360);
+    l.rotZ = (float)(rand() % 360);
+    l.rotSpeedX = 10.0f + ((float)(rand() % 25));
+    l.rotSpeedY = 14.0f + ((float)(rand() % 30));
+    l.rotSpeedZ =  8.0f + ((float)(rand() % 20));
+
+    l.size = 0.15f + ((float)(rand() % 10) / 100.0f);
+    l.swayPhase = (float)(rand() % 628) / 100.0f;
+    l.swayAmp = 0.28f + ((float)(rand() % 20) / 100.0f);
+    l.swayFreq = 0.55f + ((float)(rand() % 30) / 100.0f);
+
+    // Autumn tones: russet, burnt orange, dried golden-brown
+    int tone = rand() % 3;
+    if (tone == 0) {
+        l.r = 0.38f; l.g = 0.22f; l.b = 0.14f;
+    } else if (tone == 1) {
+        l.r = 0.48f; l.g = 0.30f; l.b = 0.16f;
+    } else {
+        l.r = 0.32f; l.g = 0.19f; l.b = 0.12f;
     }
 }
 
+void initFallingLeaves() {
+    g_fallingLeaves.resize(MAX_FALLING_LEAVES);
+    for (int i = 0; i < MAX_FALLING_LEAVES; ++i) {
+        spawnLeafFromTree(g_fallingLeaves[i], i % NUM_LEAF_TREES, true);
+    }
+}
 
-
-void updateFallingLeaves(float dt) {    // Gentle breeze: Right → Left (negative X) with very soft drift
-    const float windSpeedX = -0.32f;  // m/s gentle lateral wind drift (slowed down from -1.0)
-    const float windSpeedZ = -0.05f; // Slight forward drift
+void updateFallingLeaves(float dt) {
+    // Gentle breeze: Right → Left (negative X) with very soft drift
+    const float windSpeedX = -0.28f;
+    const float windSpeedZ = -0.04f;
 
     for (size_t i = 0; i < g_fallingLeaves.size(); ++i) {
         FallingLeafParticle& l = g_fallingLeaves[i];
@@ -81,28 +124,11 @@ void updateFallingLeaves(float dt) {    // Gentle breeze: Right → Left (negati
         l.rotY += l.rotSpeedY * dt;
         l.rotZ += l.rotSpeedZ * dt;
 
-        // Check ground landing OR drifted too far left
+        // Check if landed on the ground or drifted too far left
         float ground = getTerrainHeight(l.x, l.z) + 0.04f;
-        if (l.y <= ground || l.originX < -20.0f) {
-            // Respawn in the upper canopy of natural trees on the RIGHT side (wind source)
-            l.y = 3.6f + ((float)(rand() % 15) / 10.0f); // 3.6m to 5.1m (matching natural small tree height)
-            l.vy = 0.16f + ((float)(rand() % 16) / 100.0f); // Keep slow gentle fall (0.16 - 0.32 m/s)
-            l.rotSpeedX = 10.0f + ((float)(rand() % 25));
-            l.rotSpeedY = 14.0f + ((float)(rand() % 30));
-            l.rotSpeedZ =  8.0f + ((float)(rand() % 20));
-            float rChoice = (float)(rand() % 100) / 100.0f;
-            if (rChoice < 0.60f) {
-                l.originX = 5.0f + ((float)(rand() % 40) / 10.0f);
-                l.originZ = 13.0f + ((float)(rand() % 40) / 10.0f);
-            } else if (rChoice < 0.90f) {
-                l.originX = -7.0f + ((float)(rand() % 40) / 10.0f);
-                l.originZ = 13.0f + ((float)(rand() % 40) / 10.0f);
-            } else {
-                l.originX = -2.0f + ((float)(rand() % 40) / 10.0f);
-                l.originZ = 10.0f + ((float)(rand() % 60) / 10.0f);
-            }
-            l.x = l.originX;
-            l.z = l.originZ;
+        if (l.y <= ground || l.originX < -22.0f) {
+            // Respawn directly from a real tree branch in the scene!
+            spawnLeafFromTree(l, -1, false);
         }
     }
 }

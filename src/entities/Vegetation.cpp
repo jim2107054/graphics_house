@@ -272,38 +272,38 @@ void drawNaturalPineTree(float x, float z, float trunkRadius, float height, floa
 
 // Compatibility wrapper for any legacy organic tree calls
 void drawOrganicCreepyTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed, float colorTint) {    (void)trunkRadius;
-    drawNaturalDeciduousTree(x, z, 0.16f, std::min(height, 4.2f), rotY, seed, (seed % 2), colorTint);
+    drawNaturalDeciduousTree(x, z, 0.22f, std::max(height, 6.6f), rotY, seed, (seed % 2), colorTint);
 }
 
 // Compatibility wrapper for gothic foreground tree
 void drawGothicForegroundTree(float x, float z, float trunkRadius, float height, float rotY, unsigned int seed) {    (void)trunkRadius; (void)height;
-    drawNaturalDeciduousTree(x, z, 0.16f, 3.8f, rotY, seed, 0, 1.0f);
+    drawNaturalDeciduousTree(x, z, 0.22f, 6.8f, rotY, seed, 0, 1.0f);
 }
 
-// Scatter Natural Organic Trees across the entire landscape (Small, natural, 100% fully visible)
-void drawAllTrees() {    // 1. FRONT YARD & ENTRANCE TREES (Framing the entrance knolls, small and completely visible in full)
-    drawNaturalDeciduousTree(-4.8f, 15.5f, 0.15f, 3.4f,  25.0f, 1001, 0, 0.95f); // Front Left Lawn (In full view)
-    drawNaturalPineTree(     13.5f, 14.5f, 0.16f, 3.8f,  40.0f, 1002);         // Far Right Entrance Flank
-    drawNaturalDeciduousTree(15.5f, 16.5f, 0.14f, 3.4f, -30.0f, 1003, 1, 0.90f); // Cemetery Far Border
+// Scatter Natural Organic Trees across the entire landscape (Tall, majestic gothic trees)
+void drawAllTrees() {    // 1. FRONT YARD & ENTRANCE TREES (Framing the entrance knolls, tall, reaching overhead)
+    drawNaturalDeciduousTree(-4.8f, 15.5f, 0.22f, 6.6f,  25.0f, 1001, 0, 0.95f); // Front Left Lawn (Tall framing deciduous oak)
+    drawNaturalPineTree(     13.5f, 14.5f, 0.23f, 7.2f,  40.0f, 1002);         // Far Right Entrance Flank
+    drawNaturalDeciduousTree(15.5f, 16.5f, 0.21f, 6.5f, -30.0f, 1003, 1, 0.90f); // Cemetery Far Border
 
     // 2. MIDGROUND YARD & GRAVEYARD TREES
-    drawNaturalDeciduousTree( -7.8f, 12.5f, 0.15f, 3.4f, -15.0f, 1004, 1, 0.92f); // Graveyard Knoll
-    drawNaturalPineTree(     -11.5f, 10.0f, 0.16f, 3.7f,  30.0f, 1005);         // Left Fence Line
-    drawNaturalDeciduousTree(-13.5f,  5.5f, 0.17f, 3.9f,  48.0f, 1006, 0, 0.94f); // Left Manor Approach
-    drawNaturalDeciduousTree( 13.8f,  7.0f, 0.16f, 3.9f, -42.0f, 1007, 0, 0.95f); // Right Lawn behind car
-    drawNaturalPineTree(      16.0f,  9.5f, 0.16f, 3.8f,  55.0f, 1008);         // Far Right Manor Approach
+    drawNaturalDeciduousTree( -7.8f, 12.5f, 0.23f, 6.8f, -15.0f, 1004, 1, 0.92f); // Graveyard Knoll
+    drawNaturalPineTree(     -11.5f, 10.0f, 0.24f, 7.4f,  30.0f, 1005);         // Left Fence Line
+    drawNaturalDeciduousTree(-13.5f,  5.5f, 0.25f, 7.6f,  48.0f, 1006, 0, 0.94f); // Left Manor Approach
+    drawNaturalDeciduousTree( 13.8f,  7.0f, 0.24f, 7.5f, -42.0f, 1007, 0, 0.95f); // Right Lawn behind car
+    drawNaturalPineTree(      16.0f,  9.5f, 0.24f, 7.5f,  55.0f, 1008);         // Far Right Manor Approach
 
     // 3. MANOR FLANKING TREES (Flanking the house on left and right)
-    drawNaturalDeciduousTree(-15.0f, -3.5f, 0.17f, 4.1f,  12.0f, 2001, 0, 0.90f); // Left House Flank
-    drawNaturalPineTree(      13.5f, -3.0f, 0.17f, 4.1f, -20.0f, 2002);         // Right House Flank
+    drawNaturalDeciduousTree(-15.0f, -3.5f, 0.26f, 8.2f,  12.0f, 2001, 0, 0.90f); // Left House Flank
+    drawNaturalPineTree(      13.5f, -3.0f, 0.26f, 8.2f, -20.0f, 2002);         // Right House Flank
 
-    // 4. BACKGROUND FOREST HORIZON (Small natural trees on the ridge behind the mansion, creating a dense natural backdrop)
-    drawNaturalPineTree(     -12.5f, -14.0f, 0.16f, 4.0f,  15.0f, 3001);
-    drawNaturalDeciduousTree( -8.0f, -16.0f, 0.16f, 3.8f, -22.0f, 3002, 1, 0.88f);
-    drawNaturalPineTree(      -4.0f, -17.5f, 0.17f, 4.0f,  45.0f, 3003);
-    drawNaturalDeciduousTree(  0.0f, -18.5f, 0.17f, 3.9f, -28.0f, 3004, 0, 0.88f);
-    drawNaturalPineTree(       4.0f, -17.5f, 0.17f, 4.0f,  35.0f, 3005);
-    drawNaturalDeciduousTree(  8.0f, -16.0f, 0.16f, 3.8f, -15.0f, 3006, 1, 0.88f);
-    drawNaturalPineTree(      12.5f, -14.0f, 0.16f, 4.0f,  60.0f, 3007);
+    // 4. BACKGROUND FOREST HORIZON (Tall natural trees on the ridge behind the mansion, creating a dense natural backdrop)
+    drawNaturalPineTree(     -12.5f, -14.0f, 0.24f, 7.8f,  15.0f, 3001);
+    drawNaturalDeciduousTree( -8.0f, -16.0f, 0.24f, 7.5f, -22.0f, 3002, 1, 0.88f);
+    drawNaturalPineTree(      -4.0f, -17.5f, 0.25f, 8.0f,  45.0f, 3003);
+    drawNaturalDeciduousTree(  0.0f, -18.5f, 0.25f, 7.8f, -28.0f, 3004, 0, 0.88f);
+    drawNaturalPineTree(       4.0f, -17.5f, 0.25f, 8.0f,  35.0f, 3005);
+    drawNaturalDeciduousTree(  8.0f, -16.0f, 0.24f, 7.5f, -15.0f, 3006, 1, 0.88f);
+    drawNaturalPineTree(      12.5f, -14.0f, 0.24f, 7.8f,  60.0f, 3007);
 }
 
