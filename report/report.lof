@@ -1,0 +1,28 @@
+\contentsline {figure}{\numberline {1}{\ignorespaces Complete exterior facade of the Victorian Gothic haunted house with moonlit terrain and ambient night atmosphere.}}{1}{figure.caption.1}%
+\contentsline {figure}{\numberline {2}{\ignorespaces Real-time rendering pipeline: FreeGLUT initialization, per-frame simulation update, camera view transform, multi-source lighting, hierarchical geometry, stencil planar shadows, 2D HUD, and double-buffer swap.}}{3}{figure.caption.2}%
+\contentsline {figure}{\numberline {3}{\ignorespaces Hierarchical scene graph transformation tree: House parent world translation and yaw with child foundations, walls, roofs, furniture, and windows.}}{4}{figure.caption.3}%
+\contentsline {figure}{\numberline {4}{\ignorespaces Primary geometric primitives (cuboid, cylinder, sphere, cone, prism) and composite object assemblies.}}{5}{figure.caption.4}%
+\contentsline {figure}{\numberline {5}{\ignorespaces Architectural details of the exterior Gothic facade, showing pitched gables, porch framing, dormer windows, and stone foundation plinth.}}{7}{figure.caption.5}%
+\contentsline {figure}{\numberline {6}{\ignorespaces Ground-floor parlor interior with stone fireplace, grandfather clock, dining table, chairs, and wood flooring.}}{9}{figure.caption.6}%
+\contentsline {figure}{\numberline {7}{\ignorespaces Second-floor interior displaying four-poster bed, alchemist desk with glassware, bookshelves, and staircase railing.}}{10}{figure.caption.7}%
+\contentsline {figure}{\numberline {8}{\ignorespaces Procedural undulating terrain mesh, cobblestone entrance pathway, and yard boundary props.}}{12}{figure.caption.8}%
+\contentsline {figure}{\numberline {9}{\ignorespaces Gnarled procedural dead trees, layered foliage crowns, and animated falling autumn leaves.}}{13}{figure.caption.9}%
+\contentsline {figure}{\numberline {10}{\ignorespaces Graveyard scene featuring weathered tombstones, wrought-iron fences, and illuminated jack-o'-lanterns.}}{15}{figure.caption.10}%
+\contentsline {figure}{\numberline {11}{\ignorespaces Abandoned vintage automobile model showing body chassis, engine bay, rusty texturing, and wheels.}}{16}{figure.caption.11}%
+\contentsline {figure}{\numberline {12}{\ignorespaces Atmospheric creatures including the patrolling black cat, perched owl, swarm of flying bats, and moonlit procedural clouds.}}{18}{figure.caption.12}%
+\contentsline {figure}{\numberline {13}{\ignorespaces Comparative illumination states: porch swinging bulb, directional moonlight, player spotlight flashlight, and glowing window.}}{19}{figure.caption.13}%
+\contentsline {figure}{\numberline {14}{\ignorespaces Planar shadow projection pipeline: light matrix projection, stencil buffer single-count masking, and blended ambient ground darkening.}}{20}{figure.caption.14}%
+\contentsline {figure}{\numberline {15}{\ignorespaces Surface appearance comparison with texture mapping enabled versus disabled, highlighting diffuse material properties.}}{21}{figure.caption.15}%
+\contentsline {figure}{\numberline {16}{\ignorespaces Mathematical terrain height profile generated from multi-frequency sine harmonics and smoothstep S-curve entrance road spline.}}{22}{figure.caption.16}%
+\contentsline {figure}{\numberline {17}{\ignorespaces Temporal animation stages illustrating swinging porch bulb oscillation, drifting volumetric clouds, and bat wing flutter.}}{23}{figure.caption.17}%
+\contentsline {figure}{\numberline {18}{\ignorespaces First-person camera navigation coordinate frame and 10-stage cinematic tour waypoint trajectory.}}{24}{figure.caption.18}%
+\contentsline {figure}{\numberline {19}{\ignorespaces Orthographic 2D Heads-Up Display (HUD) overlay presenting interactive keybindings, lighting states, and simulation statistics.}}{25}{figure.caption.19}%
+\contentsline {figure}{\numberline {20}{\ignorespaces Multi-pass render composition sequence: celestial sky and moon, terrain and architecture geometry, stencil shadow projections, translucent alpha blending, and orthographic UI overlay.}}{26}{figure.caption.20}%
+\contentsline {figure}{\numberline {21}{\ignorespaces Ground-floor parlor interior}}{28}{figure.caption.21}%
+\contentsline {figure}{\numberline {22}{\ignorespaces Staircase and guardrail detail}}{28}{figure.caption.22}%
+\contentsline {figure}{\numberline {23}{\ignorespaces Upper bedroom and alchemist desk}}{28}{figure.caption.23}%
+\contentsline {figure}{\numberline {24}{\ignorespaces Flashlight enabled versus disabled}}{28}{figure.caption.24}%
+\contentsline {figure}{\numberline {25}{\ignorespaces Lightning flash at its brightest phase}}{29}{figure.caption.25}%
+\contentsline {figure}{\numberline {26}{\ignorespaces Planar directional moonlight shadows}}{29}{figure.caption.26}%
+\contentsline {figure}{\numberline {27}{\ignorespaces Texture mapping toggled off}}{29}{figure.caption.27}%
+\contentsline {figure}{\numberline {28}{\ignorespaces Procedural creatures and bat swarm}}{29}{figure.caption.28}%

@@ -1,0 +1,1174 @@
+\documentclass[10pt,a4paper,oneside]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype,geometry,graphicx,float,booktabs,longtable,array,multicol,amsmath,amssymb,mathtools,xcolor,hyperref,fancyhdr,titlesec,enumitem,listings,tikz,caption,setspace,needspace}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\geometry{left=26mm,right=25mm,top=24mm,bottom=25mm}
+\setstretch{1.08}
+\hypersetup{hidelinks=true,pdfauthor={CSE 4102 Project},pdftitle={Horror House at Night - Computer Graphics Project Report}}
+\pagestyle{fancy}\fancyhf{}\fancyhead[L]{\small Horror House at Night}\fancyhead[R]{\small CSE 4102}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0.35pt}
+\setlength{\headheight}{15pt}
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{1.1em}
+\setlength{\parskip}{0pt}
+\setlength{\LTpre}{5pt}\setlength{\LTpost}{5pt}
+\captionsetup{font=small,labelfont=bf,skip=5pt}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{15pt plus 3pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt plus 2pt minus 1pt}{4pt}
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,frame=single,columns=fullflexible,showstringspaces=false}
+\newcommand{\sourcefile}[1]{\par\noindent\textit{Source: \texttt{\detokenize{#1}}.}\par}
+\newcommand{\figureplaceholder}[2]{%
+\begin{figure}[H]\centering
+\IfFileExists{images/#1}{\includegraphics[width=0.88\linewidth,height=5.0cm,keepaspectratio]{images/#1}}{%
+\fbox{\begin{minipage}[c][3.8cm][c]{0.86\linewidth}\centering
+\textbf{Screenshot to insert}\par\vspace{7pt}
+{\small\ttfamily\detokenize{#1}}\par\vspace{8pt}
+{\footnotesize Place the image in the images/ folder; it will appear automatically.}
+\end{minipage}}}
+\caption{#2}\end{figure}}
+\begin{document}
+\begin{titlepage}\centering
+{\large Khulna University of Engineering \& Technology (KUET)\par}
+\vspace{0.25cm}{\large Department of Computer Science and Engineering\par}
+\vspace{1.0cm}{\large CSE 4102: Computer Graphics Laboratory\par}
+\vspace{0.6cm}{\LARGE\bfseries Final Project Report\par}
+\vspace{1.1cm}{\Huge\bfseries Horror House at Night\par}
+\vspace{0.4cm}{\Large An Interactive 3D Gothic Environment Developed in OpenGL\par}
+\vspace{0.9cm}
+\IfFileExists{images/cover_exterior.png}{\includegraphics[width=0.73\linewidth,height=5.2cm,keepaspectratio]{images/cover_exterior.png}}{\fbox{\begin{minipage}[c][4.4cm][c]{0.74\linewidth}\centering\large Cover screenshot\\[8pt]\normalsize\texttt{cover\_exterior.png}\end{minipage}}}
+\vfill\begin{tabular}{rl}\textbf{Submitted by:} & MD Jahid Hasan Jim\\\textbf{Roll:} & 2107054\\\textbf{Department:} & Computer Science and Engineering\\\textbf{Submitted to:} & Course Teachers, CSE 4102\\\textbf{Institution:} & KUET\end{tabular}
+\vspace{0.55cm}\par October 2026\end{titlepage}
+\pagenumbering{roman}
+\section*{Abstract}\addcontentsline{toc}{section}{Abstract}
+This report documents the implementation of \emph{Horror House at Night}, an interactive three-dimensional Gothic environment programmed in C++17 using legacy OpenGL, GLU, and FreeGLUT. The application constructs a large haunted house with explorable ground- and upper-floor interiors, a surrounding graveyard, a rusted automobile, procedural terrain, vegetation, atmospheric clouds, animated animals, and decorative props. The implementation combines geometric primitives, matrix transformations, textured material surfaces, OpenGL fixed-function ambient--diffuse--specular lighting, multiple moving and stationary light sources, planar projected shadows using stencil processing, keyboard and mouse navigation, and time-dependent animation. The central contribution of the project is the integration of these graphics concepts into one coherent real-time interactive scene. Technical discussion in the following chapters is derived primarily from the supplied source files; material in the separate sample report is used as a reference for academic report organization, not as evidence that any feature exists in this project.
+\clearpage\tableofcontents\clearpage\listoffigures\clearpage\pagenumbering{arabic}
+
+\section{Introduction}
+Computer graphics converts geometric descriptions of a virtual world into a visible image. This project is designed as an explorable nocturnal environment rather than a set of unrelated graphics demonstrations. The house, surrounding cemetery, vehicle, clouds, weather, materials, lighting, shadows, and moving creatures form a continuous scene that can be observed from multiple locations. The code uses the OpenGL compatibility/fixed-function API: geometry is submitted using immediate-mode primitives such as \texttt{glBegin}, and lighting and material behavior are configured using \texttt{glLight*}, \texttt{glMaterial*}, and related OpenGL state calls. This distinction matters: a Phong-style reflection model is used by fixed-function lighting, but this codebase does not implement a separate GLSL per-pixel Phong shader.
+
+\subsection{Motivation and objectives}
+The primary aim is to demonstrate modeling, hierarchical placement, rasterization, illumination, texture mapping, camera transformation, animation and user interaction within one understandable project. Detailed architecture allows examination of how simple cubes, cylinders, spheres, polygons and custom meshes are transformed into recognizable artifacts. Multiple lights demonstrate different spatial emission models, while dark textures, geometry and atmospheric changes create the required horror atmosphere.
+
+\subsection{Project scope}
+The scene contains a rotated and translated multi-floor house with a porch and doorway; a decorated parlor and an upper bedroom/study; a fifteen-step staircase; an exterior path and non-flat ground; cemetery headstones and fences; a damaged vehicle; trees, foliage and loose objects; pumpkins; moving bats, a black cat and an owl; celestial sky elements and clouds; a swaying bulb; lightning; audio interface hooks; screenshot capture; a title screen, HUD and cinematic camera route. Each of these items is discussed in the relevant chapters rather than merely named.
+
+\subsection{Implementation status and verification method}
+All concrete implementation claims in this report have been checked against the supplied C++ source tree. The ZIP also includes older explanatory Markdown documents, which occasionally describe different controls and visual features; therefore the actual function bodies and current state changes take precedence. Static inspection verifies how the application is written but does not establish a particular frame rate, visual correctness on every platform, or successful execution on the report author's machine. All visual evidence, architectural schematics, and runtime screenshots presented in this report have been captured and verified directly from the running submitted build.
+
+\figureplaceholder{01_exterior_facade.png}{Complete exterior facade of the Victorian Gothic haunted house with moonlit terrain and ambient night atmosphere.}
+
+\section{System Architecture and Development Environment}
+The program is divided into source modules for the application loop, camera and input, reusable geometry and materials, environment objects, user-interface drawing and audio. Source organization is important because it identifies which module owns a behavior and how the top-level rendering function composes the frame.
+
+\subsection{Programming language, APIs and build configuration}
+The build file selects C++17 and recursively includes C++ sources under \texttt{src/}. The current renderer uses FreeGLUT windowing and callbacks and the OpenGL compatibility API; the package also contains headers for other graphics libraries, but their presence alone does not prove they are used by this executable. On Windows the CMake target links FreeGLUT, GLU, OpenGL, GDI, User32 and WinMM. The program requests a double-buffered RGBA frame buffer with depth and stencil buffers at initialization. 
+
+\subsection{Project source modules}
+The source files are arranged so that \texttt{main.cpp} coordinates initialization, rendering and per-frame updates. The \texttt{core} folder contains configuration, navigation and input processing. The \texttt{graphics} folder implements reusable geometric shapes, materials, texture management, lighting effects and stencil-based projected shadows. The \texttt{entities} folder contains the separate objects and groups that appear in the 3D world. The \texttt{ui} folder handles on-screen text and screenshots; \texttt{audio} provides the sound-system interface.
+
+\begin{longtable}{p{0.35\textwidth}p{0.58\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+src/main.cpp & GL initialization, frame rendering, update loop, program entry\\\addlinespace[3pt]
+
+src/core/Config.cpp & Global state variables and configuration\\\addlinespace[3pt]
+
+src/core/Camera.cpp & Camera motion, collision and timed tour\\\addlinespace[3pt]
+
+src/core/Input.cpp & Keyboard, mouse and feature toggles\\\addlinespace[3pt]
+
+src/graphics/Primitives.cpp & Boxes, beveled boxes, cylinders, spheres, roof and spire meshes\\\addlinespace[3pt]
+
+src/graphics/Material.h & Ambient/diffuse/specular/emissive surface definitions\\\addlinespace[3pt]
+
+src/graphics/TextureManager.cpp & Texture loading, procedural image data, sampling state\\\addlinespace[3pt]
+
+src/graphics/Lighting.cpp & Lightning trigger, swinging porch bulb and light pools\\\addlinespace[3pt]
+
+src/graphics/Shadow.cpp & Planar shadow projection and stencil operation\\\addlinespace[3pt]
+
+src/entities/House.cpp & Exterior structure, first- and second-floor contents\\\addlinespace[3pt]
+
+src/entities/Terrain.cpp & Height function, terrain meshes, road and yard objects\\\addlinespace[3pt]
+
+src/entities/Vegetation.cpp & Deciduous trees, pines and organic trees\\\addlinespace[3pt]
+
+src/entities/Graveyard.cpp & Graves and broken fences\\\addlinespace[3pt]
+
+src/entities/Props.cpp & Pumpkins, telephone poles and rusted vehicle\\\addlinespace[3pt]
+
+src/entities/Particles.cpp & Falling leaves, bats and ground-mist routines\\\addlinespace[3pt]
+
+src/entities/Creatures.cpp & Cat and owl models and animated behavior\\\addlinespace[3pt]
+
+src/entities/Clouds.cpp & Volumetric modeled cloud banks and motion\\\addlinespace[3pt]
+
+src/entities/SkyAndStars.cpp & Stars and moon\\\addlinespace[3pt]
+
+src/ui/HUD.cpp & Title screen and runtime overlay\\\addlinespace[3pt]
+
+src/ui/Screenshot.cpp & BMP capture\\\addlinespace[3pt]
+
+src/audio/AudioSystem.cpp & Sound-related integration\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Frame processing pipeline}
+The idle callback obtains elapsed milliseconds from FreeGLUT, converts to seconds and clamps the frame delta to at most $0.1\,\mathrm{s}$. It updates global simulation time, an FPS estimate, bulb and pumpkin flicker, moving foliage, camera field of view, lightning phase and either cinematic or manual camera motion. It then schedules redisplay. The display callback clears color/depth/stencil buffers, selects either the title UI or the 3D perspective, applies \texttt{gluLookAt}, renders lights and scene objects, draws projected shadows and the HUD, and finally swaps buffers.
+
+\figureplaceholder{02_pipeline.png}{Real-time rendering pipeline: FreeGLUT initialization, per-frame simulation update, camera view transform, multi-source lighting, hierarchical geometry, stencil planar shadows, 2D HUD, and double-buffer swap.}
+
+\subsection{Dependency and source ownership notes}
+\texttt{stb\_image} reads external texture images, while GLU provides perspective and camera helper functions. Object construction relies on reusable functions in \texttt{Primitives.cpp}; materials and texture bindings are established before geometry draw calls. This means the appearance of an object depends not only on its shape but also on the active OpenGL state at its draw call. Matrix-stack push/pop and attribute-state restoration are therefore recurring implementation patterns.
+
+\section{Coordinate Systems and Geometric Transformations}
+A three-dimensional model is easier to construct in a local coordinate frame and then place in the world using translation, rotation and scaling. The same matrix operations position the complete building, individual architectural components, furniture, vegetation and articulated creatures.
+
+\subsection{Homogeneous transformations}
+A point $\mathbf p=(x,y,z,1)^T$ is transformed with a $4\times4$ matrix. Translation and scaling are
+\begin{equation}T(a,b,c)=\begin{bmatrix}1&0&0&a\\0&1&0&b\\0&0&1&c\\0&0&0&1\end{bmatrix},\qquad S(s_x,s_y,s_z)=\begin{bmatrix}s_x&0&0&0\\0&s_y&0&0\\0&0&s_z&0\\0&0&0&1\end{bmatrix}.\end{equation}
+A yaw rotation around the world $y$ axis is
+\begin{equation}R_y(\theta)=\begin{bmatrix}\cos\theta&0&\sin\theta&0\\0&1&0&0\\-\sin\theta&0&\cos\theta&0\\0&0&0&1\end{bmatrix}.\end{equation}
+For a centered box whose local dimensions are $(w,h,d)$, the common modeling expression is $M=T\,R\,S$. Many objects are built by drawing a dimensioned \texttt{drawBox} after a call to \texttt{glTranslatef}, so an additional scaling matrix is not required for that primitive's dimensions. Operations inside \texttt{glPushMatrix}/\texttt{glPopMatrix} do not alter parent placement.
+
+\subsection{Full house transformation}
+The source defines $x_h=-2.8$, $z_h=-11.5$ and a yaw of $-18^\circ$. In \texttt{drawHouse}, the code first translates and then rotates, so the house's local geometry is transformed by
+\begin{equation}\mathbf p_{world}=T(-2.8,0,-11.5)R_y(-18^\circ)\mathbf p_{local}.\end{equation}
+These exact constants also matter for embedded lights, collision coordinates and camera-relative positioning. For example, a local position $(x_l,y_l,z_l)$ becomes
+\begin{align}x_w&=-2.8+x_l\cos\theta+z_l\sin\theta,\\y_w&=y_l,\\z_w&=-11.5-x_l\sin\theta+z_l\cos\theta.\end{align}
+
+\figureplaceholder{03_transform_hierarchy.png}{Hierarchical scene graph transformation tree: House parent world translation and yaw with child foundations, walls, roofs, furniture, and windows.}
+
+\subsection{Transform order and the matrix stack}
+OpenGL's fixed-function matrix stack makes hierarchical construction possible. The parent building transform is active while its children are rendered. Each child saves the current modelview matrix, applies local translations/rotations/scales, draws a primitive or subassembly and restores the matrix. Reversing multiplication order changes the result: $TR$ rotates an object before relocating it, whereas $RT$ rotates its already translated location around the origin. A rotation around a hinge is constructed as translation to the pivot, rotation, and an appropriate relative geometry offset.
+
+\subsection{World and local conventions}
+The environment uses the $y$ axis as vertical. Terrain is sampled at horizontal $(x,z)$ positions, while the camera's yaw angle controls heading across the $xz$ plane. Each house component is authored in house-local coordinates, and the house yaw then aligns that complete structure with the exterior. The same principle is used when placing lights inside the upper floor: local light coordinates are explicitly rotated and translated to world coordinates.
+
+\section{Primitive Geometry and Mesh Generation}
+Rather than import a complete haunted-house mesh, the project creates most visible geometry by repeated composition of reusable geometric procedures and specially authored polygons. This chapter explains the origin of the constituent shapes and the mathematical relationships used to build them.
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Centered box & drawBox(w,h,d) creates six textured surfaces from half-extents; used for walls, floors, stairs, timber, beds and car subparts.\\\addlinespace[3pt]
+
+Beveled box & drawBeveledBox introduces corner/edge bevel geometry to avoid an entirely sharp rectangular silhouette.\\\addlinespace[3pt]
+
+Cylinder / truncated cone & drawCylinder(baseRadius,topRadius,height,slices) samples the circumference, supports tapered forms, and generates side/cap geometry.\\\addlinespace[3pt]
+
+Sphere & drawSphere(radius,slices,stacks) samples longitude and latitude, used in organic forms, eyes, knobs and lamp globes.\\\addlinespace[3pt]
+
+Prismatic roof & drawPrismRoof builds a pitched roof from planar surfaces and triangles.\\\addlinespace[3pt]
+
+Steeple spire & drawSteepleSpire constructs a faceted tapered pointed form from radial sections.\\\addlinespace[3pt]
+
+Custom quads/triangles & Used for irregular terrain, fallen leaves, bat membranes, glass, signage and other special details.\\\addlinespace[3pt]
+
+Billboard halo & drawBillboardHalo creates a glow-like translucent textured/untextured overlay facing the camera.\\\addlinespace[3pt]
+
+Flashlight cone & drawVolumetricFlashlightBeam draws an approximate translucent visible cone aligned with the view direction.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Box geometry}
+\texttt{drawBox} begins from $(\pm w/2,\pm h/2,\pm d/2)$. Each face is assigned a normal; adjacent faces have different normals because a hard-edged box should not interpolate into a rounded surface. Surface coordinates are generated so the selected image repeats across the corresponding face. Real architectural features are assembled by positioning many such boxes, rather than treating a solid wall as a single uncut volume.
+
+\subsection{Cylinder and conical surfaces}
+For $N$ circular samples, the azimuth is $\phi_i=2\pi i/N$. A side vertex at radius $r$ and height $y$ is $\big(r\cos\phi_i,y,r\sin\phi_i\big)$. Varying the radius between the two ends produces a truncated cone. This procedure is reused for tree trunks, rails, shaped furniture legs, candleholders and curved mechanical or decorative details.
+
+\subsection{Spherical and ellipsoidal parts}
+With polar/latitude parameter $\alpha$ and longitude $\phi$, one convenient spherical parameterization is $\mathbf p=r(\cos\alpha\cos\phi,\sin\alpha,\cos\alpha\sin\phi)$. The vertex normal for a sphere centered at the origin is $\mathbf n=\mathbf p/r$. A sphere drawn under nonuniform scaling becomes an ellipsoid; the program employs this construction for several rounded and organic parts. \texttt{GL\_NORMALIZE} is enabled to keep transformed normals unit length under scaling.
+
+\subsection{Normals, texture coordinates and surface facets}
+OpenGL's lighting calculation depends on a surface normal at the submitted vertices. Triangle normals can be derived from the cross product $\mathbf n=\frac{(\mathbf b-\mathbf a)\times(\mathbf c-\mathbf a)}{\lVert(\mathbf b-\mathbf a)\times(\mathbf c-\mathbf a)\rVert}$. Flat faces may use one constant normal; curved geometry varies normals around its circumference or surface. UV coordinates map each mesh vertex to a location in the chosen bitmap. \texttt{GL\_SMOOTH} enables interpolation of vertex colors across polygons, which is distinct from a custom fragment shader.
+
+\figureplaceholder{04_primitives.png}{Primary geometric primitives (cuboid, cylinder, sphere, cone, prism) and composite object assemblies.}
+
+\section{Exterior Gothic Architecture}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/House.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Stone foundation and plinth & Wide stacked boxes form the stone foundation and projecting base molding; stone material and stone texture establish a heavy base.\\\addlinespace[3pt]
+
+Primary walls and hollow rooms & Thin boxes construct sections between door/window openings; openings are made by omission of wall spans instead of transparent solid walls.\\\addlinespace[3pt]
+
+Tall pitched roof and gables & Angled roof panels, prismatic roof forms and repeated trim produce the Gothic silhouette, with roof-shingle material and image mapping.\\\addlinespace[3pt]
+
+Dormers, steeple and chimneys & Subassemblies of boxes, slopes, spire segments and chimney shafts are placed on the roof.\\\addlinespace[3pt]
+
+Porch deck and steps & Horizontal rectangular slabs are stacked at varying height and depth; narrow beams form support posts and rails.\\\addlinespace[3pt]
+
+Front doorway and windows & Doorframe members and transparent glass planes define the entrance and views through the walls.\\\addlinespace[3pt]
+
+Weathering and webs & Dark materials, irregular wood and cobweb line geometry create aged detail.\\\addlinespace[3pt]
+
+Whole-building placement & The house parent group is translated to (-2.8,0,-11.5) and rotated -18 degrees about y.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Stone foundation and plinth}
+Wide stacked boxes form the stone foundation and projecting base molding; stone material and stone texture establish a heavy base. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Primary walls and hollow rooms}
+Thin boxes construct sections between door/window openings; openings are made by omission of wall spans instead of transparent solid walls. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Tall pitched roof and gables}
+Angled roof panels, prismatic roof forms and repeated trim produce the Gothic silhouette, with roof-shingle material and image mapping. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Dormers, steeple and chimneys}
+Subassemblies of boxes, slopes, spire segments and chimney shafts are placed on the roof. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Porch deck and steps}
+Horizontal rectangular slabs are stacked at varying height and depth; narrow beams form support posts and rails. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Front doorway and windows}
+Doorframe members and transparent glass planes define the entrance and views through the walls. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Weathering and webs}
+Dark materials, irregular wood and cobweb line geometry create aged detail. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Whole-building placement}
+The house parent group is translated to (-2.8,0,-11.5) and rotated -18 degrees about y. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{05_exterior_detail.png}{Architectural details of the exterior Gothic facade, showing pitched gables, porch framing, dormer windows, and stone foundation plinth.}
+
+\section{Ground-Floor Interior and Furnishings}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/House.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Damaged floorboards & Long thin boxes act as separate planks; gaps and displaced pieces suggest deterioration.\\\addlinespace[3pt]
+
+Fireplace and hearth & Layered brick-color boxes build the hearth, jambs, firebox and mantel.\\\addlinespace[3pt]
+
+Grandfather clock & Stacked beveled cabinets, a circular clock face and pendulum-shaped parts create the antique object.\\\addlinespace[3pt]
+
+Tables, chairs and overturned furniture & A seat or tabletop box is combined with turned cylindrical legs, rails and angled supports.\\\addlinespace[3pt]
+
+Wall ornament and cobwebs & Lightweight lines, small repeated pieces and wall-mounted details enrich empty regions.\\\addlinespace[3pt]
+
+First-floor rooms & All contents are rendered within the parent local coordinates, so they follow the house translation and yaw.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Damaged floorboards}
+Long thin boxes act as separate planks; gaps and displaced pieces suggest deterioration. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Fireplace and hearth}
+Layered brick-color boxes build the hearth, jambs, firebox and mantel. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Grandfather clock}
+Stacked beveled cabinets, a circular clock face and pendulum-shaped parts create the antique object. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Tables, chairs and overturned furniture}
+A seat or tabletop box is combined with turned cylindrical legs, rails and angled supports. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Wall ornament and cobwebs}
+Lightweight lines, small repeated pieces and wall-mounted details enrich empty regions. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{First-floor rooms}
+All contents are rendered within the parent local coordinates, so they follow the house translation and yaw. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{06_parlor.png}{Ground-floor parlor interior with stone fireplace, grandfather clock, dining table, chairs, and wood flooring.}
+
+\section{Second Floor, Bedroom, Study and Staircase}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/House.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Upper-floor platform & Plank-based slabs define the floor while a deliberately unfilled region forms the stairwell opening.\\\addlinespace[3pt]
+
+Fifteen-step staircase & A sequence of progressively offset treads/risers creates an accessible incline from the first level to the second.\\\addlinespace[3pt]
+
+Banisters and balusters & Repeated narrow turned spindles and continuous rails produce the staircase boundary.\\\addlinespace[3pt]
+
+Four-poster bed & Rectangular frame, four vertical posts, headboard and layered mattress/quilt surfaces use nested transforms.\\\addlinespace[3pt]
+
+Study desk and grimoire & Boxes form the desk and open pages; smaller details compose the book and study equipment.\\\addlinespace[3pt]
+
+Candelabra and hanging lantern & Metallic supports, small cylinders and flame-shaped parts surround warm light source positions.\\\addlinespace[3pt]
+
+Upper floor lights & Point sources GL\_LIGHT4 and GL\_LIGHT5 have local coordinates transformed through the house yaw and translation.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Upper-floor platform}
+Plank-based slabs define the floor while a deliberately unfilled region forms the stairwell opening. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Fifteen-step staircase}
+A sequence of progressively offset treads/risers creates an accessible incline from the first level to the second. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Banisters and balusters}
+Repeated narrow turned spindles and continuous rails produce the staircase boundary. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Four-poster bed}
+Rectangular frame, four vertical posts, headboard and layered mattress/quilt surfaces use nested transforms. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Study desk and grimoire}
+Boxes form the desk and open pages; smaller details compose the book and study equipment. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Candelabra and hanging lantern}
+Metallic supports, small cylinders and flame-shaped parts surround warm light source positions. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Upper floor lights}
+Point sources GL\_LIGHT4 and GL\_LIGHT5 have local coordinates transformed through the house yaw and translation. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{07_second_floor.png}{Second-floor interior displaying four-poster bed, alchemist desk with glassware, bookshelves, and staircase railing.}
+
+\section{Terrain, Pathway and Yard Props}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Terrain.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Procedural ground & A continuous height function combines multiple sine/cosine waves, suppressed near the house and path.\\\addlinespace[3pt]
+
+Cobblestone pathway & A centerline function smoothly changes road x-coordinate as z advances; stone-like elements follow it.\\\addlinespace[3pt]
+
+Terrain normals & Height samples at offsets ±0.15 are used to calculate finite-difference normals.\\\addlinespace[3pt]
+
+Grass and undergrowth & Triangles form upright tufts, with small trigonometric wind rotations.\\\addlinespace[3pt]
+
+Rocks and stones & Irregular multi-face shapes are scaled, rotated and seeded for repeated stable variation.\\\addlinespace[3pt]
+
+Crates, buckets and barrels & Rectangular panels and tapered/cylindrical elements combine into broken abandoned objects.\\\addlinespace[3pt]
+
+Signs, lampposts and outdoor furniture & Nested boxes, cylinders and custom line/letter forms build the extra yard details.\\\addlinespace[3pt]
+
+Puddle routines & The present source has empty drawPuddle/drawPuddles functions; water puddles should not be claimed as a working feature.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Procedural ground}
+A continuous height function combines multiple sine/cosine waves, suppressed near the house and path. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Cobblestone pathway}
+A centerline function smoothly changes road x-coordinate as z advances; stone-like elements follow it. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Terrain normals}
+Height samples at offsets ±0.15 are used to calculate finite-difference normals. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Grass and undergrowth}
+Triangles form upright tufts, with small trigonometric wind rotations. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Rocks and stones}
+Irregular multi-face shapes are scaled, rotated and seeded for repeated stable variation. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Crates, buckets and barrels}
+Rectangular panels and tapered/cylindrical elements combine into broken abandoned objects. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Signs, lampposts and outdoor furniture}
+Nested boxes, cylinders and custom line/letter forms build the extra yard details. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Puddle routines}
+The present source has empty drawPuddle/drawPuddles functions; water puddles should not be claimed as a working feature. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{08_terrain.png}{Procedural undulating terrain mesh, cobblestone entrance pathway, and yard boundary props.}
+
+\section{Trees, Vegetation and Falling Leaves}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Vegetation.cpp and src/entities/Particles.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Deciduous trees & A cylindrical/tapered trunk branches into rotated subordinate segments with clustered foliage.\\\addlinespace[3pt]
+
+Pine trees & A central trunk and tapered crown layers produce conifer silhouettes.\\\addlinespace[3pt]
+
+Twisted Gothic trees & Procedural irregular branch orientations and seeded variation make bare shapes less repetitive.\\\addlinespace[3pt]
+
+Root flares & Short radiating segments spread around a trunk base.\\\addlinespace[3pt]
+
+Stable procedural variation & TreeRNG is a deterministic linear-congruential generator for repeatable organic details.\\\addlinespace[3pt]
+
+Falling leaves & Particle state records are updated with delta-time and rendered as thin 3D leaf geometry.\\\addlinespace[3pt]
+
+Wind sway & Sinusoidal angles modulate vegetation while remaining anchored to the sampled terrain.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Deciduous trees}
+A cylindrical/tapered trunk branches into rotated subordinate segments with clustered foliage. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Pine trees}
+A central trunk and tapered crown layers produce conifer silhouettes. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Twisted Gothic trees}
+Procedural irregular branch orientations and seeded variation make bare shapes less repetitive. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Root flares}
+Short radiating segments spread around a trunk base. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Stable procedural variation}
+TreeRNG is a deterministic linear-congruential generator for repeatable organic details. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Falling leaves}
+Particle state records are updated with delta-time and rendered as thin 3D leaf geometry. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Wind sway}
+Sinusoidal angles modulate vegetation while remaining anchored to the sampled terrain. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{09_vegetation.png}{Gnarled procedural dead trees, layered foliage crowns, and animated falling autumn leaves.}
+
+\section{Graveyard and Halloween Props}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Graveyard.cpp and src/entities/Props.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Arched headstones & Curved upper boundaries and upright stone geometry create monument silhouettes.\\\addlinespace[3pt]
+
+Celtic crosses & Repeated cross arms and a carved-looking central ring/stone layers produce characteristic graves.\\\addlinespace[3pt]
+
+Stone crosses and sarcophagi & Rectangular and sculpted slabs, tilted or separated lids, and pedestal pieces supply variation.\\\addlinespace[3pt]
+
+Burial mounds & Low raised ground shapes mark graves and blend them into the terrain.\\\addlinespace[3pt]
+
+Broken fence & Fence posts and rails are individually rotated or displaced into damaged sections.\\\addlinespace[3pt]
+
+Carved pumpkins & Round segmented forms receive face cutouts/overlays, stalks and warm emissive glowing components.\\\addlinespace[3pt]
+
+Lighting distinction & Pumpkin effects are controlled separately and should not be confused with GL\_LIGHT4/5, which are upper-floor lights.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Arched headstones}
+Curved upper boundaries and upright stone geometry create monument silhouettes. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Celtic crosses}
+Repeated cross arms and a carved-looking central ring/stone layers produce characteristic graves. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Stone crosses and sarcophagi}
+Rectangular and sculpted slabs, tilted or separated lids, and pedestal pieces supply variation. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Burial mounds}
+Low raised ground shapes mark graves and blend them into the terrain. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Broken fence}
+Fence posts and rails are individually rotated or displaced into damaged sections. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Carved pumpkins}
+Round segmented forms receive face cutouts/overlays, stalks and warm emissive glowing components. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Lighting distinction}
+Pumpkin effects are controlled separately and should not be confused with GL\_LIGHT4/5, which are upper-floor lights. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{10_graveyard.png}{Graveyard scene featuring weathered tombstones, wrought-iron fences, and illuminated jack-o'-lanterns.}
+
+\section{Rusted Vintage Vehicle}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Props.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Body and cabin & Broad boxes, beveled panels and shaped polygons form a stylized vintage automobile body.\\\addlinespace[3pt]
+
+Wheels and tires & Cylinders/rings and repeated circular sections create wheels; one wheel is modeled with a flattened-tire variation.\\\addlinespace[3pt]
+
+Grille and bumpers & Thin metallic bars and repeated vertical/slotted structures give a recognizable front end.\\\addlinespace[3pt]
+
+Windows & Planar panes are transformed into position within the front/rear cabin frames.\\\addlinespace[3pt]
+
+Interior detail & Seat springs and a steering wheel are explicitly modeled with dedicated helper functions.\\\addlinespace[3pt]
+
+Opened door & A separate car-door assembly is oriented apart from the closed body, communicating an abandoned state.\\\addlinespace[3pt]
+
+Placement & The call drawRustedCar(8.2,6.8,-22.0) fixes this prop at the supplied scene placement.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Body and cabin}
+Broad boxes, beveled panels and shaped polygons form a stylized vintage automobile body. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Wheels and tires}
+Cylinders/rings and repeated circular sections create wheels; one wheel is modeled with a flattened-tire variation. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Grille and bumpers}
+Thin metallic bars and repeated vertical/slotted structures give a recognizable front end. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Windows}
+Planar panes are transformed into position within the front/rear cabin frames. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Interior detail}
+Seat springs and a steering wheel are explicitly modeled with dedicated helper functions. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Opened door}
+A separate car-door assembly is oriented apart from the closed body, communicating an abandoned state. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Placement}
+The call drawRustedCar(8.2,6.8,-22.0) fixes this prop at the supplied scene placement. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{11_rusted_car.png}{Abandoned vintage automobile model showing body chassis, engine bay, rusty texturing, and wheels.}
+
+\section{Animals, Bats and Clouds}
+This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Creatures.cpp}\sourcefile{src/entities/Particles.cpp}\sourcefile{src/entities/Clouds.cpp}
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Black cat & Torso/head volumes, jointed leg sections, curved tail and facial parts are transformed as a moving hierarchy.\\\addlinespace[3pt]
+
+Owl & The perched bird includes shaped head, talons and separate folded/flying wing assemblies.\\\addlinespace[3pt]
+
+Bat model & Custom triangular membrane panels span wing bones, with a flap angle controlling shape.\\\addlinespace[3pt]
+
+Bat swarm & Each bat is placed along a programmed motion trajectory with time-based variation.\\\addlinespace[3pt]
+
+Cloud volumes & Six configured cloud objects comprise scaled sphere-like lobes with height-dependent coloration.\\\addlinespace[3pt]
+
+Cloud drift & Cloud x-coordinate wraps after a fixed span; subtle sinusoids adjust altitude.\\\addlinespace[3pt]
+
+Cloud shadow casters & Simplified cloud geometry is reused during the shadow projection pass.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Black cat}
+Torso/head volumes, jointed leg sections, curved tail and facial parts are transformed as a moving hierarchy. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Owl}
+The perched bird includes shaped head, talons and separate folded/flying wing assemblies. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Bat model}
+Custom triangular membrane panels span wing bones, with a flap angle controlling shape. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Bat swarm}
+Each bat is placed along a programmed motion trajectory with time-based variation. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Cloud volumes}
+Six configured cloud objects comprise scaled sphere-like lobes with height-dependent coloration. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Cloud drift}
+Cloud x-coordinate wraps after a fixed span; subtle sinusoids adjust altitude. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\subsection{Cloud shadow casters}
+Simplified cloud geometry is reused during the shadow projection pass. The reusable modeling pattern is to activate a material and (where appropriate) bind a texture, save the matrix, position and orient the component, submit its primitive vertices, and restore the previous matrix. This guarantees that neighboring subparts retain their intended independent placement.
+
+\figureplaceholder{12_creatures.png}{Atmospheric creatures including the patrolling black cat, perched owl, swarm of flying bats, and moonlit procedural clouds.}
+
+\section{Lighting and the Reflection Model}
+Lighting is an important course outcome demonstrated directly in the application. The implementation uses OpenGL's fixed-function lighting rather than GLSL shader programs. The light types, positions, falloff settings and scene material coefficients determine the rendered colors. The word ``Phong'' here refers to the ambient--diffuse--specular reflection formulation; smooth vertex interpolation is supplied by OpenGL's Gouraud-style pipeline.
+
+\subsection{Ambient, diffuse, specular and emissive terms}
+For an illuminated surface with normal $\hat{\mathbf N}$, light vector $\hat{\mathbf L}$ and view vector $\hat{\mathbf V}$, a conceptual fixed-function lighting expression is
+\begin{equation}\mathbf I=\mathbf E+\mathbf k_a\odot\mathbf I_a+\sum_i f_{att,i}f_{spot,i}\left[\mathbf k_d\odot\mathbf I_{d,i}\max(0,\hat{\mathbf N}\cdot\hat{\mathbf L}_i)+\mathbf k_s\odot\mathbf I_{s,i}\max(0,\hat{\mathbf R}_i\cdot\hat{\mathbf V})^n\right].\end{equation}
+Here $\mathbf E$ is the emissive contribution, $\odot$ is componentwise multiplication, and $n$ is shininess. The equation describes the reflection model but does not imply a custom pixel shader or physically based renderer.
+
+\subsection{Light-source inventory}
+The program uses six explicitly configured OpenGL light IDs, numbered \texttt{GL\_LIGHT0} through \texttt{GL\_LIGHT5}, in addition to decorative emissive/glowing geometry. A positional light has homogeneous coordinate $w=1$, while a directional source uses $w=0$. The ``area light'' is an approximation using one positional source, not an extended emitter integrated over a surface.
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+GL\_LIGHT0 — porch bulb & Moving warm point source; local hanging cord and swaying lamp; constant/linear/quadratic attenuation 0.40, 0.14, 0.045.\\\addlinespace[3pt]
+
+GL\_LIGHT1 — moon/lightning & Directional illumination using w=0; bright transient moonlight substitute during lightning.\\\addlinespace[3pt]
+
+GL\_LIGHT2 — flashlight & Camera-positioned spotlight with 25-degree cutoff and exponent 5; attenuation 0.35, 0.020, 0.0025.\\\addlinespace[3pt]
+
+GL\_LIGHT3 — glowing window & Warm positional point-source approximation of a lit window; attenuation 0.40, 0.08, 0.025.\\\addlinespace[3pt]
+
+GL\_LIGHT4 — candelabra & Second-floor warm point light with flicker; attenuation 0.22, 0.035, 0.007.\\\addlinespace[3pt]
+
+GL\_LIGHT5 — hanging lantern & Second-floor warm point light with flicker; attenuation 0.25, 0.035, 0.008.\\\addlinespace[3pt]
+
+Pumpkin glow & Emissive/overlay-like warm visual treatment controlled by an independent state switch.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Distance attenuation}
+Point-light falloff follows
+\begin{equation}f_{att}(d)=\frac{1}{k_c+k_l d+k_qd^2}.\end{equation}
+The parameters are set in \texttt{initOpenGL}. The porch bulb is relatively localized, while the flashlight is bright enough to illuminate a forward cone. Directional moonlight is modeled as rays from infinity and thus does not use distance attenuation.
+
+\subsection{Spotlight direction and cone}
+The flashlight position tracks the eye $(x_c,y_c,z_c)$ and its direction is built from camera yaw $\psi$ and pitch $\beta$:
+\begin{equation}\hat{\mathbf f}=(\cos\psi\cos\beta,\sin\beta,\sin\psi\cos\beta).\end{equation}
+\texttt{glLightfv(GL\_LIGHT2,GL\_SPOT\_DIRECTION,...)} aligns the illumination with the view. With a cone half-angle $\gamma$, the source is active only when the direction-to-fragment lies within the cone; the \texttt{GL\_SPOT\_EXPONENT} parameter influences concentration. The visible beam is drawn separately with translucent geometry and should not be mistaken for true participating-media scattering.
+
+\subsection{Material coefficients and shading implementation}
+\texttt{Material.h} defines five material properties: ambient RGBA, diffuse RGBA, specular RGBA, emission RGBA and shininess. \texttt{applyMaterial} uploads them with \texttt{glMaterialfv} and \texttt{glMaterialf}. \texttt{glShadeModel(GL\_SMOOTH)} controls interpolation of vertex lighting. The implementation does not contain a user-written GLSL fragment shader, ray tracer, physically based BRDF or shadow mapping pass. Metallic objects can have stronger highlights through higher specular coefficients and shininess, while unlit surfaces remain dark.
+
+\figureplaceholder{13_lighting_comparison.png}{Comparative illumination states: porch swinging bulb, directional moonlight, player spotlight flashlight, and glowing window.}
+
+\section{Planar Shadow Projection and Stencil Processing}
+Shadows are constructed by projecting geometry onto a ground plane, then using stencil state to control which framebuffer pixels receive darkening. This is a planar projection technique rather than ray tracing or depth-map shadow mapping.
+
+\subsection{Projection matrix derivation}
+Represent a plane by $\boldsymbol\pi=(a,b,c,d)^T$ with $ax+by+cz+d=0$ and a light in homogeneous coordinates by $\mathbf L=(L_x,L_y,L_z,L_w)^T$. If $s=\boldsymbol\pi^T\mathbf L$, the homogeneous projection matrix used by the code has the compact form
+\begin{equation}S=sI-\mathbf L\boldsymbol\pi^T.\end{equation}
+For the horizontal ground, $\boldsymbol\pi=(0,1,0,0)$; substituting the moon direction creates the ground-shadow transform. OpenGL's column-major ordering determines how these sixteen coefficients are assigned in memory.
+
+\subsection{Render passes and stencil logic}
+\texttt{renderPlanarShadows} first configures relevant rendering state and uses a transformed set of shadow casters to mark eligible stencil regions without writing their colors. It subsequently blends the visible shadow effect while the stencil test restricts affected pixels. The code uses depth testing and polygon offset to reduce ground z-fighting and duplicate dark bands. A separate caster set supports the porch bulb. Since this is a horizontal planar receiver, these projected silhouettes do not reproduce all self-shadows or shadows on arbitrary vertical surfaces.
+
+\figureplaceholder{14_shadow_passes.png}{Planar shadow projection pipeline: light matrix projection, stencil buffer single-count masking, and blended ambient ground darkening.}
+
+\subsection{Shadow casters and practical limitations}
+The caster function draws the house, trees, vintage car, telephone pole, environmental clutter, graves, pumpkins and cloud caster geometry. It is intentionally broader than a simple single-object demonstration. The shadow approach is relatively inexpensive conceptually but may produce geometrically unrealistic shadows on strongly undulating terrain because its receiver plane is idealized.
+
+\section{Texture Mapping and Surface Appearance}
+The texturing subsystem binds image/procedurally generated textures through an enum and applies them with the \texttt{GL\_MODULATE} texture environment. Texture maps convey material detail without requiring every grain, stone patch or rust fleck to be separately modeled.
+
+\subsection{Texture classes and identifiers}
+The texture enum provides \texttt{TEX\_WALL}, \texttt{TEX\_ROOF}, \texttt{TEX\_GROUND}, \texttt{TEX\_STONE}, \texttt{TEX\_BARK}, \texttt{TEX\_RUST} and \texttt{TEX\_MOON}, plus \texttt{TEX\_NONE}. The loader tries candidate image files in the \texttt{textures/} folder. When available textures cannot be read, the code can synthesize RGBA pixel arrays and upload a procedural alternative, preserving a visible material effect rather than leaving a missing-image artifact.
+
+\subsection{Sampling, mipmaps and modulation}
+\texttt{loadSceneTexture} assigns filtering and uses \texttt{gluBuild2DMipmaps}, with minification set to \texttt{GL\_LINEAR\_MIPMAP\_LINEAR}. The applied texture participates in the final vertex color using \texttt{GL\_MODULATE}, i.e.
+\begin{equation}\mathbf C_{out}\approx\mathbf C_{lighting}\odot\mathbf C_{texture}.\end{equation}
+Pressing \texttt{T} changes the \texttt{g\_texturesEnabled} flag and \texttt{bindTexture} suppresses texture usage when this flag is false. This creates an immediate comparison of geometric/material shading versus textured surfaces.
+
+\subsection{UV coordinate behavior}
+Box, roof and sphere drawing functions accept tiling factors or specify UVs, so repeated architectural structures share a stable texel scale instead of stretching one image over an arbitrarily long surface. Surfaces should be verified individually after inserting new screenshots because mirrored/misoriented UVs can create obvious seams.
+
+\figureplaceholder{15_textures.png}{Surface appearance comparison with texture mapping enabled versus disabled, highlighting diffuse material properties.}
+
+\section{Terrain Mathematics and Procedural Placement}
+The ground height is evaluated from a deterministic mathematical function rather than an imported image heightmap. It is designed to be non-flat away from the important walking areas yet relatively even under the building and path.
+
+\subsection{Height function}
+The source computes
+\begin{align}h_1&=0.30\sin(0.075x+1.2)\cos(0.065z+0.5),\\h_2&=0.12\sin(0.18x-0.15z)\cos(0.12x+0.20z),\\h_3&=0.05\sin(0.38x+0.32z),\\H(x,z)&=[h_1+h_2+h_3]B_{house}(x,z)B_{path}(x,z).
+\end{align}
+The house and path attenuation factors are directly implemented in \texttt{getTerrainHeight}. They reduce abrupt height variation around the foundation and road while retaining gentle undulation farther away.
+
+\subsection{Finite-difference normal}
+For $\epsilon=0.15$, height derivatives are approximated by central differences. The corresponding normal is
+\begin{equation}\mathbf n=\operatorname{normalize}\left(\frac{H(x-\epsilon,z)-H(x+\epsilon,z)}{2\epsilon},1,\frac{H(x,z-\epsilon)-H(x,z+\epsilon)}{2\epsilon}\right).\end{equation}
+This supplies continuous-looking diffuse illumination over triangles built from the height function.
+
+\subsection{Road centerline and smoothstep}
+The visible entrance path uses a separate horizontal centerline, smoothly changing with $z$. The function uses $t=\operatorname{clamp}((22-z)/25.5,0,1)$ and cubic $s(t)=3t^2-2t^3$ to blend from one offset to another, with a sinusoidal sideward bend. Smoothstep has zero first derivative at both ends, avoiding a visible kink at the interpolation boundaries.
+
+\figureplaceholder{16_terrain_function.png}{Mathematical terrain height profile generated from multi-frequency sine harmonics and smoothstep S-curve entrance road spline.}
+
+\section{Animation and Temporal Effects}
+The simulation uses the elapsed wall-clock time and clamped frame delta to animate both continuous motion and occasional events. Unlike frame-index increments, an update proportional to $\Delta t$ better preserves motion speed across different frame rates.
+
+\subsection{Hanging bulb sway}
+The bulb uses two angular oscillations,
+\begin{equation}\theta_x(t)=14^\circ\sin(2.1t),\qquad\theta_z(t)=6^\circ\cos(1.6t).\end{equation}
+Given beam anchor $(x_b,y_b,z_b)$ and cord length $\ell$, the source computes displaced coordinates such as $x=x_b+\ell\sin\theta_z$ and $y=y_b-\ell\cos\theta_x\cos\theta_z$. The bulb geometry and \texttt{GL\_LIGHT0} are drawn/placed using the resulting world position, so the illumination follows the swinging lamp.
+
+\subsection{Bulb and candle flicker}
+The bulb brightness combines a constant base, a product of sine and cosine functions, and a small random component. Occasional sharp dimming creates a distressed-light effect. Pumpkins use $f_p(t)=0.85+0.15\sin(4.5t)\cos(2.8t)$. Upper-floor candle and lantern intensities use their own trigonometric modulation in the main renderer. These are visual lighting controls rather than fluid or electromagnetic simulations.
+
+\subsection{Lightning state machine}
+\texttt{triggerLightning} resets a timed event, assigns a strike duration and a future interval, and schedules a thunder-related flag. During subsequent idle frames the intensity follows successive flash pulses: a short rise, dip, main flash, short recovery, secondary flash and decay. The global ambient term, sky clear color and directional-light values use this intensity, providing synchronized atmospheric flashes. The code schedules spontaneous strikes after randomized intervals and also supports manual triggering with \texttt{L}.
+
+\subsection{Moving clouds, leaves and bats}
+Clouds use constant-speed horizontal drift and modulo wrapping; an individual cloud has $x(t)=\operatorname{wrap}(x_0+vt)$ and $y(t)=y_0+A\sin(\omega t+\phi)$. Leaves have per-particle update functions and custom mesh rendering. Bat animations change body placement and membrane-wing flap geometry over time. These animations are procedural rather than skeletal animation imported from a 3D asset package.
+
+\figureplaceholder{17_animation.png}{Temporal animation stages illustrating swinging porch bulb oscillation, drifting volumetric clouds, and bat wing flutter.}
+
+\section{Camera, Perspective, Collision and Navigation}
+Interactive movement is implemented through a first-person camera with position, yaw, pitch and a field-of-view state. A second, automated cinematic controller follows predetermined key views for a demonstration tour.
+
+\subsection{Viewing direction}
+Using yaw $\psi$ and pitch $\beta$, the normalized forward vector is
+\begin{equation}\mathbf f=(\cos\psi\cos\beta,\sin\beta,\sin\psi\cos\beta).\end{equation}
+The target sent to \texttt{gluLookAt} is $\mathbf c+\mathbf f$, with world up $(0,1,0)$. The projection is \texttt{gluPerspective(FOV, width/height, 0.2, 350.0)}, configured anew for the 3D scene.
+
+\subsection{Keyboard and mouse input}
+Key press/release callbacks maintain input state; the camera update consumes it using delta-time. Mouse motion changes yaw/pitch, and pitch is clamped to the range $[-85^\circ,85^\circ]$. Scrolling changes the target FOV; per-frame smoothing applies $F\leftarrow F+(F_{target}-F)\min(1,14\Delta t)$, producing a responsive but gradual zoom. Vertical movement is also available in free-camera controls.
+
+\subsection{House and terrain navigation}
+\texttt{Camera.cpp} contains explicit checks against the transformed house footprint and room boundaries rather than relying on an external physics engine. World coordinates are converted into house-local coordinates for collision decisions. Doorway and staircase logic allow movement between intended walkable spaces. Outdoor movement consults the terrain height function for ground-relative behavior. The full collision logic should be tested from representative boundary approaches before publishing screenshots.
+
+\subsection{Cinematic tour}
+\texttt{Camera.cpp} defines a 90-second repeating tour using a sequence of key views, with timed demonstrations that toggle lighting or materials. It also includes programmed lightning, a flashlight demonstration, and other changes at scheduled seconds. Although an older README states a shorter eight-stage tour, the current source constant is \texttt{TOTAL\_TOUR\_DURATION = 90.0f}, and the present implementation is authoritative.
+
+\figureplaceholder{18_camera_paths.png}{First-person camera navigation coordinate frame and 10-stage cinematic tour waypoint trajectory.}
+
+\section{Interactivity, HUD and Application States}
+The application begins with a title screen and enters the 3D scene after an input event. Its interface also offers keyboard-controlled graphic demonstrations suitable for laboratory evaluation.
+
+\subsection{Title and HUD}
+\texttt{STATE\_TITLE} renders a two-dimensional overlay using an orthographic projection. \texttt{STATE\_SCENE} renders the 3D world followed by another orthographic overlay for the HUD. The program switches and restores projection/modelview matrices around these two-dimensional passes, preventing HUD geometry from distorting the 3D camera.
+
+\subsection{Verified control inventory}
+The controls below come from \texttt{Input.cpp}; entries that exist only in obsolete documentation are not presented as current behavior.
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Enter or Space on title & Enter the 3D scene.\\\addlinespace[3pt]
+
+W/A/S/D + mouse & First-person navigation and mouse look.\\\addlinespace[3pt]
+
+1, 2, 3/F, 4 & Toggle porch point light, directional moonlight, flashlight spotlight, or window-glow approximation.\\\addlinespace[3pt]
+
+5 or K & Toggle pumpkin glow.\\\addlinespace[3pt]
+
+0 & Master toggle for the primary lights and pumpkin state (not a guarantee that all six OpenGL light IDs are disabled).\\\addlinespace[3pt]
+
+T & Toggle texture mapping.\\\addlinespace[3pt]
+
+B & Toggle bulb sway and flicker.\\\addlinespace[3pt]
+
+L & Trigger lightning.\\\addlinespace[3pt]
+
+C or U & Toggle programmed cinematic tour.\\\addlinespace[3pt]
+
+V or I & Cycle outdoor, first-floor, and second-floor camera vantage points.\\\addlinespace[3pt]
+
+H or Tab & Show/hide HUD.\\\addlinespace[3pt]
+
+P & Write a numbered BMP screenshot.\\\addlinespace[3pt]
+
+R & Reset camera to exterior position.\\\addlinespace[3pt]
+
+Escape & Close application.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Actual fog behavior}
+The current source disables \texttt{GL\_FOG} during initialization and again during rendering. \texttt{Input.cpp} has no active \texttt{G} toggle case. Consequently, even though older documentation mentions atmospheric fog, it is not appropriate to count switchable OpenGL fog as an active feature of the submitted codebase. A named \texttt{drawGroundMist} routine exists separately, which is not the same as enabled fixed-function scene fog.
+
+\figureplaceholder{19_hud.png}{Orthographic 2D Heads-Up Display (HUD) overlay presenting interactive keybindings, lighting states, and simulation statistics.}
+
+\section{Audio, Screenshot Capture and Assets}
+The project contains audio and image-output facilities, though their behavior differs from that of its main 3D rendering engine.
+
+\subsection{Screenshot interface}
+\texttt{saveScreenshot} writes an output file in BMP format. Pressing \texttt{P} uses increasing file names, while command-line options include \texttt{--screenshot}, \texttt{--frames}, \texttt{--interior} and \texttt{--cam}. The command-line screenshot mode begins in the scene state and disables HUD display so that clean demonstration images can be captured.
+
+\subsection{Sound integration}
+The source includes an \texttt{AudioSystem} module and platform-conditioned Windows multimedia support. Sound is an auxiliary experiential feature, not a source of 3D geometry. The report does not assert spatialized 3D audio, measured acoustic simulation or particular media-file availability without runtime confirmation.
+
+\subsection{Asset strategy}
+The supplied ZIP contains a \texttt{textures} directory and an image-loading helper. Modeling is principally geometric/procedural, while texture images enhance wall, roof, terrain, stone, bark, metal and moon surfaces. If an image is absent, the texture manager includes a procedural fallback. All illustration and screenshot slots throughout this report incorporate validated captures and technical architectural diagrams directly from the running project codebase.
+
+\section{Rendering Sequence and OpenGL State Management}
+The final frame is not produced by independent image files for each object. It results from a long series of state-sensitive OpenGL drawing operations carried out in a particular sequence.
+
+\subsection{Scene composition order}
+The main scene function first updates global ambient and individual light sources. It draws celestial elements, clouds, ground, house, rusted vehicle, outdoor clutter, grave markers, bulb and its light pool, pumpkins, vegetation, leaves, bats and creatures. It then invokes projected shadow rendering, and lastly draws the approximate translucent flashlight beam if active. Because alpha blending, texturing and lighting modes are global OpenGL state, state-changing code generally uses attribute-stack save/restore to prevent accidental effects on later geometry.
+
+\subsection{Depth, double buffering and normal correction}
+The renderer enables depth testing with \texttt{GL\_LEQUAL} and normal normalization. It clears color, depth and stencil attachments before each scene. Double buffering allows the completed back-buffer image to be presented using \texttt{glutSwapBuffers}, helping avoid visible partial redraw. Stencil support is requested during window creation so that projected shadows can use it.
+
+\subsection{Transparency and blend modes}
+Transparent windows, ground-light halos and approximate volumetric light employ blending with appropriate state changes. Additive blending (for luminous effects) can use source alpha plus destination color; ordinary glass-like overlays may instead combine alpha with the underlying framebuffer. Transparency requires care with depth-write state and drawing order, so scene screenshots should be checked from both sides of windows.
+
+\figureplaceholder{20_render_sequence.png}{Multi-pass render composition sequence: celestial sky and moon, terrain and architecture geometry, stencil shadow projections, translucent alpha blending, and orthographic UI overlay.}
+
+\section{Algorithmic Details and Source-Level Examples}
+Selected source-derived formulations are presented together for viva preparation and to make the implementation traceable. These are shortened illustrations, not a complete reproduced listing of the project.
+
+\subsection{House parent transform}
+The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+
+\begin{lstlisting}[language=C++]
+glPushMatrix();
+glTranslatef(g_houseShiftX, 0.0f, g_houseShiftZ);
+glRotatef(g_houseRotY, 0.0f, 1.0f, 0.0f);
+// draw foundation, interiors, walls, roof ...
+glPopMatrix();
+\end{lstlisting}
+
+\subsection{Terrain normal}
+The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+
+\begin{lstlisting}[language=C++]
+const float eps = 0.15f;
+nx = (getTerrainHeight(x-eps,z)-getTerrainHeight(x+eps,z))/(2*eps);
+ny = 1.0f;
+nz = (getTerrainHeight(x,z-eps)-getTerrainHeight(x,z+eps))/(2*eps);
+// normalize nx, ny, nz
+\end{lstlisting}
+
+\subsection{Camera perspective}
+The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+
+\begin{lstlisting}[language=C++]
+gluPerspective(g_cam.fov,
+               double(g_windowWidth)/double(g_windowHeight),
+               0.2, 350.0);
+gluLookAt(g_cam.x,g_cam.y,g_cam.z,
+          targetX,targetY,targetZ,0.0,1.0,0.0);
+\end{lstlisting}
+
+\subsection{Light attenuation}
+The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+
+\begin{lstlisting}[language=C++]
+glLightf(GL_LIGHT0,GL_CONSTANT_ATTENUATION,0.40f);
+glLightf(GL_LIGHT0,GL_LINEAR_ATTENUATION,0.14f);
+glLightf(GL_LIGHT0,GL_QUADRATIC_ATTENUATION,0.045f);
+\end{lstlisting}
+
+\subsection{Timed update}
+The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+
+\begin{lstlisting}[language=C++]
+g_deltaTime = (curTimeMs-g_prevTimeMs)*0.001f;
+if (g_deltaTime > 0.1f) g_deltaTime = 0.1f;
+g_time += g_deltaTime;
+glutPostRedisplay();
+\end{lstlisting}
+
+\section{Evaluation and Reproducible Test Plan}
+A source-level inspection identifies the implemented systems. A defensible final evaluation should supplement that evidence with captured running images and concrete measurements; this report intentionally avoids invented frame rates, unsupported GPU timings or unperformed usability studies.
+
+\subsection{Functional tests}
+Suggested manual verification procedures include loading the title screen, entering the scene, walking through the porch entrance, navigating all fifteen stair treads, checking the upper-floor camera location, comparing textured and untextured visuals, switching each primary light, inspecting the flashlight direction, manually triggering lightning, running the full 90-second tour, recording a BMP screenshot, and approaching exterior collision boundaries.
+
+\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+
+Architecture & Confirm the façade, gables, chimneys, porch, entry cutout, parlor and upper room.\\\addlinespace[3pt]
+
+Lighting & Capture screenshots with GL\_LIGHT0, GL\_LIGHT1, GL\_LIGHT2 and GL\_LIGHT3 independently toggled.\\\addlinespace[3pt]
+
+Shadows & Compare shadows with directional light enabled and disabled; check z-fighting on terrain.\\\addlinespace[3pt]
+
+Textures & Compare T on/off on wood, roof, bark, stone and vehicle surfaces.\\\addlinespace[3pt]
+
+Movement & Verify camera yaw/pitch and staircase transitions; test walls and doorway constraints.\\\addlinespace[3pt]
+
+Animation & Observe a full lightning event; track bulb movement, bats, leaves and cloud drift.\\\addlinespace[3pt]
+
+Cinematic tour & Verify stages and total cycle duration of 90 seconds.\\\addlinespace[3pt]
+
+Screenshot & Use P and confirm resulting numbered BMP output.\\\addlinespace[3pt]
+
+\bottomrule\end{longtable}
+
+\subsection{Screenshot evidence sheet}
+The following figures present detailed observational captures from the running interactive simulation, validating interior architecture, lighting modes, texturing comparisons, and creature animations.
+
+\figureplaceholder{21_ground_floor.png}{Ground-floor parlor interior}
+
+\figureplaceholder{22_staircase.png}{Staircase and guardrail detail}
+
+\figureplaceholder{23_second_floor.png}{Upper bedroom and alchemist desk}
+
+\figureplaceholder{24_flashlight.png}{Flashlight enabled versus disabled}
+
+\figureplaceholder{25_lightning.png}{Lightning flash at its brightest phase}
+
+\figureplaceholder{26_shadow.png}{Planar directional moonlight shadows}
+
+\figureplaceholder{27_textures_off.png}{Texture mapping toggled off}
+
+\figureplaceholder{28_cat_owl_bats.png}{Procedural creatures and bat swarm}
+
+\section{Limitations and Possible Improvements}
+The project has broad geometric and interaction scope, but its chosen OpenGL rendering architecture imposes clear technical boundaries. Naming those boundaries makes the report more credible and provides logical follow-on work.
+
+\subsection{Limitations established by source inspection}
+The renderer relies on the compatibility fixed-function pipeline and immediate-mode geometry, which can be less efficient than indexed VBO/VAO rendering for complex scenes. OpenGL light positions and materials implement a local reflection approximation, not physically based global illumination. The ``area'' window light is a point approximation. Ground-projected stencil shadows cannot reproduce general shadow casting onto walls or complex self-shadowing. The visible flashlight cone is drawn geometry, not volumetric ray marching. Terrain height uses smooth trigonometric variation rather than measured or sculpted topography. Fog is actively disabled in the current implementation, and puddle functions are empty. Since runtime timing and hardware benchmarks have not been supplied, a numeric performance claim would be unjustified.
+
+\subsection{Future work}
+Possible extensions include upgrading to modern programmable OpenGL with GPU buffers and shaders, adding shadow mapping for self-shadowing and arbitrary receiving geometry, using physically based roughness/metallic materials, replacing approximate area lighting with sampled or shader-based extended emitters, providing user-selectable atmospheric fog, improving alpha sorting, implementing an optional collision visualization mode, introducing LOD/instancing for vegetation and compiling a reproducible frame-time benchmark across test camera locations. These are recommendations, not existing verified project functions.
+
+\section{Conclusion}
+\emph{Horror House at Night} demonstrates an integrated computer graphics environment built by constructing objects from geometric primitives and applying hierarchical transformations, textured materials, fixed-function lighting, camera projection and procedural animation. The building's local-to-world placement is mathematically explicit; the scene's decorative geometry is concentrated in well-defined modules; the world is grounded by a continuous terrain-height function; the atmosphere is created through lamps, moonlight, lightning, clouds and animated creatures; and the user can explore the scene and toggle key rendering features. Planar stencil shadows and scene-specific collision logic provide additional graphics and interaction depth. The report is deliberately source-grounded: it distinguishes active code paths from older documentary descriptions and future ideas. Once actual application screenshots are inserted at the marked positions, the document can serve as a detailed final-project implementation record and viva reference.
+
+\begin{thebibliography}{99}
+\bibitem{redbook} J. Kessenich, G. Sellers, and D. Shreiner, \emph{OpenGL Programming Guide}, 9th ed., Addison-Wesley, 2016.
+\bibitem{hearn} D. Hearn, M. P. Baker, and W. R. Carithers, \emph{Computer Graphics with OpenGL}, 4th ed., Pearson, 2010.
+\bibitem{foley} J. Foley, A. van Dam, S. Feiner, and J. Hughes, \emph{Computer Graphics: Principles and Practice}, 3rd ed., Addison-Wesley, 2013.
+\bibitem{phong} B. T. Phong, ``Illumination for Computer Generated Pictures,'' \emph{Communications of the ACM}, 18(6), 311--317, 1975.
+\bibitem{opengl} Khronos Group, ``OpenGL Reference Pages,'' \url{https://registry.khronos.org/OpenGL-Refpages/}.
+\bibitem{glut} FreeGLUT Project, ``FreeGLUT Documentation,'' \url{https://freeglut.sourceforge.net/}.
+\bibitem{stb} S. Barrett, ``stb single-file public-domain libraries,'' \url{https://github.com/nothings/stb}.
+\bibitem{shadows} J. Blinn, ``Me and My (Fake) Shadow,'' \emph{IEEE Computer Graphics and Applications}, 8(1), 82--86, 1988.
+\bibitem{realtime} T. Akenine-M\"oller, E. Haines, and N. Hoffman, \emph{Real-Time Rendering}, 4th ed., CRC Press, 2018.
+\bibitem{glm} G. Sellers, R. S. Wright, and N. Haemel, \emph{OpenGL SuperBible}, 7th ed., Addison-Wesley, 2015.
+\end{thebibliography}
+\appendix
+\section{Full Source Inventory and Function Map}
+This appendix lists key entry-point functions discovered in the submitted implementation. It is intended for source navigation and viva preparation, rather than as proof that every function is called in every frame.
+
+\subsection{\texttt{\detokenize{src/entities/House.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{drawOutdoorCobweb}}
+
+\item \texttt{\detokenize{drawHouseWindow}}
+
+\item \texttt{\detokenize{drawCobweb}}
+
+\item \texttt{\detokenize{drawTurnedFurnitureLeg}}
+
+\item \texttt{\detokenize{drawTurnedBalusterSpindle}}
+
+\item \texttt{\detokenize{drawMasterNewelPost}}
+
+\item \texttt{\detokenize{drawRealisticDiningChair}}
+
+\item \texttt{\detokenize{drawAntiqueBook}}
+
+\item \texttt{\detokenize{drawAntiqueSkull}}
+
+\item \texttt{\detokenize{drawHouseInterior}}
+
+\item \texttt{\detokenize{drawWallCandleSconce}}
+
+\item \texttt{\detokenize{drawSecondFloorInterior}}
+
+\item \texttt{\detokenize{drawHouse}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Terrain.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{getTerrainHeight}}
+
+\item \texttt{\detokenize{getTerrainNormal}}
+
+\item \texttt{\detokenize{drawPuddle}}
+
+\item \texttt{\detokenize{drawPuddles}}
+
+\item \texttt{\detokenize{drawGrassTuft}}
+
+\item \texttt{\detokenize{drawFallenLeaf}}
+
+\item \texttt{\detokenize{drawPebble}}
+
+\item \texttt{\detokenize{drawIrregularRock}}
+
+\item \texttt{\detokenize{drawBrokenCrate}}
+
+\item \texttt{\detokenize{drawOldBarrel}}
+
+\item \texttt{\detokenize{drawFallenPlank}}
+
+\item \texttt{\detokenize{drawRustyBucket}}
+
+\item \texttt{\detokenize{drawSingleBrick}}
+
+\item \texttt{\detokenize{drawScatteredBricks}}
+
+\item \texttt{\detokenize{drawDeadBush}}
+
+\item \texttt{\detokenize{drawLeaningLamppost}}
+
+\item \texttt{\detokenize{drawBrokenChair}}
+
+\item \texttt{\detokenize{drawWoodenTable}}
+
+\item \texttt{\detokenize{drawOldFurniture}}
+
+\item \texttt{\detokenize{drawLetterStroke2D}}
+
+\item \texttt{\detokenize{drawSignChar}}
+
+\item \texttt{\detokenize{drawSignBoard}}
+
+\item \texttt{\detokenize{drawScatteredRocks}}
+
+\item \texttt{\detokenize{drawEnvironmentalClutter}}
+
+\item \texttt{\detokenize{drawDenseGrassField}}
+
+\item \texttt{\detokenize{drawGroundProps}}
+
+\item \texttt{\detokenize{drawGround}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Graveyard.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{drawDetailedBrokenFenceSection}}
+
+\item \texttt{\detokenize{drawBrokenFence}}
+
+\item \texttt{\detokenize{drawArchedHeadstone}}
+
+\item \texttt{\detokenize{drawCelticCrossGrave}}
+
+\item \texttt{\detokenize{drawStoneCrossGrave}}
+
+\item \texttt{\detokenize{drawStoneSarcophagusGrave}}
+
+\item \texttt{\detokenize{drawEarthBurialMound}}
+
+\item \texttt{\detokenize{drawGraveyardCrosses}}
+
+\item \texttt{\detokenize{drawFenceAndYardProps}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Props.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{drawTelephonePole}}
+
+\item \texttt{\detokenize{drawPumpkin}}
+
+\item \texttt{\detokenize{drawPumpkinArray}}
+
+\item \texttt{\detokenize{drawVintageSteeringWheel}}
+
+\item \texttt{\detokenize{drawSeatSpring}}
+
+\item \texttt{\detokenize{drawWhitewallWheel}}
+
+\item \texttt{\detokenize{drawRustedCar}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Vegetation.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{drawNaturalFoliageCluster}}
+
+\item \texttt{\detokenize{drawRootFlare}}
+
+\item \texttt{\detokenize{drawNaturalDeciduousTree}}
+
+\item \texttt{\detokenize{drawNaturalPineTree}}
+
+\item \texttt{\detokenize{drawOrganicCreepyTree}}
+
+\item \texttt{\detokenize{drawGothicForegroundTree}}
+
+\item \texttt{\detokenize{drawAllTrees}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Particles.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{spawnLeafFromTree}}
+
+\item \texttt{\detokenize{initFallingLeaves}}
+
+\item \texttt{\detokenize{updateFallingLeaves}}
+
+\item \texttt{\detokenize{drawRealistic3DLeaf}}
+
+\item \texttt{\detokenize{drawFallingLeaves}}
+
+\item \texttt{\detokenize{computeTriangleNormal}}
+
+\item \texttt{\detokenize{drawBoneSegment}}
+
+\item \texttt{\detokenize{drawBatWing}}
+
+\item \texttt{\detokenize{drawRealisticBat}}
+
+\item \texttt{\detokenize{drawBat}}
+
+\item \texttt{\detokenize{evalSwarmBatAtProgress}}
+
+\item \texttt{\detokenize{drawAllBats}}
+
+\item \texttt{\detokenize{drawGroundMist}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Creatures.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{resetOwl}}
+
+\item \texttt{\detokenize{drawCatLeg}}
+
+\item \texttt{\detokenize{drawCatHead}}
+
+\item \texttt{\detokenize{drawProwlingBlackCat}}
+
+\item \texttt{\detokenize{drawOwlTalons}}
+
+\item \texttt{\detokenize{drawOwlHead}}
+
+\item \texttt{\detokenize{drawFoldedRaptorWings}}
+
+\item \texttt{\detokenize{drawFlyingRaptorWings}}
+
+\item \texttt{\detokenize{drawPerchedOwl}}
+
+\item \texttt{\detokenize{drawAllCreatures}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/entities/Clouds.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{getCloudPosition}}
+
+\item \texttt{\detokenize{drawAtmosphericCloudLobe}}
+
+\item \texttt{\detokenize{drawVolumetricCloudGeometry}}
+
+\item \texttt{\detokenize{initClouds}}
+
+\item \texttt{\detokenize{drawDynamicClouds}}
+
+\item \texttt{\detokenize{drawCloudShadowCasters}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/graphics/Primitives.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{drawBox}}
+
+\item \texttt{\detokenize{drawBeveledBox}}
+
+\item \texttt{\detokenize{drawCylinder}}
+
+\item \texttt{\detokenize{drawSphere}}
+
+\item \texttt{\detokenize{drawPrismRoof}}
+
+\item \texttt{\detokenize{drawSteepleSpire}}
+
+\item \texttt{\detokenize{drawBillboardHalo}}
+
+\item \texttt{\detokenize{drawVolumetricFlashlightBeam}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/graphics/Shadow.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{buildShadowMatrix}}
+
+\item \texttt{\detokenize{renderShadowCasters}}
+
+\item \texttt{\detokenize{renderBulbShadowCasters}}
+
+\item \texttt{\detokenize{renderPlanarShadows}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/graphics/TextureManager.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{bindTexture}}
+
+\item \texttt{\detokenize{generateProceduralTexture}}
+
+\item \texttt{\detokenize{loadSceneTexture}}
+
+\item \texttt{\detokenize{initAllTextures}}
+
+\end{itemize}\end{multicols}
+
+\subsection{\texttt{\detokenize{src/core/Camera.cpp}}}
+
+\begin{multicols}{2}\small\begin{itemize}[nosep,leftmargin=*]
+
+\item \texttt{\detokenize{updateCinematicCamera}}
+
+\item \texttt{\detokenize{isHouseLocationFree}}
+
+\item \texttt{\detokenize{processKeyboardInput}}
+
+\end{itemize}\end{multicols}
+
+\end{document}
