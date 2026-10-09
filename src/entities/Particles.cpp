@@ -132,133 +132,449 @@ void drawFallingLeaves() {    applyMaterial(MAT_FALLEN_LEAF);
 
 
 
-void drawBatWing(float side, float flapAngle) {    glPushMatrix();
-    glTranslatef(side * 0.12f, 0.0f, 0.0f);
-    glRotatef(side * flapAngle, 0.0f, 1.0f, 0.0f);
+// ============================================================================
+// REALISTIC CHIROPTERAN ANATOMY (True 3D Articulated Bats)
+// Modeled with authentic biological fidelity:
+// - Skeletal Forelimb (Humerus, Radius, Hooked Thumb, Digits III, IV, V)
+// - Cambered Wing Membranes (Propatagium, Plagiopatagium, Dactylopatagium)
+// - Catenary Scalloped Trailing Edges
+// - Cranium with Fleshy Noseleaf, Concave Acoustic Ears with Tragus, & Fangs
+// - Keeled Sternum & Triangular Tail Membrane (Uropatagium)
+// ============================================================================
 
-    glBegin(GL_TRIANGLES);
-    // Upper wing bone / elbow
-    glVertex3f(0.0f, 0.15f, 0.0f);
-    glVertex3f(side * 0.70f, 0.55f, 0.0f);
-    glVertex3f(0.0f, -0.20f, 0.0f);
+static const Material MAT_BAT_FUR = {
+    { 0.05f, 0.04f, 0.04f, 1.0f },
+    { 0.14f, 0.11f, 0.10f, 1.0f },
+    { 0.16f, 0.13f, 0.11f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    24.0f // Soft velvety fur sheen
+};
 
-    // Inner wing membrane under elbow
-    glVertex3f(0.0f, -0.20f, 0.0f);
-    glVertex3f(side * 0.70f, 0.55f, 0.0f);
-    glVertex3f(side * 0.45f, -0.35f, 0.0f);
+static const Material MAT_BAT_MEMBRANE = {
+    { 0.04f, 0.03f, 0.03f, 1.0f },
+    { 0.18f, 0.14f, 0.12f, 1.0f },
+    { 0.35f, 0.28f, 0.24f, 1.0f }, // Leathery skin specular highlights under moonlight
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    48.0f
+};
 
-    // Outer wing bone to high arched wing tip
-    glVertex3f(side * 0.70f, 0.55f, 0.0f);
-    glVertex3f(side * 1.55f, 0.85f, 0.0f);
-    glVertex3f(side * 0.45f, -0.35f, 0.0f);
+static const Material MAT_BAT_BONE = {
+    { 0.06f, 0.05f, 0.04f, 1.0f },
+    { 0.22f, 0.18f, 0.15f, 1.0f },
+    { 0.25f, 0.20f, 0.18f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    32.0f
+};
 
-    // Outer scallop 1
-    glVertex3f(side * 0.45f, -0.35f, 0.0f);
-    glVertex3f(side * 1.55f, 0.85f, 0.0f);
-    glVertex3f(side * 1.10f, -0.45f, 0.0f);
+static const Material MAT_BAT_EYE = {
+    { 0.40f, 0.08f, 0.08f, 1.0f },
+    { 0.85f, 0.15f, 0.12f, 1.0f },
+    { 0.95f, 0.80f, 0.70f, 1.0f },
+    { 0.30f, 0.05f, 0.05f, 1.0f }, // Subtle nocturnal eye glow
+    90.0f
+};
 
-    // Outer wingtip point & scallop 2
-    glVertex3f(side * 1.10f, -0.45f, 0.0f);
-    glVertex3f(side * 1.55f, 0.85f, 0.0f);
-    glVertex3f(side * 1.70f, 0.35f, 0.0f);
-    glEnd();
+// Helper: Surface Normal from 3 3D Vertices
+static void computeTriangleNormal(float x0, float y0, float z0,
+                                  float x1, float y1, float z1,
+                                  float x2, float y2, float z2,
+                                  float& nx, float& ny, float& nz) {
+    float ax = x1 - x0, ay = y1 - y0, az = z1 - z0;
+    float bx = x2 - x0, by = y2 - y0, bz = z2 - z0;
+    nx = ay * bz - az * by;
+    ny = az * bx - ax * bz;
+    nz = ax * by - ay * bx;
+    float len = std::sqrt(nx * nx + ny * ny + nz * nz);
+    if (len > 1e-5f) {
+        nx /= len; ny /= len; nz /= len;
+    } else {
+        nx = 0.0f; ny = 1.0f; nz = 0.0f;
+    }
+}
 
+// Helper: Slender Bone Segment Cylinder between two 3D joints
+static void drawBoneSegment(float x0, float y0, float z0, float x1, float y1, float z1, float r) {
+    float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+    float len = std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (len < 1e-4f) return;
+    glPushMatrix();
+    glTranslatef(x0, y0, z0);
+    float yaw = std::atan2(dx, dz) * (180.0f / 3.14159265f);
+    float pitch = -std::asin(std::max(-1.0f, std::min(1.0f, dy / len))) * (180.0f / 3.14159265f);
+    glRotatef(yaw, 0.0f, 1.0f, 0.0f);
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f);
+    drawCylinder(r, r * 0.85f, len, 6);
     glPopMatrix();
 }
 
-void drawBat(float x, float y, float z, float roll, float flapAngle, float scale) {    glPushMatrix();
+void drawBatWing(float side, float flapAngle) {
+    // Backward compatibility stub - modern bat handles both wings in drawRealisticBat
+}
+
+void drawRealisticBat(float x, float y, float z, float yaw, float pitch, float roll, float flapAngle, float scale) {
+    glPushMatrix();
     glTranslatef(x, y, z);
-    glRotatef(roll, 0.0f, 0.0f, 1.0f);
+    glRotatef(yaw,   0.0f, 1.0f, 0.0f); // Flight heading
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f); // Climb / dive pitch
+    glRotatef(roll,  0.0f, 0.0f, 1.0f); // Aerodynamic banking roll
     glScalef(scale, scale, scale);
 
-    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT | GL_COLOR_BUFFER_BIT);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_LIGHTING);
-    glDisable(GL_FOG);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+    glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_NORMALIZE);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
     bindTexture(TEX_NONE);
-    glColor4f(0.005f, 0.005f, 0.01f, 1.0f); // Solid pitch-black silhouette
 
-    // Torso Body in XY plane
+    // Dynamic wing flap angle in radians
+    float flapRad = flapAngle * (3.14159265f / 180.0f);
+    float tipLag = std::sin(flapRad - 0.35f) * 0.16f;
+    float camberY = std::sin(flapRad) * 0.022f;
+
+    // --- 1. SKELETAL CRANIUM & SNOUT ---
+    applyMaterial(MAT_BAT_FUR);
+    // Rounded mammalian skull
     glPushMatrix();
-    glScalef(0.18f, 0.38f, 0.18f);
-    drawSphere(1.0f, 8, 6);
+    glTranslatef(0.0f, 0.022f, 0.095f);
+    glScalef(0.92f, 0.88f, 1.05f);
+    drawSphere(0.044f, 10, 8);
     glPopMatrix();
 
-    // Head & Pointed Ears in XY plane
+    // Protruding mammalian snout
     glPushMatrix();
-    glTranslatef(0.0f, 0.32f, 0.0f);
-    drawSphere(0.14f, 8, 6);
-    glBegin(GL_TRIANGLES);
-    glVertex3f(-0.10f, 0.05f, 0.0f);
-    glVertex3f(-0.02f, 0.05f, 0.0f);
-    glVertex3f(-0.08f, 0.25f, 0.0f);
+    glTranslatef(0.0f, 0.014f, 0.138f);
+    glScalef(1.0f, 0.75f, 1.25f);
+    drawBox(0.026f, 0.020f, 0.032f);
+    glPopMatrix();
 
-    glVertex3f(0.02f, 0.05f, 0.0f);
-    glVertex3f(0.10f, 0.05f, 0.0f);
-    glVertex3f(0.08f, 0.25f, 0.0f);
+    // Fleshy Leaf-Nose (Acoustic flap for echolocation)
+    applyMaterial(MAT_BAT_MEMBRANE);
+    glPushMatrix();
+    glTranslatef(0.0f, 0.030f, 0.146f);
+    glRotatef(-15.0f, 1.0f, 0.0f, 0.0f);
+    drawPrismRoof(0.016f, 0.020f, 0.014f);
+    glPopMatrix();
+
+    // Tiny Ivory Vampire Fangs
+    glDisable(GL_LIGHTING);
+    glColor3f(0.92f, 0.90f, 0.85f);
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    glVertex3f(-0.009f, 0.010f, 0.145f);
+    glVertex3f(-0.009f, 0.000f, 0.147f);
+    glVertex3f( 0.009f, 0.010f, 0.145f);
+    glVertex3f( 0.009f, 0.000f, 0.147f);
     glEnd();
+    glEnable(GL_LIGHTING);
+
+    // Large Sculpted Bat Ears (Pinnae with Tragus)
+    for (int side = -1; side <= 1; side += 2) {
+        glPushMatrix();
+        glTranslatef(side * 0.026f, 0.046f, 0.090f);
+        glRotatef(side * -32.0f, 0.0f, 0.0f, 1.0f);
+        glRotatef(14.0f, 1.0f, 0.0f, 0.0f);
+
+        // Outer Ear Shell
+        applyMaterial(MAT_BAT_FUR);
+        drawPrismRoof(0.036f, 0.075f, 0.026f);
+
+        // Inner Concave Acoustic Cavity
+        applyMaterial(MAT_BAT_MEMBRANE);
+        glTranslatef(0.0f, 0.005f, 0.008f);
+        drawPrismRoof(0.026f, 0.058f, 0.014f);
+
+        // Fleshy Tragus Spike
+        glTranslatef(0.0f, 0.006f, 0.004f);
+        drawBox(0.008f, 0.024f, 0.008f);
+        glPopMatrix();
+
+        // Glinting Nocturnal Eye
+        glPushMatrix();
+        glTranslatef(side * 0.017f, 0.024f, 0.122f);
+        applyMaterial(MAT_BAT_EYE);
+        drawSphere(0.0065f, 6, 6);
+        glPopMatrix();
+    }
+
+    // --- 2. THORACIC BARREL, KEELED STERNUM & PELVIS ---
+    applyMaterial(MAT_BAT_FUR);
+    // Main Torso / Thorax
+    glPushMatrix();
+    glTranslatef(0.0f, 0.0f, 0.0f);
+    glScalef(1.0f, 1.15f, 1.45f);
+    drawSphere(0.055f, 10, 8);
     glPopMatrix();
 
-    // Articulated Wings in XY plane
-    drawBatWing(-1.0f, flapAngle);
-    drawBatWing( 1.0f, flapAngle);
+    // Keeled Breastbone (Sternum flight muscle ridge)
+    glPushMatrix();
+    glTranslatef(0.0f, -0.025f, 0.020f);
+    glScalef(0.65f, 1.20f, 1.20f);
+    drawSphere(0.035f, 8, 6);
+    glPopMatrix();
+
+    // Abdomen & Pelvis
+    glPushMatrix();
+    glTranslatef(0.0f, -0.006f, -0.065f);
+    glScalef(0.80f, 0.75f, 1.10f);
+    drawSphere(0.040f, 8, 6);
+    glPopMatrix();
+
+    // --- 3. HINDLIMBS & UROPATAGIUM (TAIL MEMBRANE) ---
+    applyMaterial(MAT_BAT_BONE);
+    for (int side = -1; side <= 1; side += 2) {
+        // Thigh & Knee
+        drawBoneSegment(side * 0.025f, -0.010f, -0.085f,
+                        side * 0.042f, -0.018f, -0.125f, 0.008f);
+        // Shin & Ankle
+        drawBoneSegment(side * 0.042f, -0.018f, -0.125f,
+                        side * 0.055f, -0.020f, -0.160f, 0.006f);
+        // Hooked Foot
+        glPushMatrix();
+        glTranslatef(side * 0.055f, -0.020f, -0.160f);
+        drawBox(0.012f, 0.008f, 0.016f);
+        glPopMatrix();
+    }
+
+    // Slender Tail Vertebra
+    drawBoneSegment(0.0f, -0.010f, -0.090f, 0.0f, -0.015f, -0.155f, 0.005f);
+
+    // Uropatagium (Triangular Tail Membrane)
+    applyMaterial(MAT_BAT_MEMBRANE);
+    float nx, ny, nz;
+    glBegin(GL_TRIANGLES);
+    computeTriangleNormal(0.0f, -0.010f, -0.090f,
+                          -0.055f, -0.020f, -0.160f,
+                          0.0f, -0.015f, -0.155f, nx, ny, nz);
+    glNormal3f(nx, ny, nz);
+    glVertex3f(0.0f, -0.010f, -0.090f);
+    glVertex3f(-0.055f, -0.020f, -0.160f);
+    glVertex3f(0.0f, -0.015f, -0.155f);
+
+    computeTriangleNormal(0.0f, -0.010f, -0.090f,
+                          0.0f, -0.015f, -0.155f,
+                          0.055f, -0.020f, -0.160f, nx, ny, nz);
+    glNormal3f(nx, ny, nz);
+    glVertex3f(0.0f, -0.010f, -0.090f);
+    glVertex3f(0.0f, -0.015f, -0.155f);
+    glVertex3f(0.055f, -0.020f, -0.160f);
+    glEnd();
+
+    // --- 4. ARTICULATED FORELIMBS & CAMBERED WING PATAGIUM ---
+    for (int side = -1; side <= 1; side += 2) {
+        float s = (float)side;
+
+        // Shoulder origin
+        float sx = s * 0.040f, sy = 0.015f, sz = 0.035f;
+
+        // Elbow: sweeps with primary shoulder flap
+        float ex = s * 0.160f;
+        float ey = sy + std::sin(flapRad) * 0.130f;
+        float ez = 0.045f;
+
+        // Wrist: extends forearm with elbow flexion
+        float wx = s * 0.360f;
+        float wy = ey + std::sin(flapRad + 0.20f) * 0.150f;
+        float wz = 0.020f;
+
+        // Hooked Thumb Claw (Pollex)
+        float tx = wx + s * 0.010f;
+        float ty = wy + 0.024f;
+        float tz = wz + 0.022f;
+
+        // Elongated Finger Strut Tips (Digits III, IV, V)
+        // Digit III (Wingtip leading edge point)
+        float p3x = s * 0.650f;
+        float p3y = wy + tipLag;
+        float p3z = -0.060f;
+
+        // Digit IV (Middle strut tip)
+        float p4x = s * 0.490f;
+        float p4y = wy + tipLag * 0.85f;
+        float p4z = -0.190f;
+
+        // Digit V (Inner strut tip)
+        float p5x = s * 0.310f;
+        float p5y = wy + tipLag * 0.65f;
+        float p5z = -0.170f;
+
+        // Hind Ankle attachment point
+        float ax = s * 0.055f;
+        float ay = -0.020f;
+        float az = -0.160f;
+
+        // Catenary Scallop Midpoints (Curved parabolic indentations)
+        // Mid-scallop between Digit III and Digit IV
+        float m34x = s * 0.550f;
+        float m34y = (p3y + p4y) * 0.5f + camberY;
+        float m34z = -0.110f;
+
+        // Mid-scallop between Digit IV and Digit V
+        float m45x = s * 0.385f;
+        float m45y = (p4y + p5y) * 0.5f + camberY;
+        float m45z = -0.165f;
+
+        // Mid-scallop between Digit V and Ankle
+        float m5ax = s * 0.170f;
+        float m5ay = (p5y + ay) * 0.5f + camberY;
+        float m5az = -0.175f;
+
+        // Neck and Flank anchor points
+        float nx_pt = s * 0.025f, ny_pt = 0.015f, nz_pt = 0.070f;
+        float fx_pt = s * 0.038f, fy_pt = 0.000f, fz_pt = -0.040f;
+
+        // --- Render Wing Bones (Humerus, Radius, Thumb, Digits) ---
+        applyMaterial(MAT_BAT_BONE);
+        // Humerus (Upper arm)
+        drawBoneSegment(sx, sy, sz, ex, ey, ez, 0.010f);
+        // Radius / Ulna (Forearm)
+        drawBoneSegment(ex, ey, ez, wx, wy, wz, 0.008f);
+        // Thumb (Pollex claw)
+        drawBoneSegment(wx, wy, wz, tx, ty, tz, 0.004f);
+        // Digit III Strut (Metacarpal + Phalanges)
+        drawBoneSegment(wx, wy, wz, p3x, p3y, p3z, 0.0055f);
+        // Digit IV Strut
+        drawBoneSegment(wx, wy, wz, p4x, p4y, p4z, 0.0045f);
+        // Digit V Strut
+        drawBoneSegment(wx, wy, wz, p5x, p5y, p5z, 0.0045f);
+
+        // --- Render Wing Membrane (Patagium with Catenary Scalloping) ---
+        applyMaterial(MAT_BAT_MEMBRANE);
+        glBegin(GL_TRIANGLES);
+
+        // Propatagium (Leading edge between neck, shoulder, elbow, wrist)
+        computeTriangleNormal(nx_pt, ny_pt, nz_pt, sx, sy, sz, ex, ey, ez, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(nx_pt, ny_pt, nz_pt);
+        glVertex3f(sx, sy, sz);
+        glVertex3f(ex, ey, ez);
+
+        computeTriangleNormal(sx, sy, sz, ex, ey, ez, wx, wy, wz, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(sx, sy, sz);
+        glVertex3f(ex, ey, ez);
+        glVertex3f(wx, wy, wz);
+
+        // Dactylopatagium Cell 1 (Digit III to Digit IV with scallop)
+        computeTriangleNormal(wx, wy, wz, p3x, p3y, p3z, m34x, m34y, m34z, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(p3x, p3y, p3z);
+        glVertex3f(m34x, m34y, m34z);
+
+        computeTriangleNormal(wx, wy, wz, m34x, m34y, m34z, p4x, p4y, p4z, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(m34x, m34y, m34z);
+        glVertex3f(p4x, p4y, p4z);
+
+        // Dactylopatagium Cell 2 (Digit IV to Digit V with scallop)
+        computeTriangleNormal(wx, wy, wz, p4x, p4y, p4z, m45x, m45y, m45z, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(p4x, p4y, p4z);
+        glVertex3f(m45x, m45y, m45z);
+
+        computeTriangleNormal(wx, wy, wz, m45x, m45y, m45z, p5x, p5y, p5z, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(m45x, m45y, m45z);
+        glVertex3f(p5x, p5y, p5z);
+
+        // Plagiopatagium (Digit V to Ankle with scallop)
+        computeTriangleNormal(wx, wy, wz, p5x, p5y, p5z, m5ax, m5ay, m5az, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(p5x, p5y, p5z);
+        glVertex3f(m5ax, m5ay, m5az);
+
+        computeTriangleNormal(wx, wy, wz, m5ax, m5ay, m5az, ax, ay, az, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(m5ax, m5ay, m5az);
+        glVertex3f(ax, ay, az);
+
+        // Inner Body Web (Wrist, Ankle, Flank, Shoulder)
+        computeTriangleNormal(wx, wy, wz, ax, ay, az, fx_pt, fy_pt, fz_pt, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(ax, ay, az);
+        glVertex3f(fx_pt, fy_pt, fz_pt);
+
+        computeTriangleNormal(wx, wy, wz, fx_pt, fy_pt, fz_pt, sx, sy, sz, nx, ny, nz);
+        glNormal3f(s * nx, ny, s * nz);
+        glVertex3f(wx, wy, wz);
+        glVertex3f(fx_pt, fy_pt, fz_pt);
+        glVertex3f(sx, sy, sz);
+
+        glEnd();
+    }
 
     glPopAttrib();
     glPopMatrix();
 }
 
-void drawAllBats() {    // ------------------------------------------------------------------------
-    // FLOCK OF NOCTURNAL BATS FLYING IN FRONT OF THE HOUSE: RIGHT → LEFT
-    // Bats sweep across the scene in front of the house (z ≈ 11.5 - 14.5m),
-    // fly completely out of the scene on the left, and then reappear after a pause
-    // from the right side.
+// Backward compatible shim
+void drawBat(float x, float y, float z, float roll, float flapAngle, float scale) {
+    drawRealisticBat(x, y, z, -90.0f, 0.0f, roll, flapAngle, scale);
+}
+
+void drawAllBats() {
     // ------------------------------------------------------------------------
-
-    struct BatFlockMember {
-        float xOffset;     // Horizontal spread in flock
-        float baseY;       // Base flight height
-        float baseZ;       // Depth in front of house (in front of z=7.0 house)
-        float scale;       // World-space scale
-        float flapPhase;   // Wing flap phase offset
+    // COLONY OF NOCTURNAL BATS: DYNAMIC HORROR FLIGHT
+    // Flying continuously across the moonlit sky with varied swoops,
+    // altitudes, banking rolls, and true aerodynamic flight orientation!
+    // ------------------------------------------------------------------------
+    struct BatColonyMember {
+        float startX;      // Spawn X
+        float endX;        // Despawn X
+        float baseY;       // Nominal altitude
+        float baseZ;       // Yard depth
+        float scale;       // Scale
+        float flapFreq;    // Flapping frequency
+        float swoopAmp;    // Vertical swoop amplitude
+        float swoopFreq;   // Vertical swoop frequency
+        float timeOffset;  // Staggered launch offset
     };
-    static const BatFlockMember BATS[5] = {
-        {  0.0f, 5.8f, 12.5f, 0.52f, 0.0f }, // Alpha leader bat
-        {  2.2f, 6.4f, 13.5f, 0.46f, 1.8f }, // Upper follower
-        {  1.6f, 5.0f, 11.8f, 0.44f, 3.2f }, // Lower follower
-        {  3.8f, 6.7f, 14.2f, 0.42f, 4.5f }, // High trailer
-        {  4.5f, 4.7f, 12.0f, 0.40f, 2.1f }  // Low trailer
+
+    static const BatColonyMember COLONY[6] = {
+        // 1. Alpha Leader Bat (Graceful broad wingbeats across mid-yard)
+        {  32.0f, -32.0f, 5.9f, 13.2f, 0.55f, 13.0f, 0.45f, 2.2f, 0.0f },
+        // 2. High Moonlit Sentry (High altitude crossing the glowing full moon disk)
+        {  34.0f, -34.0f, 8.4f, 10.5f, 0.48f, 14.5f, 0.35f, 1.8f, 2.8f },
+        // 3. Low Graveyard Hunter (Swooping low over the tomb crosses and pumpkins)
+        {  30.0f, -30.0f, 3.8f, 14.8f, 0.50f, 15.0f, 0.85f, 2.8f, 5.2f },
+        // 4. Manor Turret Scout (Gliding near the Gothic roof ridge)
+        {  33.0f, -33.0f, 7.2f, 11.8f, 0.46f, 12.5f, 0.40f, 2.0f, 7.5f },
+        // 5. Agile Follower (Staggered trailing formation)
+        {  31.0f, -31.0f, 6.4f, 13.8f, 0.44f, 14.0f, 0.55f, 2.4f, 9.8f },
+        // 6. Low Wrecked-Car Scout (Dipping near the old rusted truck)
+        {  35.0f, -35.0f, 4.4f, 12.2f, 0.48f, 15.5f, 0.70f, 2.6f, 11.6f }
     };
 
-    float startX =  26.0f; // Well off-screen right
-    float endX   = -26.0f; // Well off-screen left
-    float totalDist = startX - endX;
+    float cycleDuration = 14.0f; // Each wave takes 14s to cross
 
-    float activeDuration = 10.5f; // Seconds to fly across the entire scene
-    float pauseDuration  =  5.5f; // Seconds of pause off-screen before returning
-    float cyclePeriod    = activeDuration + pauseDuration; // 16.0s total cycle
+    for (int i = 0; i < 6; ++i) {
+        const BatColonyMember& b = COLONY[i];
+        float t = std::fmod(g_time + b.timeOffset, cycleDuration) / cycleDuration;
 
-    float cycleTime = std::fmod(g_time, cyclePeriod);
+        // Position
+        float bx = b.startX + t * (b.endX - b.startX);
+        float by = b.baseY + b.swoopAmp * std::sin(g_time * b.swoopFreq + b.timeOffset);
+        float bz = b.baseZ + 0.35f * std::cos(g_time * 1.5f + b.timeOffset);
 
-    // Only render while active in flight
-    if (cycleTime < activeDuration) {
-        float t = cycleTime / activeDuration;
-        float baseX = startX - t * totalDist;
+        // True flight dynamics:
+        // Heading towards -X is yaw = -90.0f
+        // Pitch calculated from vertical velocity
+        float vy = b.swoopAmp * b.swoopFreq * std::cos(g_time * b.swoopFreq + b.timeOffset);
+        float vx = -((b.startX - b.endX) / cycleDuration);
+        float pitch = -std::atan2(vy, std::abs(vx)) * (180.0f / 3.14159265f);
 
-        for (int i = 0; i < 5; ++i) {
-            const BatFlockMember& b = BATS[i];
-            float bx = baseX + b.xOffset;
-            float by = b.baseY + 0.35f * std::sin(g_time * 2.5f + b.flapPhase);
-            float bz = b.baseZ;
+        // Banking roll when swooping
+        float roll = -15.0f + 12.0f * std::sin(g_time * 1.8f + b.timeOffset);
 
-            // Banking roll in flight direction
-            float roll = -16.0f + 6.0f * std::sin(g_time * 1.8f + b.flapPhase);
-            // Dynamic wing flap
-            float flap = std::sin(g_time * 11.0f + b.flapPhase) * 34.0f;
+        // Flapping angle with downstroke power
+        float flapAngle = std::sin(g_time * b.flapFreq + b.timeOffset) * 38.0f;
 
-            drawBat(bx, by, bz, roll, flap, b.scale);
-        }
+        drawRealisticBat(bx, by, bz, -90.0f, pitch, roll, flapAngle, b.scale);
     }
 }
 

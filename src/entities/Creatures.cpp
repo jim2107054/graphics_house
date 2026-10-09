@@ -1,10 +1,21 @@
 #include "Creatures.h"
 #include "Terrain.h"
+#include "../core/Camera.h"
 #include "../graphics/Material.h"
 #include "../graphics/TextureManager.h"
 #include "../graphics/Primitives.h"
 #include <cmath>
 #include <algorithm>
+#include <iostream>
+
+// Owl Proximity Escape State Variables
+bool g_owlEscaped = false;
+float g_owlTakeoffTime = 0.0f;
+
+void resetOwl() {
+    g_owlEscaped = false;
+    g_owlTakeoffTime = 0.0f;
+}
 
 // ============================================================================
 // DYNAMIC REALISTIC CREATURES (Prowling Black Cat & Great Horned Owl)
@@ -40,33 +51,57 @@ static const Material MAT_CAT_NOSE_PINK = {
 };
 
 static const Material MAT_OWL_FEATHER_MANTLE = {
-    { 0.15f, 0.11f, 0.08f, 1.0f },
-    { 0.36f, 0.26f, 0.18f, 1.0f },
-    { 0.12f, 0.10f, 0.08f, 1.0f },
+    { 0.12f, 0.09f, 0.06f, 1.0f },
+    { 0.32f, 0.23f, 0.16f, 1.0f },
+    { 0.10f, 0.08f, 0.06f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    12.0f
+};
+
+static const Material MAT_OWL_CHEST_BARRED = {
+    { 0.24f, 0.20f, 0.15f, 1.0f },
+    { 0.65f, 0.56f, 0.42f, 1.0f },
+    { 0.10f, 0.08f, 0.06f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     10.0f
 };
 
-static const Material MAT_OWL_CHEST_BARRED = {
-    { 0.28f, 0.24f, 0.18f, 1.0f },
-    { 0.70f, 0.62f, 0.48f, 1.0f },
-    { 0.14f, 0.12f, 0.10f, 1.0f },
+static const Material MAT_OWL_FACIAL_DISC = {
+    { 0.20f, 0.17f, 0.13f, 1.0f },
+    { 0.52f, 0.45f, 0.35f, 1.0f },
+    { 0.08f, 0.07f, 0.06f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
-    14.0f
+    8.0f
+};
+
+static const Material MAT_OWL_DISC_RIM = {
+    { 0.05f, 0.04f, 0.03f, 1.0f },
+    { 0.14f, 0.10f, 0.07f, 1.0f },
+    { 0.06f, 0.05f, 0.04f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    10.0f
 };
 
 static const Material MAT_OWL_EYE_AMBER = {
-    { 0.90f, 0.65f, 0.12f, 1.0f },
-    { 1.00f, 0.82f, 0.18f, 1.0f },
-    { 1.00f, 0.96f, 0.65f, 1.0f },
-    { 0.85f, 0.62f, 0.10f, 1.0f }, // Glowing nocturnal raptor glare
+    { 0.95f, 0.65f, 0.08f, 1.0f },
+    { 1.00f, 0.80f, 0.14f, 1.0f },
+    { 1.00f, 0.98f, 0.70f, 1.0f },
+    { 0.80f, 0.55f, 0.08f, 1.0f }, // Glowing nocturnal raptor glare
     120.0f
 };
 
+static const Material MAT_OWL_BEAK_SLATE = {
+    { 0.06f, 0.06f, 0.07f, 1.0f },
+    { 0.18f, 0.18f, 0.19f, 1.0f },
+    { 0.30f, 0.30f, 0.32f, 1.0f },
+    { 0.00f, 0.00f, 0.00f, 1.0f },
+    36.0f
+};
+
 static const Material MAT_OWL_TALON_HORN = {
-    { 0.08f, 0.08f, 0.08f, 1.0f },
-    { 0.18f, 0.18f, 0.18f, 1.0f },
-    { 0.40f, 0.40f, 0.40f, 1.0f },
+    { 0.04f, 0.04f, 0.04f, 1.0f },
+    { 0.10f, 0.10f, 0.10f, 1.0f },
+    { 0.35f, 0.35f, 0.35f, 1.0f },
     { 0.00f, 0.00f, 0.00f, 1.0f },
     48.0f
 };
@@ -384,120 +419,305 @@ void drawProwlingBlackCat() {
 // 2. GREAT HORNED OWL (Perched Raptorial Anatomy, Snap Head-Turns & Talons)
 // ============================================================================
 
-// Helper: Owl Raptor Talons tightly clutching the wooden fence post
-static void drawOwlTalons() {
+// Helper: Owl Raptor Talons with fluffy down-feather pantaloons clutching the timber post
+static void drawOwlTalons(bool tucked) {
     applyMaterial(MAT_OWL_TALON_HORN);
     bindTexture(TEX_NONE);
 
     for (int foot = -1; foot <= 1; foot += 2) {
+        float fs = (float)foot;
         glPushMatrix();
-        glTranslatef(foot * 0.055f, 0.0f, 0.0f);
+        glTranslatef(fs * 0.052f, tucked ? -0.02f : 0.0f, tucked ? -0.08f : 0.0f);
+
+        if (tucked) {
+            // In flight: legs tucked back under belly plumage
+            glRotatef(-65.0f, 1.0f, 0.0f, 0.0f);
+            glRotatef(fs * -12.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        // Fluffy down-feather "pantaloons" (thick plumage covering thigh & tarsus)
+        applyMaterial(MAT_OWL_CHEST_BARRED);
+        glPushMatrix();
+        glScalef(1.15f, 1.35f, 1.15f);
+        drawSphere(0.028f, 8, 6);
+        glPopMatrix();
 
         // Ankle / Tarsus
-        drawCylinder(0.016f, 0.014f, 0.045f, 6);
-        glTranslatef(0.0f, 0.01f, 0.0f);
+        applyMaterial(MAT_OWL_TALON_HORN);
+        drawCylinder(0.012f, 0.010f, 0.038f, 6);
+        glTranslatef(0.0f, 0.008f, 0.0f);
 
-        // 2 Forward Curved Toes wrapping tightly over front of post
-        for (int toe = -1; toe <= 1; toe += 2) {
+        if (!tucked) {
+            // 2 Forward Curved Toes wrapping tightly over front of post
+            for (int toe = -1; toe <= 1; toe += 2) {
+                float ts = (float)toe;
+                glPushMatrix();
+                glTranslatef(ts * 0.012f, 0.0f, 0.016f);
+                glRotatef(44.0f, 1.0f, 0.0f, 0.0f);
+                drawBox(0.009f, 0.009f, 0.038f);
+                // Sharp black hooked raptor claw
+                glTranslatef(0.0f, -0.010f, 0.022f);
+                glRotatef(48.0f, 1.0f, 0.0f, 0.0f);
+                drawBox(0.006f, 0.006f, 0.020f);
+                glPopMatrix();
+            }
+
+            // 2 Rear Curved Claws wrapping backward
+            for (int btoe = -1; btoe <= 1; btoe += 2) {
+                float bts = (float)btoe;
+                glPushMatrix();
+                glTranslatef(bts * 0.011f, 0.0f, -0.016f);
+                glRotatef(-44.0f, 1.0f, 0.0f, 0.0f);
+                drawBox(0.009f, 0.009f, 0.034f);
+                glPopMatrix();
+            }
+        } else {
+            // Tucked curled claws in flight
             glPushMatrix();
-            glTranslatef(toe * 0.014f, 0.0f, 0.018f);
-            glRotatef(42.0f, 1.0f, 0.0f, 0.0f);
-            drawBox(0.011f, 0.011f, 0.042f);
-            // Sharp black hooked claw
-            glTranslatef(0.0f, -0.012f, 0.024f);
-            glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
-            drawBox(0.007f, 0.007f, 0.022f);
+            glTranslatef(0.0f, -0.015f, 0.010f);
+            drawBox(0.016f, 0.012f, 0.020f);
             glPopMatrix();
         }
 
-        // 2 Rear Curved Claws wrapping backward
-        for (int btoe = -1; btoe <= 1; btoe += 2) {
-            glPushMatrix();
-            glTranslatef(btoe * 0.012f, 0.0f, -0.018f);
-            glRotatef(-42.0f, 1.0f, 0.0f, 0.0f);
-            drawBox(0.011f, 0.011f, 0.038f);
-            glPopMatrix();
-        }
         glPopMatrix();
     }
 }
 
-// Helper: Owl Head with Facial Disc, Ear Tufts, Raptor Beak & Glowing Eyes
+// Helper: Owl Head with Parabolic Facial Disc, Wispy Plumicorns, Hooked Beak & Deep-Set Amber Eyes
 static void drawOwlHead(float snapYaw, float cockRoll) {
     glPushMatrix();
-    glTranslatef(0.0f, 0.28f, 0.02f); // Above shoulders
-    glRotatef(snapYaw, 0.0f, 1.0f, 0.0f); // The signature owl head-swivel!
+    glTranslatef(0.0f, 0.27f, 0.02f); // Above shoulders
+    glRotatef(snapYaw, 0.0f, 1.0f, 0.0f); // The signature owl head-swivel
     glRotatef(cockRoll, 0.0f, 0.0f, 1.0f); // Inquisitive head tilt
 
     // Broad Rounded Raptor Skull
     applyMaterial(MAT_OWL_FEATHER_MANTLE);
     bindTexture(TEX_NONE);
     glPushMatrix();
-    glScalef(1.08f, 0.95f, 1.02f);
+    glScalef(1.06f, 0.94f, 1.02f);
     drawSphere(0.088f, 12, 10);
     glPopMatrix();
 
-    // Heart-Shaped Concave Facial Disc (Buff with dark contoured rim)
-    applyMaterial(MAT_OWL_CHEST_BARRED);
-    for (int eyeSide = -1; eyeSide <= 1; eyeSide += 2) {
-        glPushMatrix();
-        glTranslatef(eyeSide * 0.038f, -0.005f, 0.068f);
-        glRotatef(eyeSide * -12.0f, 0.0f, 1.0f, 0.0f);
-        glScalef(1.0f, 1.15f, 0.25f);
-        drawSphere(0.045f, 10, 8); // Facial disc basin
-        glPopMatrix();
-    }
+    // Dark Feather Collar Ruff framing back of head
+    applyMaterial(MAT_OWL_DISC_RIM);
+    glPushMatrix();
+    glTranslatef(0.0f, -0.04f, -0.02f);
+    glScalef(1.15f, 0.60f, 1.15f);
+    drawSphere(0.080f, 10, 8);
+    glPopMatrix();
 
-    // Two Large Glowing Amber Eyes with Deep Black Raptor Pupils
+    // Twin Concave Parabolic Facial Discs with Dark Outer Rim
     for (int eyeSide = -1; eyeSide <= 1; eyeSide += 2) {
+        float es = (float)eyeSide;
+
+        // Outer Dark Facial Ruff Rim (framing the parabolic dish)
+        applyMaterial(MAT_OWL_DISC_RIM);
         glPushMatrix();
-        glTranslatef(eyeSide * 0.035f, 0.002f, 0.080f);
+        glTranslatef(es * 0.038f, -0.005f, 0.065f);
+        glRotatef(es * -10.0f, 0.0f, 1.0f, 0.0f);
+        glScalef(1.15f, 1.25f, 0.20f);
+        drawSphere(0.046f, 10, 8);
+        glPopMatrix();
+
+        // Inner Buff Acoustic Basin (recessed dish)
+        applyMaterial(MAT_OWL_FACIAL_DISC);
+        glPushMatrix();
+        glTranslatef(es * 0.038f, -0.005f, 0.068f);
+        glRotatef(es * -10.0f, 0.0f, 1.0f, 0.0f);
+        glScalef(1.00f, 1.10f, 0.18f);
+        drawSphere(0.042f, 10, 8);
+        glPopMatrix();
+
+        // Fierce Overhanging Feathered Brow Ridge (Predatory raptor scowl)
+        applyMaterial(MAT_OWL_FEATHER_MANTLE);
+        glPushMatrix();
+        glTranslatef(es * 0.034f, 0.025f, 0.076f);
+        glRotatef(es * -18.0f, 0.0f, 0.0f, 1.0f); // Angled down towards beak
+        glRotatef(20.0f, 1.0f, 0.0f, 0.0f);       // Projecting forward over eye
+        drawBox(0.030f, 0.012f, 0.022f);
+        glPopMatrix();
+
+        // Large Nocturnal Amber Eye (Recessed deep inside the basin)
+        glPushMatrix();
+        glTranslatef(es * 0.035f, 0.000f, 0.076f);
 
         // Luminous Amber-Gold Iris
         applyMaterial(MAT_OWL_EYE_AMBER);
-        drawSphere(0.022f, 10, 8);
+        drawSphere(0.020f, 10, 8);
 
-        // Pitch Black Centered Pupil
+        // Deep Black Concentric Pupil
         applyMaterial(MAT_BLACK_CAT_FUR);
-        glTranslatef(0.0f, 0.0f, 0.016f);
-        drawSphere(0.011f, 8, 6);
+        glTranslatef(0.0f, 0.0f, 0.015f);
+        drawSphere(0.010f, 8, 6);
         glPopMatrix();
     }
 
-    // Downcurved Hooked Slate Raptor Beak
-    applyMaterial(MAT_OWL_TALON_HORN);
+    // Downcurved Hooked Slate Raptor Beak nestled between discs
+    applyMaterial(MAT_OWL_BEAK_SLATE);
     glPushMatrix();
-    glTranslatef(0.0f, -0.022f, 0.082f);
-    glRotatef(35.0f, 1.0f, 0.0f, 0.0f);
-    drawPrismRoof(0.022f, 0.042f, 0.035f);
+    glTranslatef(0.0f, -0.018f, 0.082f);
+    glRotatef(34.0f, 1.0f, 0.0f, 0.0f);
+    drawPrismRoof(0.020f, 0.042f, 0.032f);
     // Sharp Hook Tip
-    glTranslatef(0.0f, -0.025f, 0.015f);
-    glRotatef(40.0f, 1.0f, 0.0f, 0.0f);
-    drawBox(0.012f, 0.024f, 0.014f);
+    glTranslatef(0.0f, -0.024f, 0.014f);
+    glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
+    drawBox(0.010f, 0.022f, 0.012f);
     glPopMatrix();
 
-    // TWO PROMINENT FEATHERY EAR TUFTS ("HORNS") SWEEPING UPWARD
+    // Nasal Bristle Feathers covering base of beak
+    applyMaterial(MAT_OWL_FACIAL_DISC);
+    glPushMatrix();
+    glTranslatef(0.0f, -0.002f, 0.088f);
+    drawBox(0.018f, 0.018f, 0.016f);
+    glPopMatrix();
+
+    // WISPY, FEATHERY EAR TUFTS ("PLUMICORNS") - NO MORE BLOCKY CHIMNEYS!
+    // Modeled as clusters of 3 curved, tapered, overlapping feather plumes
     applyMaterial(MAT_OWL_FEATHER_MANTLE);
     for (int horn = -1; horn <= 1; horn += 2) {
+        float hs = (float)horn;
+
         glPushMatrix();
-        glTranslatef(horn * 0.052f, 0.075f, 0.015f);
-        glRotatef(horn * -24.0f, 0.0f, 0.0f, 1.0f); // Tilted outwards
-        glRotatef(-16.0f, 1.0f, 0.0f, 0.0f);        // Swept backward
-        drawPrismRoof(0.028f, 0.085f, 0.035f);
-        // Jagged feather tips
-        glTranslatef(0.0f, 0.065f, -0.01f);
-        drawBox(0.016f, 0.040f, 0.018f);
+        glTranslatef(hs * 0.046f, 0.065f, 0.030f);
+        glRotatef(hs * -26.0f, 0.0f, 0.0f, 1.0f); // Tilted outwards
+        glRotatef(-22.0f, 1.0f, 0.0f, 0.0f);        // Swept backward
+
+        // Plume 1: Tall leading feather plume
+        glPushMatrix();
+        drawPrismRoof(0.022f, 0.085f, 0.020f);
+        glTranslatef(0.0f, 0.070f, -0.008f);
+        glRotatef(hs * -8.0f, 0.0f, 0.0f, 1.0f);
+        drawBox(0.012f, 0.035f, 0.010f); // Delicate tapered tip
+        glPopMatrix();
+
+        // Plume 2: Overlapping rear feather quill
+        glPushMatrix();
+        glTranslatef(hs * -0.008f, 0.010f, -0.015f);
+        glRotatef(-8.0f, 1.0f, 0.0f, 0.0f);
+        drawPrismRoof(0.018f, 0.070f, 0.016f);
+        glTranslatef(0.0f, 0.055f, -0.006f);
+        drawBox(0.010f, 0.025f, 0.008f);
+        glPopMatrix();
+
+        // Plume 3: Outer splayed feather quill
+        glPushMatrix();
+        glTranslatef(hs * 0.010f, 0.005f, -0.008f);
+        glRotatef(hs * -15.0f, 0.0f, 0.0f, 1.0f);
+        drawPrismRoof(0.016f, 0.055f, 0.014f);
+        glPopMatrix();
+
         glPopMatrix();
     }
 
     glPopMatrix(); // End Owl Head
 }
 
-// Master Perched Owl Routine
+// Helper: Layered Folded Wings conforming naturally to the raptor's body
+// (Completely eliminates the blocky rectangular boxes!)
+static void drawFoldedRaptorWings(float ruffleAngle) {
+    applyMaterial(MAT_OWL_FEATHER_MANTLE);
+    bindTexture(TEX_NONE);
+
+    for (int wing = -1; wing <= 1; wing += 2) {
+        float ws = (float)wing;
+        glPushMatrix();
+        glTranslatef(ws * 0.105f, 0.18f, -0.01f);
+        glRotatef(ws * -12.0f + ws * ruffleAngle, 0.0f, 0.0f, 1.0f);
+        glRotatef(-16.0f, 1.0f, 0.0f, 0.0f); // Swept down-back along flank
+
+        // 1. Curved Shoulder Cape / Scapular Coverts (wraps body contours)
+        glPushMatrix();
+        glScalef(0.65f, 1.25f, 0.85f);
+        drawSphere(0.085f, 10, 8);
+        glPopMatrix();
+
+        // 2. Secondary Flight Feather Blanket (hugging flank)
+        glPushMatrix();
+        glTranslatef(0.0f, -0.06f, -0.015f);
+        glRotatef(ws * 4.0f, 0.0f, 0.0f, 1.0f);
+        glScalef(0.55f, 1.40f, 0.70f);
+        drawSphere(0.075f, 8, 6);
+        glPopMatrix();
+
+        // 3. Layered Fan of 4 Overlapping Primary Flight Feathers
+        // Tapering to an elegant pointed apex crossed above the tail!
+        for (int p = 0; p < 4; ++p) {
+            float pf = (float)p;
+            glPushMatrix();
+            glTranslatef(ws * (0.010f - pf * 0.005f), -0.10f - pf * 0.025f, -0.020f - pf * 0.015f);
+            glRotatef(ws * (6.0f - pf * 2.0f), 0.0f, 0.0f, 1.0f);
+            glRotatef(-12.0f - pf * 3.0f, 1.0f, 0.0f, 0.0f); // Tapering backward
+
+            // Feather quill blade
+            applyMaterial(MAT_OWL_FEATHER_MANTLE);
+            drawBeveledBox(0.018f, 0.11f - pf * 0.010f, 0.040f - pf * 0.005f, 0.006f);
+
+            // Subtle darker transverse feather bar on each quill
+            applyMaterial(MAT_OWL_DISC_RIM);
+            glTranslatef(0.0f, -0.02f, 0.002f);
+            drawBox(0.019f, 0.020f, 0.038f - pf * 0.005f);
+            glPopMatrix();
+        }
+
+        // 4. Pointed Wingtip Primary Apex (crossing over back)
+        applyMaterial(MAT_OWL_FEATHER_MANTLE);
+        glPushMatrix();
+        glTranslatef(ws * -0.008f, -0.22f, -0.065f);
+        glRotatef(ws * 14.0f, 0.0f, 0.0f, 1.0f); // Crossing inward toward midline
+        glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
+        drawBox(0.014f, 0.090f, 0.024f);
+        glPopMatrix();
+
+        glPopMatrix();
+    }
+}
+
+// Helper: Massive Broad Raptor Wings Spread in Flight (1.35m wingspan with slotted primaries)
+static void drawFlyingRaptorWings(float flapAngle) {
+    applyMaterial(MAT_OWL_FEATHER_MANTLE);
+    bindTexture(TEX_NONE);
+
+    for (int wing = -1; wing <= 1; wing += 2) {
+        float ws = (float)wing;
+        glPushMatrix();
+        glTranslatef(ws * 0.10f, 0.16f, 0.00f);
+        glRotatef(ws * flapAngle, 0.0f, 0.0f, 1.0f); // Primary downstroke/upstroke
+
+        // --- Inner Wing (Arm / Secondary Flight Feathers) ---
+        glPushMatrix();
+        glTranslatef(ws * 0.18f, 0.0f, -0.04f);
+        glRotatef(ws * -8.0f, 0.0f, 1.0f, 0.0f);
+        glRotatef(6.0f, 1.0f, 0.0f, 0.0f); // Aerodynamic camber
+        drawBeveledBox(0.24f, 0.025f, 0.22f, 0.010f);
+        glPopMatrix();
+
+        // --- Outer Wing (Forearm & Hand with Aeroelastic Flex) ---
+        float tipFlex = -flapAngle * 0.35f; // Wingtip trails stroke
+        glPushMatrix();
+        glTranslatef(ws * 0.36f, 0.0f, -0.04f);
+        glRotatef(ws * tipFlex, 0.0f, 0.0f, 1.0f);
+        drawBeveledBox(0.22f, 0.020f, 0.18f, 0.008f);
+
+        // --- 5 Slotted Primary Flight Feathers ("Wingtip Fingers") ---
+        for (int f = 0; f < 5; ++f) {
+            float ff = (float)f;
+            glPushMatrix();
+            glTranslatef(ws * (0.12f + ff * 0.035f), 0.005f, -0.06f - ff * 0.025f);
+            glRotatef(ws * (15.0f + ff * 8.0f), 0.0f, 1.0f, 0.0f); // Splayed out like fingers
+            glRotatef(ws * (flapAngle * 0.20f), 0.0f, 0.0f, 1.0f); // Primary feather curl
+            drawBeveledBox(0.025f, 0.008f, 0.14f + ff * 0.015f, 0.004f);
+            glPopMatrix();
+        }
+        glPopMatrix();
+
+        glPopMatrix();
+    }
+}
+
+// Master Perched Owl Routine with Proximity Escape System
 void drawPerchedOwl() {
     // ------------------------------------------------------------------------
     // PERCH LOCATION: Dedicated rustic timber post flanking the entrance path (x = 3.45f, z = 18.40f)
-    // Clear line of sight from the approach road, overlooking the manor grounds.
     // ------------------------------------------------------------------------
     float perchX =  3.45f;
     float perchZ = 18.40f;
@@ -505,7 +725,7 @@ void drawPerchedOwl() {
     float postH = 1.95f;
     float perchY = gy + postH;
 
-    // --- WEATHERED TIMBER PERCH POST ---
+    // --- 1. WEATHERED TIMBER PERCH POST (Always renders on lawn) ---
     glPushMatrix();
     glTranslatef(perchX, gy, perchZ);
     applyMaterial(MAT_DARK_WOOD);
@@ -523,124 +743,215 @@ void drawPerchedOwl() {
     drawBox(0.20f, 0.04f, 0.20f);
     glPopMatrix();
 
-    // Weathered timber post cap
+    // Weathered timber post cap with subtle beveled top
     applyMaterial(MAT_DARK_WOOD);
     bindTexture(TEX_WALL);
     glPushMatrix();
     glTranslatef(0.0f, postH + 0.01f, 0.0f);
-    drawBox(0.19f, 0.02f, 0.19f);
+    drawBeveledBox(0.19f, 0.025f, 0.19f, 0.006f);
     glPopMatrix();
     glPopMatrix();
 
-    // Real Owl Head State Machine: Fast, crisp snaps with long fixations!
-    float period = 16.0f;
-    float timeMod = std::fmod(g_time, period);
+    // --- 2. PROXIMITY DETECTION TO PLAYER CAMERA ---
+    float camDx = g_cam.x - perchX;
+    float camDz = g_cam.z - perchZ;
+    float camDist = std::sqrt(camDx * camDx + camDz * camDz);
 
-    float targetYaw = 0.0f;
-    float targetRoll = 0.0f;
-
-    if (timeMod < 3.5f) {
-        // Phase 1: Staring forward down the visitor pathway
-        targetYaw = -25.0f;
-        targetRoll = 3.0f;
-    } else if (timeMod < 4.0f) {
-        // Fast snap turn to left (Cemetery & Wrecked Car across the lawn)
-        float s = (timeMod - 3.5f) / 0.5f;
-        targetYaw = -25.0f + s * (-65.0f);
-        targetRoll = 3.0f + s * (-9.0f);
-    } else if (timeMod < 7.5f) {
-        // Phase 2: Scanning the graveyard knolls and rusted car wreck
-        targetYaw = -90.0f;
-        targetRoll = -6.0f;
-    } else if (timeMod < 8.2f) {
-        // Deep snap turn all the way over shoulder (140 degrees backward!)
-        float s = (timeMod - 7.5f) / 0.7f;
-        targetYaw = -90.0f + s * (-70.0f);
-        targetRoll = -6.0f + s * (16.0f);
-    } else if (timeMod < 11.5f) {
-        // Phase 3: Watching the dark woods behind the post
-        targetYaw = -160.0f;
-        targetRoll = 10.0f;
-    } else if (timeMod < 12.2f) {
-        // Snap turn across to look at the manor house & glowing windows
-        float s = (timeMod - 11.5f) / 0.7f;
-        targetYaw = -160.0f + s * (205.0f);
-        targetRoll = 10.0f + s * (-18.0f);
-    } else if (timeMod < 15.2f) {
-        // Phase 4: Staring at the front porch, stairs and candelabra
-        targetYaw = 45.0f;
-        targetRoll = -8.0f;
-    } else {
-        // Phase 5: Snap back to pathway
-        float s = (timeMod - 15.2f) / 0.8f;
-        targetYaw = 45.0f + s * (-70.0f);
-        targetRoll = -8.0f + s * (11.0f);
+    // If player approaches within 3.2 meters, startle the owl into escape flight!
+    if (camDist < 3.2f && !g_owlEscaped) {
+        g_owlEscaped = true;
+        g_owlTakeoffTime = g_time;
+        std::cout << "[CREATURE] Great Horned Owl startled! Taking flight into the night sky..." << std::endl;
     }
 
-    // Respiratory Chest Rise and Fall
-    float breath = std::sin(g_time * 2.4f) * 0.012f;
+    // --- 3. STATE MACHINE RENDERING ---
+    if (!g_owlEscaped) {
+        // ====================================================================
+        // STATE A: PERCHED PEACEFULLY ON TIMBER POST
+        // ====================================================================
+        float period = 16.0f;
+        float timeMod = std::fmod(g_time, period);
 
-    // Periodic Wing Ruffle / Shrug every 8 seconds
-    float wingRuffle = 0.0f;
-    float ruffleCycle = std::fmod(g_time, 8.0f);
-    if (ruffleCycle < 0.6f) {
-        wingRuffle = std::sin(ruffleCycle * (3.14159f / 0.6f)) * 9.0f;
-    }
+        float targetYaw = 0.0f;
+        float targetRoll = 0.0f;
 
-    glPushMatrix();
-    glTranslatef(perchX, perchY + 0.02f, perchZ);
-    glRotatef(-15.0f, 0.0f, 1.0f, 0.0f); // Body posture angled towards the lawn path
+        if (timeMod < 3.5f) {
+            // Phase 1: Staring forward down the visitor pathway
+            targetYaw = -25.0f;
+            targetRoll = 3.0f;
+        } else if (timeMod < 4.0f) {
+            // Fast snap turn to left (Cemetery & Wrecked Car across the lawn)
+            float s = (timeMod - 3.5f) / 0.5f;
+            targetYaw = -25.0f + s * (-65.0f);
+            targetRoll = 3.0f + s * (-9.0f);
+        } else if (timeMod < 7.5f) {
+            // Phase 2: Scanning the graveyard knolls and rusted car wreck
+            targetYaw = -90.0f;
+            targetRoll = -6.0f;
+        } else if (timeMod < 8.2f) {
+            // Deep snap turn all the way over shoulder (140 degrees backward!)
+            float s = (timeMod - 7.5f) / 0.7f;
+            targetYaw = -90.0f + s * (-70.0f);
+            targetRoll = -6.0f + s * (16.0f);
+        } else if (timeMod < 11.5f) {
+            // Phase 3: Watching the dark woods behind the post
+            targetYaw = -160.0f;
+            targetRoll = 10.0f;
+        } else if (timeMod < 12.2f) {
+            // Snap turn across to look at the manor house & glowing windows
+            float s = (timeMod - 11.5f) / 0.7f;
+            targetYaw = -160.0f + s * (205.0f);
+            targetRoll = 10.0f + s * (-18.0f);
+        } else if (timeMod < 15.2f) {
+            // Phase 4: Staring at the front porch, stairs and candelabra
+            targetYaw = 45.0f;
+            targetRoll = -8.0f;
+        } else {
+            // Phase 5: Snap back to pathway
+            float s = (timeMod - 15.2f) / 0.8f;
+            targetYaw = 45.0f + s * (-70.0f);
+            targetRoll = -8.0f + s * (11.0f);
+        }
 
-    // --- RAPTOR TALONS GRIPPING TIMBER ---
-    drawOwlTalons();
+        // Respiratory Chest Rise and Fall
+        float breath = std::sin(g_time * 2.4f) * 0.012f;
 
-    // --- TEARDROP RAPTOR BODY & PLUMAGE ---
-    glTranslatef(0.0f, 0.04f, 0.0f);
+        // Periodic Wing Ruffle / Shrug every 8 seconds
+        float wingRuffle = 0.0f;
+        float ruffleCycle = std::fmod(g_time, 8.0f);
+        if (ruffleCycle < 0.6f) {
+            wingRuffle = std::sin(ruffleCycle * (3.14159f / 0.6f)) * 9.0f;
+        }
 
-    // Main Torso / Plumage Barrel
-    applyMaterial(MAT_OWL_FEATHER_MANTLE);
-    bindTexture(TEX_NONE);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.16f + breath, 0.0f);
-    glRotatef(-14.0f, 1.0f, 0.0f, 0.0f); // Perched upright posture
-    glScalef(1.05f, 1.45f, 1.0f);
-    drawSphere(0.125f, 12, 10);
-    glPopMatrix();
-
-    // Barred Buff Chest Plumage (Front Bib)
-    applyMaterial(MAT_OWL_CHEST_BARRED);
-    glPushMatrix();
-    glTranslatef(0.0f, 0.17f + breath * 1.5f, 0.055f);
-    glRotatef(-16.0f, 1.0f, 0.0f, 0.0f);
-    glScalef(0.92f, 1.25f, 0.55f);
-    drawSphere(0.105f, 10, 8);
-    glPopMatrix();
-
-    // Layered Folded Primary Flight Wings along flanks
-    applyMaterial(MAT_OWL_FEATHER_MANTLE);
-    for (int wing = -1; wing <= 1; wing += 2) {
         glPushMatrix();
-        glTranslatef(wing * 0.12f, 0.17f, -0.01f);
-        glRotatef(wing * -15.0f + wing * wingRuffle, 0.0f, 0.0f, 1.0f);
-        glRotatef(-18.0f, 1.0f, 0.0f, 0.0f); // Angled down towards tail
-        drawBeveledBox(0.045f, 0.26f, 0.11f, 0.015f);
-        // Wingtip primaries extending below body
-        glTranslatef(0.0f, -0.14f, -0.03f);
-        drawBox(0.035f, 0.12f, 0.06f);
+        glTranslatef(perchX, perchY + 0.02f, perchZ);
+        glRotatef(-15.0f, 0.0f, 1.0f, 0.0f); // Body posture angled towards the lawn path
+
+        // Talons clutching timber
+        drawOwlTalons(false);
+
+        // Teardrop Raptor Torso
+        glTranslatef(0.0f, 0.04f, 0.0f);
+        applyMaterial(MAT_OWL_FEATHER_MANTLE);
+        bindTexture(TEX_NONE);
+        glPushMatrix();
+        glTranslatef(0.0f, 0.16f + breath, 0.0f);
+        glRotatef(-14.0f, 1.0f, 0.0f, 0.0f);
+        glScalef(1.05f, 1.45f, 1.0f);
+        drawSphere(0.125f, 12, 10);
         glPopMatrix();
+
+        // Barred Buff Chest Plumage (Front Bib)
+        applyMaterial(MAT_OWL_CHEST_BARRED);
+        glPushMatrix();
+        glTranslatef(0.0f, 0.17f + breath * 1.5f, 0.055f);
+        glRotatef(-16.0f, 1.0f, 0.0f, 0.0f);
+        glScalef(0.92f, 1.25f, 0.55f);
+        drawSphere(0.105f, 10, 8);
+        glPopMatrix();
+
+        // Organic Folded Wings with Primary Flight Quills (No blocky boxes!)
+        drawFoldedRaptorWings(wingRuffle);
+
+        // Wedge-Shaped Tail Feathers
+        glPushMatrix();
+        glTranslatef(0.0f, 0.06f, -0.10f);
+        glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
+        drawBeveledBox(0.09f, 0.18f, 0.025f, 0.008f);
+        glPopMatrix();
+
+        // Articulated Head with Parabolic Facial Disc, Wispy Ear Tufts & Glowing Eyes
+        drawOwlHead(targetYaw, targetRoll);
+
+        glPopMatrix();
+
+    } else {
+        // ====================================================================
+        // STATE B: STARTLED ESCAPE FLIGHT INTO THE NIGHT SKY
+        // ====================================================================
+        float ft = g_time - g_owlTakeoffTime;
+
+        if (ft < 0.28f) {
+            // Phase 1: Startled crouch & wings burst open on the post!
+            float crouch = ft / 0.28f;
+            glPushMatrix();
+            glTranslatef(perchX, perchY + 0.02f - crouch * 0.04f, perchZ);
+            glRotatef(-15.0f, 0.0f, 1.0f, 0.0f);
+
+            drawOwlTalons(false);
+
+            glTranslatef(0.0f, 0.04f, 0.0f);
+            applyMaterial(MAT_OWL_FEATHER_MANTLE);
+            bindTexture(TEX_NONE);
+            glPushMatrix();
+            glTranslatef(0.0f, 0.14f, 0.0f);
+            glRotatef(-22.0f, 1.0f, 0.0f, 0.0f);
+            glScalef(1.05f, 1.45f, 1.0f);
+            drawSphere(0.125f, 12, 10);
+            glPopMatrix();
+
+            // Wings unfurling
+            float spreadFlap = crouch * -25.0f;
+            drawFlyingRaptorWings(spreadFlap);
+
+            // Head looking alertly at player
+            drawOwlHead(-camDx * 8.0f, 0.0f);
+            glPopMatrix();
+
+        } else if (ft < 14.0f) {
+            // Phase 2: Escaping flight climbing steeply into the night sky!
+            float t = ft - 0.28f;
+
+            // Escape trajectory climbing towards the dark forest / distant sky
+            float escX = perchX + 4.2f * t + 1.2f * std::sin(t * 1.4f);
+            float escY = perchY + 1.5f * t + 0.32f * t * t; // Smooth parabolic altitude climb
+            float escZ = perchZ - 6.5f * t; // Flying away into the distance
+
+            float vx = 4.2f + 1.68f * std::cos(t * 1.4f);
+            float vy = 1.5f + 0.64f * t;
+            float vz = -6.5f;
+
+            float speedH = std::sqrt(vx * vx + vz * vz);
+            float flightYaw = std::atan2(vx, -vz) * (180.0f / 3.14159265f);
+            float flightPitch = -std::atan2(vy, speedH) * (180.0f / 3.14159265f);
+            float flightRoll = -16.0f + 8.0f * std::sin(t * 1.8f);
+            float flapAngle = std::sin(t * 8.0f) * 44.0f; // Broad, deep wingbeats
+
+            glPushMatrix();
+            glTranslatef(escX, escY, escZ);
+            glRotatef(flightYaw,   0.0f, 1.0f, 0.0f);
+            glRotatef(flightPitch, 1.0f, 0.0f, 0.0f);
+            glRotatef(flightRoll,  0.0f, 0.0f, 1.0f);
+
+            // Tucked talons in flight
+            drawOwlTalons(true);
+
+            // Streamlined Torso in flight
+            applyMaterial(MAT_OWL_FEATHER_MANTLE);
+            bindTexture(TEX_NONE);
+            glPushMatrix();
+            glRotatef(12.0f, 1.0f, 0.0f, 0.0f);
+            glScalef(0.95f, 0.85f, 1.45f);
+            drawSphere(0.125f, 12, 10);
+            glPopMatrix();
+
+            // Broad fanned tail rectrices for flight stability
+            glPushMatrix();
+            glTranslatef(0.0f, 0.02f, -0.16f);
+            glRotatef(18.0f, 1.0f, 0.0f, 0.0f);
+            drawBeveledBox(0.18f, 0.015f, 0.22f, 0.006f);
+            glPopMatrix();
+
+            // Massive Spreading Raptor Wings flapping in flight
+            drawFlyingRaptorWings(flapAngle);
+
+            // Head looking forward in flight direction
+            drawOwlHead(0.0f, 0.0f);
+
+            glPopMatrix();
+        }
+        // Beyond 14 seconds, the owl has flown completely out of the world bounds, post is empty!
     }
-
-    // Wedge-Shaped Tail Feathers projecting down beneath wings
-    glPushMatrix();
-    glTranslatef(0.0f, 0.06f, -0.10f);
-    glRotatef(-28.0f, 1.0f, 0.0f, 0.0f);
-    drawBeveledBox(0.09f, 0.18f, 0.025f, 0.008f);
-    glPopMatrix();
-
-    // --- ARTICULATED HEAD WITH HORN TUFTS & GLOWING EYES ---
-    drawOwlHead(targetYaw, targetRoll);
-
-    glPopMatrix(); // End Perched Owl
 }
 
 // ----------------------------------------------------------------------------

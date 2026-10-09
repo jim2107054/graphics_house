@@ -257,7 +257,8 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
 }
 
 
-void displayCallback() {    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void displayCallback() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     if (g_appState == STATE_TITLE) {
         glMatrixMode(GL_PROJECTION);
@@ -447,7 +448,7 @@ int main(int argc, char** argv) {    for (int i = 1; i < argc; ++i) {
     }
 
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL);
     glutInitWindowSize(WINDOW_INIT_WIDTH, WINDOW_INIT_HEIGHT);
     glutInitWindowPosition(80, 50);
     glutCreateWindow("Horror House at Night - 3D 4-Light Scene (Jim 2107054)");

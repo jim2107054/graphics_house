@@ -3,6 +3,7 @@
 #include "../audio/AudioSystem.h"
 #include "../graphics/Lighting.h"
 #include "../ui/Screenshot.h"
+#include "../entities/Creatures.h"
 #include <iostream>
 
 void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y;
@@ -109,7 +110,8 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
             g_cam.fov = 52.0f; g_cam.targetFov = 52.0f;
             g_cinematicMode = false;
             g_camFloorState = 0;
-            std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point (FOV Reset)" << std::endl;
+            resetOwl();
+            std::cout << "[CAMERA] Reset to Exterior Yard Vantage Point (FOV & Owl Reset)" << std::endl;
             break;
         case 'v':
         case 'V':

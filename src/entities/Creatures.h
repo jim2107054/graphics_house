@@ -8,3 +8,4 @@
 void drawProwlingBlackCat();
 void drawPerchedOwl();
 void drawAllCreatures();
+void resetOwl();

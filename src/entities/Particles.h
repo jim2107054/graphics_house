@@ -22,4 +22,6 @@ void drawFallingLeaves();
 void drawGroundMist();
 void drawBatWing(float side, float flapAngle);
 void drawBat(float x, float y, float z, float roll, float flapAngle, float scale = 1.0f);
+void drawRealisticBat(float x, float y, float z, float yaw, float pitch, float roll, float flapAngle, float scale = 1.0f);
 void drawAllBats();
+
