@@ -89,7 +89,7 @@ void updateCinematicCamera(float dt) {
         g_light3AreaOn = true;
         g_pumpkinLightsOn = true;
         g_texturesEnabled = true;
-        g_fogEnabled = true;
+        g_fogEnabled = false;
     }
 
     // Dynamic Live Demonstrations during Guided Tour:
@@ -103,14 +103,6 @@ void updateCinematicCamera(float dt) {
     }
     if (prevTime < 6.5f && g_cinematicTime >= 6.5f) {
         g_light1DirectionalOn = true;  // DEMO: Moonlight ON (Silvery blue & planar shadows restored)
-    }
-
-    // 3. Fog Demonstration (GL_FOG)
-    if (prevTime < 8.8f && g_cinematicTime >= 8.8f) {
-        g_fogEnabled = false; // DEMO: Fog OFF (Clear distant sky)
-    }
-    if (prevTime < 11.2f && g_cinematicTime >= 11.2f) {
-        g_fogEnabled = true;  // DEMO: Fog ON (Atmospheric mist)
     }
 
     // 4. Jack-o'-Lantern Pumpkin Candle Lights Demonstration

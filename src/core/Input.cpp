@@ -56,11 +56,6 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
             g_texturesEnabled = !g_texturesEnabled;
             std::cout << "[TEXTURES] Texture Mapping : " << (g_texturesEnabled ? "ON (GL_MODULATE)" : "OFF (Materials Only)") << std::endl;
             break;
-        case 'g':
-        case 'G':
-            g_fogEnabled = !g_fogEnabled;
-            std::cout << "[ATMOSPHERE] Fog : " << (g_fogEnabled ? "ON" : "OFF") << std::endl;
-            break;
         case 'b':
         case 'B':
             g_bulbAnimEnabled = !g_bulbAnimEnabled;
@@ -81,7 +76,7 @@ void keyboardDownCallback(unsigned char key, int x, int y) {    (void)x; (void)y
                 g_light3AreaOn = true;
                 g_pumpkinLightsOn = true;
                 g_texturesEnabled = true;
-                g_fogEnabled = true;
+                g_fogEnabled = false;
                 std::cout << "[CAMERA] Guided Showcase Tour : DISABLED (Free Manual Exploration - All Lights Restored)" << std::endl;
             }
             break;

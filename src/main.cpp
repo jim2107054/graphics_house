@@ -71,10 +71,8 @@ void initOpenGL() {
     glLightf(GL_LIGHT5, GL_LINEAR_ATTENUATION,    0.035f);
     glLightf(GL_LIGHT5, GL_QUADRATIC_ATTENUATION, 0.008f);
 
-    // Atmospheric Fog Setup
-    glFogi(GL_FOG_MODE, GL_EXP2);
-    glFogf(GL_FOG_DENSITY, 0.019f);
-    glHint(GL_FOG_HINT, GL_NICEST);
+    // No Fog (Fog permanently disabled per user request)
+    glDisable(GL_FOG);
 
     initAllTextures();
     initStars();
@@ -84,17 +82,8 @@ void initOpenGL() {
 void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
     float flash = g_lightning.flashIntensity;
 
-    // Atmospheric Fog (Brightens and turns electric lavender during lightning)
-    if (g_fogEnabled) {
-        glEnable(GL_FOG);
-        float fogR = 0.06f + 0.22f * flash;
-        float fogG = 0.09f + 0.25f * flash;
-        float fogB = 0.14f + 0.35f * flash;
-        float curFogColor[4] = { fogR, fogG, fogB, 1.0f };
-        glFogfv(GL_FOG_COLOR, curFogColor);
-    } else {
-        glDisable(GL_FOG);
-    }
+    // No Fog (Fog permanently disabled per user request)
+    glDisable(GL_FOG);
 
     // Global Ambient (Spikes during lightning strike)
     float ambR = 0.05f + 0.25f * flash;
@@ -258,7 +247,6 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
     drawPumpkinArray();
     drawAllTrees();
     drawFallingLeaves();
-    drawGroundMist();
     drawAllBats();
     drawAllCreatures();
 

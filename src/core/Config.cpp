@@ -26,7 +26,7 @@ bool g_light5LanternOn     = true;  // 2nd Floor Hanging Brass Lantern
 bool g_pumpkinLightsOn     = true;  // Jack-o'-Lantern Candle Lights
 
 bool g_texturesEnabled     = true;
-bool g_fogEnabled          = true;
+bool g_fogEnabled          = false; // Permanently disabled - No fog
 bool g_bulbAnimEnabled     = true;
 bool g_showHUD             = true;
 bool g_cinematicMode       = false;

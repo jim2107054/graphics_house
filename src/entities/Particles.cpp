@@ -679,7 +679,8 @@ void drawAllBats() {
 // ----------------------------------------------------------------------------
 // LAYERED GROUND MIST & ROLLING HORIZON FOG WISPS
 // ----------------------------------------------------------------------------
-void drawGroundMist() {    if (!g_fogEnabled) return;
+void drawGroundMist() {
+    return;
 
     bindTexture(TEX_NONE);
     glPushAttrib(GL_LIGHTING_BIT | GL_DEPTH_BUFFER_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);

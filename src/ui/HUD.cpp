@@ -143,8 +143,8 @@ void renderTitleScreen() {    bindTexture(TEX_NONE);
     drawString2D(cardX + 55.0f, cardY + 260.0f, GLUT_BITMAP_HELVETICA_12, "[Light 2] DIRECTIONAL LIGHT : Moonlight Sky (w=0.0, Low Angle, Casts Planar Shadows)", 0.4f, 0.75f, 1.0f);
     drawString2D(cardX + 55.0f, cardY + 282.0f, GLUT_BITMAP_HELVETICA_12, "[Light 3] SPOT LIGHT        : Flashlight (Positional, 22 deg Soft Cone, Follows Camera)", 0.9f, 0.95f, 1.0f);
     drawString2D(cardX + 55.0f, cardY + 304.0f, GLUT_BITMAP_HELVETICA_12, "[Light 4] AREA LIGHT EMUL.  : Parlor Window Glow (Elevated Ambient Dispersion)", 1.0f, 0.6f, 0.2f);
-    drawString2D(cardX + 55.0f, cardY + 326.0f, GLUT_BITMAP_HELVETICA_12, "[Atmosphere] LIVING SCENE   : Prowling Black Cat, Horned Owl, Bats, Ground Mist, Wind [L]", 0.3f, 0.9f, 0.9f);
-    drawString2D(cardX + 55.0f, cardY + 348.0f, GLUT_BITMAP_HELVETICA_12, "+ GL_FOG Atmosphere, Phong Materials, Carved Jack-o'-Lanterns & Cinematic Camera Tour", 0.6f, 0.9f, 0.6f);
+    drawString2D(cardX + 55.0f, cardY + 326.0f, GLUT_BITMAP_HELVETICA_12, "[Atmosphere] LIVING SCENE   : Prowling Black Cat, Horned Owl, Bats, Dynamic Clouds, Wind [L]", 0.3f, 0.9f, 0.9f);
+    drawString2D(cardX + 55.0f, cardY + 348.0f, GLUT_BITMAP_HELVETICA_12, "+ Clear Night Sky, Phong Materials, Carved Jack-o'-Lanterns & Cinematic Camera Tour", 0.6f, 0.9f, 0.6f);
 
     float pulse = 0.6f + 0.4f * std::sin(g_time * 5.0f);
     drawString2D(cardX + 230.0f, cardY + 425.0f, GLUT_BITMAP_HELVETICA_18, ">> PRESS  [ ENTER ]  OR  [ SPACE ]  TO ENTER <<", 1.0f * pulse, 0.8f * pulse, 0.2f * pulse);
@@ -224,8 +224,7 @@ void renderSceneHUD() {    bindTexture(TEX_NONE);
     }
 
     char featStr[160];
-    snprintf(featStr, sizeof(featStr), "Fog: %s [G] | Guided Tour: %s [C] | Lightning: [L]",
-             g_fogEnabled ? "ON" : "OFF",
+    snprintf(featStr, sizeof(featStr), "Guided Tour: %s [C] | Lightning: [L] | Flashlight: [3/F]",
              g_cinematicMode ? "ACTIVE" : "OFF");
     drawString2D(35.0f, 230.0f, GLUT_BITMAP_HELVETICA_12, featStr, 0.8f, 0.8f, 0.9f);
 
@@ -246,7 +245,7 @@ void renderSceneHUD() {    bindTexture(TEX_NONE);
     drawString2D(w - 365.0f, 143.0f, GLUT_BITMAP_HELVETICA_12, "Space / Ctrl   : Fly Up / Fly Down", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 161.0f, GLUT_BITMAP_HELVETICA_12, "1, 2, 3, 4, 5  : Toggle Individual Lights", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 179.0f, GLUT_BITMAP_HELVETICA_12, "0: Master Lights | K: Pumpkin Candles", 0.8f, 0.85f, 0.9f);
-    drawString2D(w - 365.0f, 197.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | G: Fog | L: Lightning", 0.8f, 0.85f, 0.9f);
+    drawString2D(w - 365.0f, 197.0f, GLUT_BITMAP_HELVETICA_12, "T: Textures | 3/F: Flashlight | L: Lightning", 0.8f, 0.85f, 0.9f);
     drawString2D(w - 365.0f, 215.0f, GLUT_BITMAP_HELVETICA_12, "H / TAB: Collapse HUD | P: Screenshot | ESC", 0.8f, 0.85f, 0.9f);
 
     // Comprehensive Guided Showcase Tour HUD Card (Bottom Center)
