@@ -41,14 +41,18 @@ void initOpenGL() {
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,    0.14f);
     glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.045f);
 
-    // Light 2: Spot Light Flashlight Cone & Cutoff
-    glLightf(GL_LIGHT2, GL_SPOT_CUTOFF,   18.5f);
-    glLightf(GL_LIGHT2, GL_SPOT_EXPONENT, 28.0f);
-    glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION,  0.50f);
-    glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION,    0.06f);
-    glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.012f);
-    float flashSpec[4] = { 0.9f, 0.95f, 1.0f, 1.0f };
+    // Light 2: Spot Light Flashlight Cone & Cutoff (Player Tactical Flashlight on key '3')
+    glLightf(GL_LIGHT2, GL_SPOT_CUTOFF,   25.0f);
+    glLightf(GL_LIGHT2, GL_SPOT_EXPONENT, 5.0f);
+    glLightf(GL_LIGHT2, GL_CONSTANT_ATTENUATION,  0.35f);
+    glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION,    0.020f);
+    glLightf(GL_LIGHT2, GL_QUADRATIC_ATTENUATION, 0.0025f);
+    float flashDiff[4] = { 2.6f, 2.5f, 2.2f, 1.0f }; // Bright diffuse light illuminating all objects!
+    float flashSpec[4] = { 1.5f, 1.5f, 1.5f, 1.0f };
+    float flashAmb[4]  = { 0.10f, 0.10f, 0.08f, 1.0f };
+    glLightfv(GL_LIGHT2, GL_DIFFUSE,  flashDiff);
     glLightfv(GL_LIGHT2, GL_SPECULAR, flashSpec);
+    glLightfv(GL_LIGHT2, GL_AMBIENT,  flashAmb);
 
     // Light 3: Area Light Window Glow Attenuation
     glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION,  0.40f);
@@ -165,11 +169,18 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
 
     if (g_light2SpotOn) {
         glEnable(GL_LIGHT2);
-        float flashPos[4] = { flashPosX, flashPosY, flashPosZ, 1.0f };
-        float flashDir[3] = { fx, fy, fz };
+        // Position light at camera eye for centered illumination
+        float flashPos[4]  = { g_cam.x, g_cam.y, g_cam.z, 1.0f };
+        float flashDir[3]  = { fx, fy, fz };
+        float flashDiff[4] = { 2.6f, 2.5f, 2.2f, 1.0f };
+        float flashSpec[4] = { 1.5f, 1.5f, 1.5f, 1.0f };
+        float flashAmb[4]  = { 0.10f, 0.10f, 0.08f, 1.0f };
 
         glLightfv(GL_LIGHT2, GL_POSITION, flashPos);
         glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, flashDir);
+        glLightfv(GL_LIGHT2, GL_DIFFUSE,  flashDiff);
+        glLightfv(GL_LIGHT2, GL_SPECULAR, flashSpec);
+        glLightfv(GL_LIGHT2, GL_AMBIENT,  flashAmb);
     } else {
         glDisable(GL_LIGHT2);
     }

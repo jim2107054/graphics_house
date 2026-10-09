@@ -486,8 +486,8 @@ void drawVolumetricFlashlightBeam(float posX, float posY, float posZ, float dirX
     // Multi-segment soft translucent beam cone
     int slices = 18;
     int rings = 8;
-    float maxDist = 16.0f;
-    float spreadAngle = 21.5f * (float)M_PI / 180.0f; // matches spot cutoff
+    float maxDist = 28.0f;
+    float spreadAngle = 24.5f * (float)M_PI / 180.0f; // matches spot cutoff (25.0 deg)
     float tanSpread = std::tan(spreadAngle);
 
     for (int ring = 0; ring < rings; ++ring) {
