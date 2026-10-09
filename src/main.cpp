@@ -13,6 +13,7 @@
 #include "entities/Graveyard.h"
 #include "entities/Props.h"
 #include "entities/Particles.h"
+#include "entities/Creatures.h"
 #include "entities/House.h"
 #include "ui/HUD.h"
 #include "ui/Screenshot.h"
@@ -244,6 +245,7 @@ void render3DScene() {    // 1. UPDATE LIGHTS & ATMOSPHERE
     drawFallingLeaves();
     drawGroundMist();
     drawAllBats();
+    drawAllCreatures();
 
     // 3. RENDER SHADOWS
     renderPlanarShadows();
