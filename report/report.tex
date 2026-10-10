@@ -76,7 +76,14 @@ Dept. of CSE, KUET
 \pagenumbering{roman}
 \section*{Abstract}\addcontentsline{toc}{section}{Abstract}
 This report documents the implementation of \textbf{Horror House at Night}, an interactive three-dimensional Gothic environment programmed in \textbf{C++17} using legacy \textbf{OpenGL (compatibility profile)}, \textbf{GLU}, and \textbf{FreeGLUT}. The application constructs a large haunted house with explorable ground- and upper-floor interiors, a surrounding graveyard, a rusted automobile, procedural terrain, vegetation, atmospheric clouds, animated animals, and decorative props. The implementation combines \textbf{geometric primitives}, \textbf{hierarchical matrix transformations}, \textbf{textured material surfaces}, OpenGL fixed-function \textbf{ambient--diffuse--specular lighting}, multiple moving and stationary light sources, \textbf{planar projected shadows} using \textbf{stencil buffer processing}, keyboard and mouse navigation, and \textbf{time-dependent procedural animation}. The central contribution of the project is the integration of these graphics concepts into one coherent real-time interactive scene. Technical discussion in the following chapters is derived primarily from the supplied source files; material in the separate sample report is used as a reference for academic report organization, not as evidence that any feature exists in this project.
-\clearpage\tableofcontents\clearpage\listoffigures\clearpage\pagenumbering{arabic}
+\clearpage\tableofcontents
+\clearpage
+\begingroup
+\setstretch{0.96}
+\enlargethispage{2.5cm}
+\listoffigures
+\endgroup
+\clearpage\pagenumbering{arabic}
 
 \section{Introduction}
 \textbf{Computer graphics} converts geometric descriptions of a virtual world into a visible image. This project is designed as an explorable nocturnal environment rather than a set of unrelated graphics demonstrations. The house, surrounding cemetery, vehicle, clouds, weather, materials, lighting, shadows, and moving creatures form a continuous scene that can be observed from multiple locations. The code uses the \textbf{OpenGL compatibility/fixed-function API}: geometry is submitted using \textbf{immediate-mode primitives} such as \texttt{glBegin} and \texttt{glEnd}, and lighting and material behavior are configured using \texttt{glLight*}, \texttt{glMaterial*}, and related OpenGL state calls. This distinction matters: a \textbf{Phong-style reflection model} is used by fixed-function lighting with \textbf{Gouraud vertex interpolation}, but this codebase does not implement a separate GLSL per-pixel Phong shader.
@@ -227,23 +234,35 @@ Planar faces utilize constant face normals, whereas curved cylinders and spheres
 \section{Exterior Gothic Architecture}
 This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/House.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-Stone foundation and plinth & Wide stacked boxes form the stone foundation and projecting base molding; stone material and stone texture establish a heavy base.\\\addlinespace[3pt]
+Stone Foundation and Plinth & Stacked Rectangular Cuboids (\texttt{drawBox}) & Foundation: $17.50\,\mathrm{m} \times 1.20\,\mathrm{m} \times 10.50\,\mathrm{m}$; Base plinth: $17.80\,\mathrm{m} \times 0.18\,\mathrm{m} \times 10.80\,\mathrm{m}$ & Granite texture (\texttt{TEX\_STONE}), dark stone material anchoring the structure.\\\addlinespace[3pt]
 
-Primary walls and hollow rooms & Thin boxes construct sections between door/window openings; openings are made by omission of wall spans instead of transparent solid walls.\\\addlinespace[3pt]
+Primary Manor Wings & Composite Rectangular Slabs (\texttt{drawBox}) & Main wing piers: $8.50\,\mathrm{m} \times 5.60\,\mathrm{m} \times 8.80\,\mathrm{m}$; Right wing: $4.40\,\mathrm{m} \times 4.60\,\mathrm{m} \times 7.60\,\mathrm{m}$ & Weathered wood siding (\texttt{TEX\_WOOD}); hollow wall openings.\\\addlinespace[3pt]
 
-Tall pitched roof and gables & Angled roof panels, prismatic roof forms and repeated trim produce the Gothic silhouette, with roof-shingle material and image mapping.\\\addlinespace[3pt]
+Central Octagonal Tower & 8-Sided Cylinder (\texttt{drawCylinder}) \& Corbel & Tower: $R_{\mathrm{base}}=2.20\,\mathrm{m}$, $R_{\mathrm{top}}=1.90\,\mathrm{m}$, $H=9.20\,\mathrm{m}$; Corbel: $R=2.50\,\mathrm{m}$, $H=0.50\,\mathrm{m}$ & Weathered stone masonry; floor-level cantilevered balcony corbel.\\\addlinespace[3pt]
 
-Dormers, steeple and chimneys & Subassemblies of boxes, slopes, spire segments and chimney shafts are placed on the roof.\\\addlinespace[3pt]
+Tower Spire and Needle & Steeple Spire \& Thin Cylinder & Spire cone: $R=2.05\,\mathrm{m}$, $H=9.50\,\mathrm{m}$ (8 facets); Needle: $r=0.05\,\mathrm{m}\to 0.008\,\mathrm{m}$, $H=2.60\,\mathrm{m}$ & Aged slate roofing; forged iron lightning rod terminal apex.\\\addlinespace[3pt]
 
-Porch deck and steps & Horizontal rectangular slabs are stacked at varying height and depth; narrow beams form support posts and rails.\\\addlinespace[3pt]
+Pitched Roofs and Gables & Triangular Prisms (\texttt{drawPrismRoof}) & Main roof: $9.20\,\mathrm{m} \times 4.80\,\mathrm{m} \times 9.40\,\mathrm{m}$; Right roof: $4.80\,\mathrm{m} \times 3.20\,\mathrm{m} \times 8.00\,\mathrm{m}$ & Weathered cedar shingles (\texttt{TEX\_ROOF}); projecting overhang eaves.\\\addlinespace[3pt]
 
-Front doorway and windows & Doorframe members and transparent glass planes define the entrance and views through the walls.\\\addlinespace[3pt]
+Front Attic Dormers & Gabled Prisms + Box Frames & Dormer 1: $2.50\,\mathrm{m} \times 1.40\,\mathrm{m} \times 0.85\,\mathrm{m}$; Dormer 2: $2.10\,\mathrm{m} \times 1.20\,\mathrm{m} \times 0.80\,\mathrm{m}$ & Wood siding with mullioned glazed attic windows.\\\addlinespace[3pt]
 
-Weathering and webs & Dark materials, irregular wood and cobweb line geometry create aged detail.\\\addlinespace[3pt]
+Twin Masonry Chimneys & Tiered Cuboids + Cylindrical Pots & Left: $1.30\,\mathrm{m} \times 2.60\,\mathrm{m} \times 1.30\,\mathrm{m}$ (2 pots $r=0.18\,\mathrm{m}, H=0.65\,\mathrm{m}$); Right: $1.00\,\mathrm{m} \times 2.40\,\mathrm{m} \times 1.00\,\mathrm{m}$ (1 pot $r=0.15\,\mathrm{m}, H=0.55\,\mathrm{m}$) & Red-brown brick course; terracotta chimney flue pots.\\\addlinespace[3pt]
 
-Whole-building placement & The house parent group is translated to (-2.8,0,-11.5) and rotated -18 degrees about y.\\\addlinespace[3pt]
+Porch Deck and Steps & Stacked Rectangular Slabs (\texttt{drawBox}) & Deck: $6.20\,\mathrm{m} \times 0.16\,\mathrm{m} \times 3.40\,\mathrm{m}$; 3 Steps: $3.40\times 0.24\,\mathrm{m}$, $3.20\times 0.12\,\mathrm{m}$, $3.00\times 0.18\,\mathrm{m}$ (tread $0.65\,\mathrm{m}$) & Distressed rotting wood planks with stone sub-base.\\\addlinespace[3pt]
+
+Porch Support Columns & Square Plinths + Octagonal Cylinders & 4 Base plinths: $0.30\,\mathrm{m}\times 0.30\,\mathrm{m}$; Shafts: $r=0.11\,\mathrm{m}\to 0.09\,\mathrm{m}$, $H=3.00\,\mathrm{m}$; Overhang: $6.60\times 0.18\times 2.80\,\mathrm{m}$ ($18^\circ$) & Carved wood colonnettes supporting sloped porch overhang roof.\\\addlinespace[3pt]
+
+Front Doorway and Leaf & Rectangular Beveled Boxes (\texttt{drawBox}) & Frame: $1.80\,\mathrm{m} \times 2.80\,\mathrm{m} \times 0.16\,\mathrm{m}$; Door leaf: $1.20\,\mathrm{m} \times 2.45\,\mathrm{m} \times 0.06\,\mathrm{m}$ ($82^\circ$ ajar) & Paneled dark oak; brass spherical doorknob ($R=0.04\,\mathrm{m}$).\\\addlinespace[3pt]
+
+Mullioned Windows & Box Casements + Thin Glass Quads & Sills/Lintels: $1.15\,\mathrm{m} \times 1.55\,\mathrm{m} \times 0.20\,\mathrm{m}$; Glass pane quad: $1.05\,\mathrm{m} \times 1.45\,\mathrm{m}$ & Weathered wood frame with semi-transparent dirty glass.\\\addlinespace[3pt]
+
+Building Global Transform & Spatial Transform Hierarchy & Local origin at $(-2.80\,\mathrm{m}, 0.0\,\mathrm{m}, -11.50\,\mathrm{m})$, yaw rotation $\theta = -18^\circ$ & Single parent matrix grouping all manor subassemblies.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -276,14 +295,37 @@ The complete manor assembly is anchored within a parent transformation group tra
 \section{Ground-Floor Interior and Furnishings}
 The ground-floor parlor is completely modeled with dilapidated Victorian furnishings, interactive architectural details, and localized atmospheric lighting. \sourcefile{src/entities/House.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Damaged floorboards} & Individually positioned wooden planks with irregular gaps and displaced boards.\\\addlinespace[3pt]
-\textbf{Fireplace and hearth} & Layered brick firebox, stone hearth, and mantle with warm ember glow.\\\addlinespace[3pt]
-\textbf{Grandfather clock} & Tiered cabinet body, beveled pediment, circular clock face, and pendulum enclosure.\\\addlinespace[3pt]
-\textbf{Dining furniture} & Polished wooden table and dining chairs featuring turned baluster legs.\\\addlinespace[3pt]
-\textbf{Wall cobwebs} & Fine 3D line-strip geometry spanning interior ceiling corners.\\\addlinespace[3pt]
-\textbf{Parlor spatial layout} & Fully enclosed explorable room situated within the parent house coordinate frame.\\\addlinespace[3pt]
+Damaged Floorboards & Thin Rectangular Slabs (\texttt{drawBox}) & Room span: $8.20\,\mathrm{m} \times 0.08\,\mathrm{m} \times 8.40\,\mathrm{m}$; Individual planks: width $0.22\,\mathrm{m}$, gap $0.008\,\mathrm{m}$ & Distressed rotting wood planks (\texttt{TEX\_WOOD}) with vertical displacement.\\\addlinespace[3pt]
+
+Hallway Partition Walls & Vertical Thin Boxes (\texttt{drawBox}) + Arch & Left wall: $4.00\,\mathrm{m} \times 3.40\,\mathrm{m} \times 0.08\,\mathrm{m}$; Right wall: $3.30\,\mathrm{m} \times 3.40\,\mathrm{m} \times 0.08\,\mathrm{m}$; Arch: $1.80\,\mathrm{m}\times 0.65\,\mathrm{m}$ & Peeling plaster / dark timber studs dividing parlor and hallway.\\\addlinespace[3pt]
+
+Exposed Ceiling Beams & Elongated Timber Cuboids (\texttt{drawBox}) & 3 Intact beams: $8.20\,\mathrm{m} \times 0.22\,\mathrm{m} \times 0.20\,\mathrm{m}$; Collapsed beam: $4.50\,\mathrm{m} \times 0.20\,\mathrm{m}$ ($28^\circ$ sag) & Hewn dark timber joists overhead with structural decay.\\\addlinespace[3pt]
+
+Hanging Bare Lightbulb & Line Strip + Cylinder + Emissive Sphere & Cord: $L=0.95\,\mathrm{m}$; Brass socket: $r=0.045\,\mathrm{m}, H=0.08\,\mathrm{m}$; Glass bulb: $R=0.085\,\mathrm{m}$ & Thin wire cord, brass threading, glowing glass (\texttt{GL\_LIGHT1}).\\\addlinespace[3pt]
+
+Stone Fireplace and Hearth & Tiered Cuboids (\texttt{drawBox}) & Hearth: $2.40\,\mathrm{m}\times 0.25\,\mathrm{m}\times 1.20\,\mathrm{m}$; Firebox: $1.60\,\mathrm{m}\times 1.20\,\mathrm{m}\times 0.90\,\mathrm{m}$; Mantel: $2.60\,\mathrm{m}\times 0.18\,\mathrm{m}\times 0.35\,\mathrm{m}$ & Weathered brick courses, soot-stained cavity, flickering embers.\\\addlinespace[3pt]
+
+Fractured Dining Table & Beveled Boxes + Turned Cylinders & Fractured top: $0.78\times 0.055\times 0.92\,\mathrm{m}$ and $0.72\times 0.055\times 0.88\,\mathrm{m}$ ($8^\circ$ tilt); 4 Legs: $r=0.075\,\mathrm{m}, H=0.64\,\mathrm{m}$ & Polished dark walnut with splintered center fissure.\\\addlinespace[3pt]
+
+Gothic Dining Chairs & Beveled Boxes + Tapered Cylinders & Saddle seat: $0.46\,\mathrm{m} \times 0.05\,\mathrm{m} \times 0.44\,\mathrm{m}$; Backrest: $H=0.52\,\mathrm{m}$; 4 Legs: $r=0.044\,\mathrm{m}, H=0.44\,\mathrm{m}$ & Carved dark oak, turned spindles; one chair overturned on floor.\\\addlinespace[3pt]
+
+Antique Grandfather Clock & Stacked Beveled Boxes + Spheres + Cylinder & Base: $0.64\times 0.32\times 0.44\,\mathrm{m}$; Waist: $0.48\times 1.02\times 0.34\,\mathrm{m}$; Bonnet: $0.60\times 0.56\times 0.40\,\mathrm{m}$ ($H=2.14\,\mathrm{m}$); Pendulum: $L=0.62\,\mathrm{m}$, Bob $R=0.078\,\mathrm{m}$; Face: $R=0.165\,\mathrm{m}$ & Carved mahogany ($3.5^\circ$ lean), oscillating pendulum, Roman numerals.\\\addlinespace[3pt]
+
+Dilapidated Bookshelf & Box Carcase + Horizontal Shelf Slabs & Carcase: $1.42\,\mathrm{m} \times 2.40\,\mathrm{m} \times 0.40\,\mathrm{m}$ ($7.5^\circ$ lean); 4 Shelves: $1.34\,\mathrm{m} \times 0.045\,\mathrm{m} \times 0.38\,\mathrm{m}$ & Dark mahogany carcase with bowing shelves and dust patina.\\\addlinespace[3pt]
+
+Stacked Antique Books & Thin Rectangular Cuboids (\texttt{drawBox}) & Leather tomes: $0.22\text{--}0.24\,\mathrm{m} \times 0.28\text{--}0.32\,\mathrm{m} \times 0.06\text{--}0.08\,\mathrm{m}$ & Burgundy, forest green, and navy leather bindings with gold leaf.\\\addlinespace[3pt]
+
+Human Skull Relic & Sphere (Cranium) + Box Facial Bones & Cranium sphere: $R=0.085\,\mathrm{m}$; Facial bone assembly: $0.14\,\mathrm{m} \times 0.16\,\mathrm{m} \times 0.18\,\mathrm{m}$ & Aged ivory bone material, hollow eye sockets, jaw structure.\\\addlinespace[3pt]
+
+Crooked Ancestral Portrait & Beveled Box Molding + Canvas Quad & Frame: $0.85\,\mathrm{m} \times 1.15\,\mathrm{m} \times 0.04\,\mathrm{m}$ ($7.5^\circ$ tilt); Canvas: $0.72\,\mathrm{m} \times 1.02\,\mathrm{m}$ & Gilded tarnished molding with aged dark oil portrait texture.\\\addlinespace[3pt]
+
+Corner Cobwebs & Procedural Line Strips (\texttt{GL\_LINES}) & Corner span: $0.60\,\mathrm{m} \times 0.60\,\mathrm{m} \times 0.45\,\mathrm{m}$; 16 radiating line vertices & Semi-transparent fine white line primitives with alpha blending.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -310,15 +352,35 @@ All ground-floor objects inherit the parent house transformation matrix. Clear f
 \section{Second Floor, Bedroom, Study and Staircase}
 The upper level of the manor houses an occult bedroom and alchemist study, reached by a fully walkable 15-step wooden staircase. \sourcefile{src/entities/House.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Upper floorboards} & Second-story platform at elevation $y = 4.20$ with stairwell opening.\\\addlinespace[3pt]
-\textbf{15-step staircase} & Sequentially offset treads and risers connecting ground floor to attic.\\\addlinespace[3pt]
-\textbf{Stair railing} & Turned baluster spindles (\texttt{drawCylinder}) and continuous inclined handrail.\\\addlinespace[3pt]
-\textbf{Four-poster bed} & Carved vertical posts, canopy frame, headboard, and draped mattress.\\\addlinespace[3pt]
-\textbf{Alchemist desk} & Heavy timber desk with open grimoire, skull prop, and chemical glassware.\\\addlinespace[3pt]
-\textbf{Candle sconces} & Ornate wall brackets holding flickering candle flame primitives.\\\addlinespace[3pt]
-\textbf{Upper-floor lights} & Hardware point sources \texttt{GL\_LIGHT4} and \texttt{GL\_LIGHT5} positioned in world space.\\\addlinespace[3pt]
+Master 15-Step Staircase & 15 Tread/Riser Boxes (\texttt{drawBox}) + Stringers & 15 Steps: run $5.00\,\mathrm{m}$, rise $3.46\,\mathrm{m}$, span $6.08\,\mathrm{m}$, incline $+34.68^\circ$; Step depth $0.333\,\mathrm{m}$, rise $0.231\,\mathrm{m}$, tread $1.10\times 0.035\,\mathrm{m}$; Stringers: $0.06\times 0.28\times 6.23\,\mathrm{m}$ & Dark oak treads, structural inclined carriage stringers.\\\addlinespace[3pt]
+
+Stair Railing and Balusters & Turned Cylinders (\texttt{drawCylinder}) + Rails & 15 Turned balusters: $r=0.035\,\mathrm{m}, H=0.78\,\mathrm{m}$; 2 Newels: $0.11\times 1.15\times 0.11\,\mathrm{m}$; Sloped handrail: $0.075\times 0.055\times 6.23\,\mathrm{m}$ & Polished turned baluster spindles, continuous sloped rail.\\\addlinespace[3pt]
+
+Upper Floorboards and Cutout & Horizontal Slab Box with Void Opening & Platform span: $7.00\,\mathrm{m} \times 0.08\,\mathrm{m} \times 8.40\,\mathrm{m}$ (at $y=4.20\,\mathrm{m}$); Stair cutout: $1.30\,\mathrm{m} \times 2.35\,\mathrm{m}$ & Second-story walking platform with stairwell clearance opening.\\\addlinespace[3pt]
+
+Mezzanine Guardrail & Turned Spindles + Newel Posts + Beams & Shoe/Hand rails: length $3.15\,\mathrm{m}$; 10 Balusters: $H=0.78\,\mathrm{m}$; 2 Terminal posts: $H=1.22\,\mathrm{m}, 1.15\,\mathrm{m}$ & Perimeter protective balustrade encircling the upper stairwell.\\\addlinespace[3pt]
+
+Vaulted Roof Trusses & Sloped Slabs (\texttt{drawBox}) + Heavy Beams & Ceiling slopes: $5.50\times 0.08\times 8.40\,\mathrm{m}$ ($41.3^\circ$); Ridge: $0.25\times 0.25\times 8.45\,\mathrm{m}$; 3 Collar ties: $6.20\times 0.16\,\mathrm{m}$ & Heavy timber A-frame Gothic roof truss framing.\\\addlinespace[3pt]
+
+Gothic Four-Poster Bed & Beveled Box Base + 4 Turned Column Cylinders & Bed base: $1.92\times 0.24\times 2.42\,\mathrm{m}$; 4 Posts: $\text{dia } 0.11\,\mathrm{m}, H=2.35\,\mathrm{m}$; Mattress: $1.70\times 0.32\times 2.20\,\mathrm{m}$ & Carved ebony posts, layered mattress, wrinkled velvet bedspread.\\\addlinespace[3pt]
+
+Alchemist Study Desk & Beveled Box Top/Carcase + 4 Turned Legs & Body: $1.58\times 0.76\times 0.82\,\mathrm{m}$; 4 Legs: $r=0.065\,\mathrm{m}, H=0.66\,\mathrm{m}$; Cubby slots: $1.58\times 0.32\times 0.24\,\mathrm{m}$ & Heavy dark stained oak with drawers and cubby compartments.\\\addlinespace[3pt]
+
+Arcane Grimoire & Beveled Boxes (Curved Covers \& Leaves) & Leather cover: $0.48\times 0.035\times 0.36\,\mathrm{m}$; 2 Open page wings: $0.22\times 0.024\times 0.32\,\mathrm{m}$ & Weathered leather binding, curved parchment leaves with runic scripts.\\\addlinespace[3pt]
+
+3-Arm Brass Candelabra & Cylindrical Pedestal/Stem + Curved Arms & Base: $r=0.08\,\mathrm{m}, H=0.04\,\mathrm{m}$; Stem: $r=0.02\,\mathrm{m}, H=0.22\,\mathrm{m}$; 3 Candles: $r=0.016\,\mathrm{m}, H=0.14\,\mathrm{m}$; Spread: $0.34\,\mathrm{m}$ & Polished brass casting, flickering tallow candle flames (\texttt{GL\_LIGHT4}).\\\addlinespace[3pt]
+
+Hanging Brass Lantern & Hexagonal Box + Cylindrical Chimney & Lantern box: $0.22\times 0.38\times 0.22\,\mathrm{m}$; Chimney: $r=0.05\,\mathrm{m}, H=0.08\,\mathrm{m}$; Chain: $L=0.85\,\mathrm{m}$ & Tarnished brass casing, yellow glass panels (\texttt{GL\_LIGHT5}).\\\addlinespace[3pt]
+
+Old Storage Chest & Beveled Box Body + Segmented Domed Lid & Chest body: $1.12\times 0.60\times 0.66\,\mathrm{m}$; Domed lid: $1.14\times 0.12\times 0.66\,\mathrm{m}$; Straps: $0.065\times 0.72\,\mathrm{m}$ & Oak chest bound with forged iron straps and padlock.\\\addlinespace[3pt]
+
+Antique Wardrobe (Armoire) & Tall Box Carcase + Molded Crown + Doors & Carcase: $1.30\times 2.30\times 0.55\,\mathrm{m}$; 2 Doors: $0.58\times 2.05\,\mathrm{m}$ (right door ajar $14^\circ$) & Dark walnut, beveled panel doors, brass teardrop pulls.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -348,23 +410,29 @@ Hardware point lights \texttt{GL\_LIGHT4} (candelabra) and \texttt{GL\_LIGHT5} (
 \section{Terrain, Pathway and Yard Props}
 This chapter traces the visible objects to their source construction and separates base geometry from the transforms and surface treatments that make them recognizable. \sourcefile{src/entities/Terrain.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-Procedural ground & A continuous height function combines multiple sine/cosine waves, suppressed near the house and path.\\\addlinespace[3pt]
+Procedural Terrain Mesh & Dense Regular Quad Grid ($64\times 64$ Quads) & Domain: $[-65.0\,\mathrm{m}, +65.0\,\mathrm{m}] \times [-65.0\,\mathrm{m}, +65.0\,\mathrm{m}]$ ($130.0\,\mathrm{m} \times 130.0\,\mathrm{m}$); Cell: $2.031\,\mathrm{m} \times 2.031\,\mathrm{m}$; 4225 vertices & Continuous multi-frequency sinusoidal heightfield $H(x,z)$ with foundation flattening.\\\addlinespace[3pt]
 
-Cobblestone pathway & A centerline function smoothly changes road x-coordinate as z advances; stone-like elements follow it.\\\addlinespace[3pt]
+Cobblestone Roadway & Extruded Spline Quad Strip (\texttt{GL\_QUADS}) & Width: $3.80\,\mathrm{m}$, Length: $32.00\,\mathrm{m}$; Centerline: $x(z) = 0.8\sin(0.08z) - 0.05z$ & Weathered cobblestone texture (\texttt{TEX\_STONE}) with stone edging.\\\addlinespace[3pt]
 
-Terrain normals & Height samples at offsets ±0.15 are used to calculate finite-difference normals.\\\addlinespace[3pt]
+Utility / Telephone Poles & Tapered Cylinders (\texttt{drawCylinder}) + Crossarms & Main shaft: $r=0.18\,\mathrm{m}\to 0.11\,\mathrm{m}, H=8.80\,\mathrm{m}$; Crossarm: $2.40\times 0.16\times 0.14\,\mathrm{m}$; Wires: $L=38.0\,\mathrm{m}$ & Creosote timber pole, ceramic insulators, hanging catenary power cables.\\\addlinespace[3pt]
 
-Grass and undergrowth & Triangles form upright tufts, with small trigonometric wind rotations.\\\addlinespace[3pt]
+Iron-Banded Barrels & Bulging Cylinders (Lathe Profile) & Waist: $R_{\mathrm{mid}}=0.42\,\mathrm{m}$, Rim: $R_{\mathrm{cap}}=0.36\,\mathrm{m}$, Height: $H=0.92\,\mathrm{m}$ & Weathered cedar staves bound by 4 forged iron hoops ($0.04\,\mathrm{m}$ strap).\\\addlinespace[3pt]
 
-Rocks and stones & Irregular multi-face shapes are scaled, rotated and seeded for repeated stable variation.\\\addlinespace[3pt]
+Broken Shipping Crates & Hollow Cuboids (\texttt{drawBox}) + Bracing Slabs & Outer box: $0.85\,\mathrm{m} \times 0.75\,\mathrm{m} \times 0.85\,\mathrm{m}$; Slat thickness: $0.028\,\mathrm{m}$ & Fractured wooden slats, damaged lids, and exposed internal hollows.\\\addlinespace[3pt]
 
-Crates, buckets and barrels & Rectangular panels and tapered/cylindrical elements combine into broken abandoned objects.\\\addlinespace[3pt]
+Weathered Yard Benches & Slatted Boxes + Curved Leg Brackets & Seat: $1.85\times 0.06\times 0.52\,\mathrm{m}$; Back: $1.85\times 0.44\times 0.05\,\mathrm{m}$; Height: $0.82\,\mathrm{m}$ & Weathered rotting wood planks with oxidized cast-iron armrests.\\\addlinespace[3pt]
 
-Signs, lampposts and outdoor furniture & Nested boxes, cylinders and custom line/letter forms build the extra yard details.\\\addlinespace[3pt]
+Yard Directional Signs & Box Post + Pointed Arrow Plank & Post: $0.10\times 0.10\times 1.85\,\mathrm{m}$; Sign board: $0.78\times 0.22\times 0.035\,\mathrm{m}$ ($6^\circ$ tilt) & Weather-beaten painted wood with warning runes and iron nails.\\\addlinespace[3pt]
 
-Puddle routines & The present source has empty drawPuddle/drawPuddles functions; water puddles should not be claimed as a working feature.\\\addlinespace[3pt]
+Scattered Boulders & Irregular Faceted Polygons (\texttt{GL\_TRIANGLES}) & Diameters: $0.45\text{--}1.80\,\mathrm{m}$, Heights: $0.30\text{--}1.10\,\mathrm{m}$ & Multi-face stone clusters with pseudo-random rotational placement.\\\addlinespace[3pt]
+
+Wild Grass Clumps & Crossed Textured Planar Quads & Tufts: width $0.40\text{--}0.65\,\mathrm{m}$, height $0.35\text{--}0.55\,\mathrm{m}$ & Alpha-tested autumnal grass blades with dynamic wind sway.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -397,15 +465,23 @@ Note that \texttt{drawPuddle()} and \texttt{drawPuddles()} are intentionally emp
 \section{Trees, Vegetation and Falling Leaves}
 The nocturnal vegetation system features multiple tree species, organic branching structures, and a dynamic falling-leaf particle system. \sourcefile{src/entities/Vegetation.cpp and src/entities/Particles.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Deciduous trees} & Gnarled trunks branching into rotated limb clusters with multi-layered autumn foliage.\\\addlinespace[3pt]
-\textbf{Pine trees} & Conical tiered evergreen crowns constructed from stacked truncated cones.\\\addlinespace[3pt]
-\textbf{Twisted Gothic trees} & Bare, organic dead trees with curved limbs creating ominous nocturnal silhouettes.\\\addlinespace[3pt]
-\textbf{Root flares} & Flared radial buttress segments anchoring tree trunks into undulating terrain.\\\addlinespace[3pt]
-\textbf{TreeRNG engine} & Deterministic linear-congruential generator for reproducible organic tree variation.\\\addlinespace[3pt]
-\textbf{Falling leaves} & Dynamic particle system updating position and planar rotation under gravity and wind.\\\addlinespace[3pt]
-\textbf{Wind sway} & Harmonic sinusoidal deflection of tree boughs driven by simulation time \texttt{g\_time}.\\\addlinespace[3pt]
+Mature Deciduous Trees & Tapered Cylinders + Clustered Foliage Spheres & Trunk: $r=0.32\text{--}0.48\,\mathrm{m}, H=6.50\text{--}9.20\,\mathrm{m}$; 5 Canopy spheres: $R=2.20\text{--}3.50\,\mathrm{m}$ & Bark texture (\texttt{TEX\_BARK}), multi-layered autumn leaf clusters.\\\addlinespace[3pt]
+
+Conifer Pine Trees & Central Cylinder + 4--6 Conical Tiers & Trunk: $r=0.24\text{--}0.34\,\mathrm{m}, H=7.50\text{--}11.00\,\mathrm{m}$; Conical tiers: $R=2.40\,\mathrm{m}\to 0.75\,\mathrm{m}$ & Dark pine bark, descending conical evergreen needle crowns.\\\addlinespace[3pt]
+
+Gnarled Gothic Dead Trees & Multi-Segment Chained Cylinders & Main trunk: $r=0.38\,\mathrm{m}, H=7.00\,\mathrm{m}$; 12 Bifurcated branches: $r=0.18\to 0.04\,\mathrm{m}, L=1.50\text{--}3.80\,\mathrm{m}$ & Twisted bare limbs forming spooky nocturnal silhouettes.\\\addlinespace[3pt]
+
+Flared Root Buttresses & Curved Buttress Cylinders / Wedges & 4 to 6 buttresses per tree; Radius: $r=0.22\to 0.10\,\mathrm{m}$, Length: $1.40\text{--}2.20\,\mathrm{m}$ & Radiating roots anchoring trunk securely into sloping terrain.\\\addlinespace[3pt]
+
+Falling Leaves Particles & Double-Sided Planar Quads (\texttt{GL\_QUADS}) & 120 Dynamic particles: $0.08\,\mathrm{m} \times 0.06\,\mathrm{m}$; Active volume: $40\,\mathrm{m}\times 12\,\mathrm{m}\times 40\,\mathrm{m}$ & Dynamic translation, gravity drift, and multi-axis tumbling rotation.\\\addlinespace[3pt]
+
+Sinusoidal Wind Sway & Dynamic Trigonometric Matrices & Angular deflection $\theta = A\sin(\omega t + \phi)$; Amplitude $A=2.5^\circ\text{--}4.0^\circ$ & Continuous ambient wind oscillation applied to outer branches.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -435,14 +511,25 @@ Subtle sinusoidal sway angles $\theta_{\text{sway}} = A \sin(\omega t + \phi)$ m
 \section{Graveyard and Halloween Props}
 The estate cemetery features weather-eroded tombstones, broken wrought-iron fences, and illuminated jack-o'-lantern pumpkins. \sourcefile{src/entities/Graveyard.cpp and src/entities/Props.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Arched headstones} & Curved granite gravestones with engraved commemorative crosses.\\\addlinespace[3pt]
-\textbf{Celtic crosses} & High stone crosses featuring carved ring nimbuses and stepped pedestals.\\\addlinespace[3pt]
-\textbf{Stone sarcophagi} & Rectangular burial vaults with displaced heavy stone lids.\\\addlinespace[3pt]
-\textbf{Burial mounds} & Low raised earth mounds marking weathered gravesites.\\\addlinespace[3pt]
-\textbf{Broken iron fence} & Dilapidated wrought-iron fence panels with tilted pickets and bent rails.\\\addlinespace[3pt]
-\textbf{Carved pumpkins} & Segmented orange spheres with glowing demonic faces and internal candle flames.\\\addlinespace[3pt]
+Arched Headstones & Rectangular Slab + Cylindrical Arch & Base: $0.92\times 0.22\times 0.44\,\mathrm{m}$; Slab: $0.72\times 0.95\times 0.22\,\mathrm{m}$; Arch: $r=0.36\,\mathrm{m}, H=0.22\,\mathrm{m}$ (total $H=1.53\,\mathrm{m}$) & Lichen-encrusted granite (\texttt{TEX\_STONE}), inscribed relief cross.\\\addlinespace[3pt]
+
+Celtic Cross Memorials & Tiered Boxes + Torus / Cylindrical Ring & Base: $0.85\times 0.22\times 0.55\,\mathrm{m}$; Shaft: $0.24\times 1.85\times 0.22\,\mathrm{m}$; Cross: $1.10\times 0.24\,\mathrm{m}$; Ring: $R=0.35\,\mathrm{m}$ & Carved sandstone with circular Celtic halo nimbus.\\\addlinespace[3pt]
+
+Latin Cross Memorials & Intersecting Rectangular Beams (\texttt{drawBox}) & Base: $0.75\times 0.20\times 0.45\,\mathrm{m}$; Shaft: $0.22\times 1.55\times 0.18\,\mathrm{m}$; Crossbeam: $0.90\times 0.20\times 0.18\,\mathrm{m}$ & Chipped gray limestone with irregular settlement tilt.\\\addlinespace[3pt]
+
+Stone Sarcophagi & Hollow Box Chest + Stepped Beveled Lid & Base: $1.25\times 0.18\times 2.40\,\mathrm{m}$; Chest: $1.10\times 0.65\times 2.25\,\mathrm{m}$; Lid: $1.18\times 0.22\times 2.32\,\mathrm{m}$ (displaced ajar) & Weathered crypt stone, open void showing interior darkness.\\\addlinespace[3pt]
+
+Burial Mounds & Flattened Ellipsoid Hemispheres & Ellipsoid: length $2.90\,\mathrm{m}$, width $1.70\,\mathrm{m}$, crest height $0.50\,\mathrm{m}$ & Disturbed soil mounds smoothly integrated into terrain.\\\addlinespace[3pt]
+
+Broken Cemetery Fence & Square Post Boxes + Finial Spikes + Rails & Posts: $0.16\times 1.35\times 0.16\,\mathrm{m}$; Spikes: $H=0.18\,\mathrm{m}$; Rails: $2.80\times 0.08\times 0.05\,\mathrm{m}$ & Wrought iron, bent rails, missing and askew pickets.\\\addlinespace[3pt]
+
+Jack-o'-Lantern Pumpkins & 10 Merged Ellipsoid Lobes + Curved Stem & 21 Pumpkins: scale $0.26\text{--}0.46\,\mathrm{m}$; Lobes: $0.48\times 0.52\times 0.45$; Stem: $r=0.065\to 0.035\,\mathrm{m}, L=0.28\,\mathrm{m}$ & Ribbed orange flesh, carved facial apertures, flickering flame.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -469,15 +556,31 @@ Pumpkins are synthesized from radially clustered orange ellipsoids. Carved facia
 \section{Rusted Vintage Vehicle}
 An abandoned 1930s coupe automobile is stationed in the overgrown front lawn. \sourcefile{src/entities/Props.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Chassis and cabin} & Sculpted vintage automobile body with rounded fenders, hood, and cabin roof.\\\addlinespace[3pt]
-\textbf{Wheels and tires} & Cylindrical whitewall tires, stamped metal rims, and one flattened flat tire.\\\addlinespace[3pt]
-\textbf{Radiator grille} & Vertical slotted front grille bars and curved tubular chrome bumpers.\\\addlinespace[3pt]
-\textbf{Cabin windows} & Planar windshield and rear window panes with cracked glass texture mapping.\\\addlinespace[3pt]
-\textbf{Interior detail} & Coiled seat springs and three-spoke steering wheel inside the cabin.\\\addlinespace[3pt]
-\textbf{Ajar driver door} & Swung-open vehicle door revealing the derelict floorboards.\\\addlinespace[3pt]
-\textbf{Yard placement} & Fixed world coordinates $(8.2, \; 6.8, \; -22.0)$ via \texttt{drawRustedCar()}.\\\addlinespace[3pt]
+Chassis Frame and Axles & Longitudinal Box Rails + Cylindrical Axles & 2 Rails: $0.14\times 0.16\times 4.30\,\mathrm{m}$ (span $1.30\,\mathrm{m}$); 5 Crossmembers: $1.35\times 0.14\times 0.14\,\mathrm{m}$; Axles: $r=0.045\,\mathrm{m}, L=1.95\,\mathrm{m}$ & Structural channel steel, rear differential bulb ($R=0.16\,\mathrm{m}$).\\\addlinespace[3pt]
+
+Lower Body Tub & Beveled Box Hull (\texttt{drawBeveledBox}) & Tub: $2.18\,\mathrm{m} \times 0.38\,\mathrm{m} \times 4.65\,\mathrm{m}$; Running boards: $0.22\times 0.06\times 1.85\,\mathrm{m}$ & Rusted stamped sheet metal (\texttt{TEX\_RUST}), weathered sill plates.\\\addlinespace[3pt]
+
+Cabin and Curved Fenders & Sculpted Beveled Boxes + Quarter-Cylinders & Cabin: $2.08\times 0.22\times 2.80\,\mathrm{m}$; Front fenders: $0.24\times 0.26\times 1.72\,\mathrm{m}$; Rear fenders: $0.26\times 0.28\times 1.55\,\mathrm{m}$ & Flared 1930s coupe body styling, oxidized paintwork.\\\addlinespace[3pt]
+
+Gothic Tailfins & Wedge Prisms + Cylindrical Bullet Pods & Wedge fins: $0.16\times 0.32\times 1.35\,\mathrm{m}$ (slope $8.5^\circ$); Bullet pods: $R=0.075\,\mathrm{m}, L=0.22\,\mathrm{m}$ & Aerodynamic fins ending in red circular tail light pods.\\\addlinespace[3pt]
+
+Bumpers and Grille & Beveled Bumper Slabs + 11 Vertical Slat Boxes & Left bumper: $1.25\times 0.16\,\mathrm{m}$; Right bumper: $1.22\times 0.16\,\mathrm{m}$ ($24^\circ$ bend); 11 Grille bars: $0.024\times 0.34\,\mathrm{m}$ & Tarnished chrome plating, impact-bent front right corner.\\\addlinespace[3pt]
+
+V8 Engine Bay & Stacked Cuboids + Cylindrical Air Cleaner & Engine block: $0.58\times 0.42\times 0.68\,\mathrm{m}$; Radiator: $1.38\times 0.46\times 0.08\,\mathrm{m}$; Air cleaner: $R=0.18\,\mathrm{m}, H=0.06\,\mathrm{m}$ & Cast iron engine block, copper radiator, circular carburetor.\\\addlinespace[3pt]
+
+Crumpled Hood & Dual Flanged Beveled Slabs & 2 Hood halves: $0.98\times 0.06\times 1.76\,\mathrm{m}$ (hinged centerline, popped ajar $28^\circ$) & Buckled steel hood panels exposing the mechanical engine bay.\\\addlinespace[3pt]
+
+Cabin Interior & Beveled Benches + Torus Wheel + Helical Springs & Bench seat: $1.64\times 0.24\times 0.58\,\mathrm{m}$; Dash: $1.68\times 0.22\times 0.42\,\mathrm{m}$; Wheel: $R=0.22\,\mathrm{m}$; 4 Springs: $r=0.06\,\mathrm{m}, H=0.26\,\mathrm{m}$ & Torn upholstery, exposed wire coil springs, 3-spoke steering wheel.\\\addlinespace[3pt]
+
+Wheels and Flat Tire & Short Cylinders + Annular Rings + Spheres & 3 Wheels: tire $R=0.42\,\mathrm{m}$, width $0.22\,\mathrm{m}$, cap $R=0.13\,\mathrm{m}$; Flat right-front: scaled $(1.0, 0.44, 1.25)$ & Vulcanized whitewall rubber, hubcaps; squashed flat tire in mud.\\\addlinespace[3pt]
+
+Ajar Driver Door & Beveled Box Slab + Window Frame & Door: $1.15\times 0.88\times 0.06\,\mathrm{m}$ ($35^\circ$ hinged ajar); Window opening: $0.78\times 0.44\,\mathrm{m}$ & Rusted outer door panel with cracked window glass pane.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -507,15 +610,27 @@ The vehicle is permanently stationed at coordinates $(x = 8.2, \; y = 6.8, \; z 
 \section{Animals, Bats and Clouds}
 Atmospheric nocturnal wildlife and volumetric weather systems bring motion to the interactive estate. \sourcefile{src/entities/Creatures.cpp, src/entities/Particles.cpp, src/entities/Clouds.cpp}
 
-\begin{longtable}{p{0.27\textwidth}p{0.66\textwidth}}\toprule\textbf{Component} & \textbf{Construction and purpose}\\\midrule\endhead
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}}
+\toprule
+\textbf{Component} & \textbf{Geometric Shape / Primitive} & \textbf{Initial Dimensions \& Parameters} & \textbf{Material / Construction} \\
+\midrule
+\endhead
 
-\textbf{Patrolling black cat} & Articulated four-legged feline with walking limb cycle, arched back, and tail.\\\addlinespace[3pt]
-\textbf{Perched owl} & Nocturnal raptor with textured plumage, curved beak, and glowing golden eyes.\\\addlinespace[3pt]
-\textbf{Flapping bats} & Triangular membrane wings anchored to bone struts with flapping oscillation.\\\addlinespace[3pt]
-\textbf{Bat swarm flocking} & Multi-agent flock navigating parameterized orbits around the moon.\\\addlinespace[3pt]
-\textbf{Volumetric clouds} & Multi-lobed cloud banks constructed from clustered overlapping ellipsoids.\\\addlinespace[3pt]
-\textbf{Cloud drift physics} & Continuous horizontal drift with toroidal coordinate boundary wrapping.\\\addlinespace[3pt]
-\textbf{Cloud shadow casters} & Simplified cloud hulls projecting dynamic planar shadows onto the terrain.\\\addlinespace[3pt]
+Patrolling Black Cat & Hierarchical Ellipsoids, Cones \& Cylinders & Torso: $0.42\times 0.17\times 0.14\,\mathrm{m}$; Head: $R=0.065\,\mathrm{m}$; 2 Ears: $H=0.045\,\mathrm{m}$; 4 Legs: $H=0.22\,\mathrm{m}$; Tail: $L=0.36\,\mathrm{m}$ & Glossy black fur material, animated 4-beat walking gait cycle.\\\addlinespace[3pt]
+
+Great Horned Owl & Upright Ellipsoid Torso + Sphere Head + Cones & Torso: $0.28\times 0.38\,\mathrm{m}$; Head: $R=0.13\,\mathrm{m}$; Ear tufts: $0.09\,\mathrm{m}$; Wingspan: $1.15\,\mathrm{m}$; Eyes: $R=0.024\,\mathrm{m}$ & Feathery plumage texture, glowing yellow emissive eyes.\\\addlinespace[3pt]
+
+Articulated Bats & Ellipsoid Fuselage + Cylinders + Triangles & 22 Bats: wingspan $0.75\text{--}1.30\,\mathrm{m}$; Torso: $0.18\times 0.09\,\mathrm{m}$; Struts: $L=0.24\text{--}0.42\,\mathrm{m}$; Wing membranes & Dark leathery wings, sinusoidal flapping wing kinematics.\\\addlinespace[3pt]
+
+Bat Swarm Trajectories & Parametric Sinusoidal Flight Curves & Orbit radii: $14.0\text{--}28.0\,\mathrm{m}$; Altitude: $18.0\text{--}32.0\,\mathrm{m}$; Flight speed: $3.2\text{--}5.8\,\mathrm{m/s}$ & Nocturnal flock silhouetted against the glowing lunar disc.\\\addlinespace[3pt]
+
+Celestial Full Moon & Triangle Fan Flat Disc + Halo Ring & Moon disc: $R=10.80\,\mathrm{m}$; Halo glow disc: $R=16.20\,\mathrm{m}$; World pos: $(2.5, 29.5, -52.0)$ & Emissive lunar crater texture, soft moonlight casting.\\\addlinespace[3pt]
+
+Celestial Sky Dome & Inverted UV Sphere (16 Stacks $\times$ 36 Slices) & Dome radius: $R=220.00\,\mathrm{m}$; 350 Star points on $R=180.00\,\mathrm{m}$ & Smooth hemispherical celestial dome, twinkling star particles (\texttt{GL\_POINTS}).\\\addlinespace[3pt]
+
+Volumetric Cloud Banks & Clustered Overlapping Spheres (6--8 Lobes) & 6 Cloud banks: length $25.0\text{--}55.0\,\mathrm{m}$, thickness $6.0\text{--}12.0\,\mathrm{m}$, alt $26.5\text{--}36.5\,\mathrm{m}$ & Soft diffuse nocturnal gray-blue coloring, drift $0.22\text{--}0.46\,\mathrm{m/s}$.\\\addlinespace[3pt]
+
+Cloud Shadow Casters & Simplified Planar Quad Hulls (\texttt{GL\_QUADS}) & Shadow footprint: $20.0\text{--}45.0\,\mathrm{m} \times 8.0\text{--}15.0\,\mathrm{m}$; Ground proj & Semi-transparent dark shadow projection onto terrain.\\\addlinespace[3pt]
 
 \bottomrule\end{longtable}
 
@@ -916,60 +1031,60 @@ Transparent windows, ground-light halos and approximate volumetric light employ 
 
 \figureplaceholder{20_render_sequence.png}{Multi-pass render composition sequence: celestial sky and moon, terrain and architecture geometry, stencil shadow projections, translucent alpha blending, and orthographic UI overlay.}
 
-\section{Algorithmic Details and Source-Level Examples}
-Selected source-derived formulations are presented together for viva preparation and to make the implementation traceable. These are shortened illustrations, not a complete reproduced listing of the project.
+\section{Algorithmic Details and Mathematical Formulations}
+Key procedural algorithms and mathematical formulations governing the interactive simulation are presented below, detailing spatial transformations, differential geometry, viewing projections, radial light attenuation, and time integration without relying on raw source code listings.
 
-\subsection{House parent transform}
-The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+\subsection{Hierarchical parent transformation pipeline}
+All structural components of the Gothic manor inherit a composite rigid-body transformation that decouples world-space orientation from localized architectural modeling. Any local vertex $\mathbf{p}_{\text{local}} = (x, y, z, 1)^T$ within the manor subassembly is transformed into world coordinates via:
+\begin{equation}
+\mathbf{p}_{\text{world}} = \mathbf{T}(x_h, 0, z_h) \; \mathbf{R}_y(\theta_h) \; \mathbf{p}_{\text{local}},
+\end{equation}
+where $(x_h, z_h) = (-2.80\,\mathrm{m}, -11.50\,\mathrm{m})$ represents the estate translation vector and $\theta_h = -18^\circ$ represents the clockwise yaw orientation about the vertical $y$-axis. The OpenGL transformation matrix stack evaluates this hierarchy, allowing interior furnishings and roof geometry to be modeled in convenient axis-aligned coordinates before placement into the scene.
 
-\begin{lstlisting}[language=C++]
-glPushMatrix();
-glTranslatef(g_houseShiftX, 0.0f, g_houseShiftZ);
-glRotatef(g_houseRotY, 0.0f, 1.0f, 0.0f);
-// draw foundation, interiors, walls, roof ...
-glPopMatrix();
-\end{lstlisting}
+\subsection{Finite-difference terrain normal evaluation}
+Because the procedural ground height is defined by an analytical multi-frequency trigonometric function $H(x,z)$, continuous surface normals are computed at each mesh vertex using central finite differences. With spatial step offset $\epsilon = 0.15\,\mathrm{m}$, the tangent gradients along the orthogonal coordinate axes are approximated as:
+\begin{equation}
+n_x = \frac{H(x - \epsilon, z) - H(x + \epsilon, z)}{2\epsilon}, \quad
+n_y = 1.0, \quad
+n_z = \frac{H(x, z - \epsilon) - H(x, z + \epsilon)}{2\epsilon}.
+\end{equation}
+The resulting normal vector $\mathbf{n} = (n_x, n_y, n_z)^T$ is subsequently normalized to unit length:
+\begin{equation}
+\hat{\mathbf{n}} = \frac{\mathbf{n}}{\|\mathbf{n}\|} = \frac{(n_x, 1, n_z)^T}{\sqrt{n_x^2 + 1 + n_z^2}}.
+\end{equation}
+This formulation guarantees smooth Gouraud intensity shading across all $64 \times 64$ terrain quads without vertex normal discretization artifacts.
 
-\subsection{Terrain normal}
-The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+\subsection{Perspective viewing frustum and camera basis}
+Interactive camera navigation translates user input into a standard viewing coordinate system. The perspective projection matrix maps the viewing frustum onto normalized device coordinates using field of view $\mathrm{FOV} = 60^\circ$, viewport aspect ratio $r = W/H$, near clipping distance $z_{\text{near}} = 0.20\,\mathrm{m}$, and far clipping distance $z_{\text{far}} = 350.0\,\mathrm{m}$.
 
-\begin{lstlisting}[language=C++]
-const float eps = 0.15f;
-nx = (getTerrainHeight(x-eps,z)-getTerrainHeight(x+eps,z))/(2*eps);
-ny = 1.0f;
-nz = (getTerrainHeight(x,z-eps)-getTerrainHeight(x,z+eps))/(2*eps);
-// normalize nx, ny, nz
-\end{lstlisting}
+The viewing transformation constructs an orthonormal camera coordinate basis $\{\mathbf{u}_{\text{cam}}, \mathbf{v}_{\text{cam}}, \mathbf{w}_{\text{cam}}\}$ from the player's eye position $\mathbf{e} = (x, y, z)$ and spherical look-at angles (yaw $\phi$, pitch $\theta$):
+\begin{equation}
+\mathbf{w}_{\text{cam}} = -\frac{\mathbf{t} - \mathbf{e}}{\|\mathbf{t} - \mathbf{e}\|}, \quad
+\mathbf{u}_{\text{cam}} = \frac{\mathbf{u}_{\text{world}} \times \mathbf{w}_{\text{cam}}}{\|\mathbf{u}_{\text{world}} \times \mathbf{w}_{\text{cam}}\|}, \quad
+\mathbf{v}_{\text{cam}} = \mathbf{w}_{\text{cam}} \times \mathbf{u}_{\text{cam}},
+\end{equation}
+where $\mathbf{u}_{\text{world}} = (0, 1, 0)^T$ is the world vertical vector and target point $\mathbf{t} = \mathbf{e} + (\cos\theta\cos\phi, \; \sin\theta, \; \cos\theta\sin\phi)^T$.
 
-\subsection{Camera perspective}
-The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
+\subsection{Radial distance light attenuation}
+Local point light sources attenuate radiance according to the standard physical quadratic falloff law:
+\begin{equation}
+f_{\text{att}}(d) = \frac{1}{k_c + k_l d + k_q d^2},
+\end{equation}
+where $d = \|\mathbf{p}_{\text{vertex}} - \mathbf{p}_{\text{light}}\|$ is the Euclidean distance from the surface vertex to the light emitter. The assigned attenuation coefficients are:
+\begin{equation}
+k_c = 0.40 \quad (\text{constant}), \qquad
+k_l = 0.14\,\mathrm{m}^{-1} \quad (\text{linear}), \qquad
+k_q = 0.045\,\mathrm{m}^{-2} \quad (\text{quadratic}).
+\end{equation}
+This parametric configuration produces a luminous halo immediately adjacent to the bulb while attenuating intensity smoothly over a $12\,\mathrm{m}$ radius.
 
-\begin{lstlisting}[language=C++]
-gluPerspective(g_cam.fov,
-               double(g_windowWidth)/double(g_windowHeight),
-               0.2, 350.0);
-gluLookAt(g_cam.x,g_cam.y,g_cam.z,
-          targetX,targetY,targetZ,0.0,1.0,0.0);
-\end{lstlisting}
-
-\subsection{Light attenuation}
-The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
-
-\begin{lstlisting}[language=C++]
-glLightf(GL_LIGHT0,GL_CONSTANT_ATTENUATION,0.40f);
-glLightf(GL_LIGHT0,GL_LINEAR_ATTENUATION,0.14f);
-glLightf(GL_LIGHT0,GL_QUADRATIC_ATTENUATION,0.045f);
-\end{lstlisting}
-
-\subsection{Timed update}
-The following abbreviated sequence isolates the mathematical or state-management operation from surrounding drawing details.
-
-\begin{lstlisting}[language=C++]
-g_deltaTime = (curTimeMs-g_prevTimeMs)*0.001f;
-if (g_deltaTime > 0.1f) g_deltaTime = 0.1f;
-g_time += g_deltaTime;
-glutPostRedisplay();
-\end{lstlisting}
+\subsection{Delta-time numerical integration and frame rate decoupling}
+To guarantee that simulation kinematics, pendulum oscillations, and creature flight speeds remain independent of instantaneous display refresh rates, all physical updates utilize elapsed delta time $\Delta t$. At each timer callback, the elapsed millisecond timestamp difference is converted to seconds and clamped:
+\begin{equation}
+\Delta t = \min\big(0.10\,\mathrm{s}, \; (t_{\text{current}} - t_{\text{prev}}) \times 10^{-3}\big), \qquad
+t_{\text{sim}} \leftarrow t_{\text{sim}} + \Delta t.
+\end{equation}
+The upper bound of $100\,\mathrm{ms}$ prevents numerical instability or sudden positional teleportation during temporary background OS stalls or window resize operations.
 
 \section{Evaluation and Reproducible Test Plan}
 A source-level inspection identifies the implemented systems. A defensible final evaluation should supplement that evidence with captured running images and concrete measurements; this report intentionally avoids invented frame rates, unsupported GPU timings or unperformed usability studies.

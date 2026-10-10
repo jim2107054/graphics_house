@@ -19,132 +19,132 @@
 \contentsline {subsection}{\numberline {4.3}Spherical and ellipsoidal parts}{6}{subsection.4.3}%
 \contentsline {subsection}{\numberline {4.4}Normals, texture coordinates and surface facets}{6}{subsection.4.4}%
 \contentsline {section}{\numberline {5}Exterior Gothic Architecture}{7}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Stone foundation and plinth}{7}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.1}Stone foundation and plinth}{8}{subsection.5.1}%
 \contentsline {subsection}{\numberline {5.2}Primary walls and hollow rooms}{8}{subsection.5.2}%
 \contentsline {subsection}{\numberline {5.3}Tall pitched roof and gables}{8}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}Dormers, steeple and chimneys}{8}{subsection.5.4}%
-\contentsline {subsection}{\numberline {5.5}Porch deck and steps}{8}{subsection.5.5}%
-\contentsline {subsection}{\numberline {5.6}Front doorway and windows}{8}{subsection.5.6}%
-\contentsline {subsection}{\numberline {5.7}Weathering and webs}{8}{subsection.5.7}%
-\contentsline {subsection}{\numberline {5.8}Whole-building placement}{8}{subsection.5.8}%
+\contentsline {subsection}{\numberline {5.4}Dormers, steeple and chimneys}{9}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Porch deck and steps}{9}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Front doorway and windows}{9}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}Weathering and webs}{9}{subsection.5.7}%
+\contentsline {subsection}{\numberline {5.8}Whole-building placement}{9}{subsection.5.8}%
 \contentsline {section}{\numberline {6}Ground-Floor Interior and Furnishings}{9}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Damaged floorboards}{9}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Fireplace and hearth}{9}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Grandfather clock}{10}{subsection.6.3}%
-\contentsline {subsection}{\numberline {6.4}Tables, chairs and overturned furniture}{10}{subsection.6.4}%
-\contentsline {subsection}{\numberline {6.5}Wall ornament and cobwebs}{10}{subsection.6.5}%
-\contentsline {subsection}{\numberline {6.6}First-floor rooms and navigation flow}{10}{subsection.6.6}%
-\contentsline {section}{\numberline {7}Second Floor, Bedroom, Study and Staircase}{10}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Upper-floor platform and stairwell cutout}{11}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}Fifteen-step staircase}{11}{subsection.7.2}%
-\contentsline {subsection}{\numberline {7.3}Banisters and balusters}{11}{subsection.7.3}%
-\contentsline {subsection}{\numberline {7.4}Four-poster bed}{11}{subsection.7.4}%
-\contentsline {subsection}{\numberline {7.5}Study desk and grimoire}{11}{subsection.7.5}%
-\contentsline {subsection}{\numberline {7.6}Candelabra and hanging lantern}{11}{subsection.7.6}%
-\contentsline {subsection}{\numberline {7.7}Upper floor light integration}{11}{subsection.7.7}%
-\contentsline {section}{\numberline {8}Terrain, Pathway and Yard Props}{12}{section.8}%
-\contentsline {subsection}{\numberline {8.1}Procedural ground}{12}{subsection.8.1}%
-\contentsline {subsection}{\numberline {8.2}Cobblestone pathway}{13}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}Terrain normals}{13}{subsection.8.3}%
-\contentsline {subsection}{\numberline {8.4}Grass and undergrowth}{13}{subsection.8.4}%
-\contentsline {subsection}{\numberline {8.5}Rocks and stones}{13}{subsection.8.5}%
-\contentsline {subsection}{\numberline {8.6}Crates, buckets and barrels}{13}{subsection.8.6}%
-\contentsline {subsection}{\numberline {8.7}Signs, lampposts and outdoor furniture}{13}{subsection.8.7}%
-\contentsline {subsection}{\numberline {8.8}Puddle routines}{13}{subsection.8.8}%
-\contentsline {section}{\numberline {9}Trees, Vegetation and Falling Leaves}{14}{section.9}%
-\contentsline {subsection}{\numberline {9.1}Deciduous trees}{14}{subsection.9.1}%
-\contentsline {subsection}{\numberline {9.2}Pine trees}{14}{subsection.9.2}%
-\contentsline {subsection}{\numberline {9.3}Twisted Gothic trees}{14}{subsection.9.3}%
-\contentsline {subsection}{\numberline {9.4}Root flares}{14}{subsection.9.4}%
-\contentsline {subsection}{\numberline {9.5}Stable procedural variation}{14}{subsection.9.5}%
-\contentsline {subsection}{\numberline {9.6}Falling leaves particle system}{14}{subsection.9.6}%
-\contentsline {subsection}{\numberline {9.7}Wind sway dynamics}{14}{subsection.9.7}%
-\contentsline {section}{\numberline {10}Graveyard and Halloween Props}{15}{section.10}%
-\contentsline {subsection}{\numberline {10.1}Arched headstones}{15}{subsection.10.1}%
-\contentsline {subsection}{\numberline {10.2}Celtic crosses}{15}{subsection.10.2}%
-\contentsline {subsection}{\numberline {10.3}Stone crosses and sarcophagi}{15}{subsection.10.3}%
-\contentsline {subsection}{\numberline {10.4}Burial mounds}{16}{subsection.10.4}%
-\contentsline {subsection}{\numberline {10.5}Broken iron fence}{16}{subsection.10.5}%
-\contentsline {subsection}{\numberline {10.6}Carved jack-o'-lantern pumpkins}{16}{subsection.10.6}%
-\contentsline {section}{\numberline {11}Rusted Vintage Vehicle}{16}{section.11}%
-\contentsline {subsection}{\numberline {11.1}Chassis and cabin body}{17}{subsection.11.1}%
-\contentsline {subsection}{\numberline {11.2}Wheels and tires}{17}{subsection.11.2}%
-\contentsline {subsection}{\numberline {11.3}Grille and bumpers}{17}{subsection.11.3}%
-\contentsline {subsection}{\numberline {11.4}Cabin windows}{17}{subsection.11.4}%
-\contentsline {subsection}{\numberline {11.5}Interior detail}{17}{subsection.11.5}%
-\contentsline {subsection}{\numberline {11.6}Ajar driver door}{17}{subsection.11.6}%
-\contentsline {subsection}{\numberline {11.7}Prop world placement}{17}{subsection.11.7}%
-\contentsline {section}{\numberline {12}Animals, Bats and Clouds}{17}{section.12}%
-\contentsline {subsection}{\numberline {12.1}Patrolling black cat}{18}{subsection.12.1}%
-\contentsline {subsection}{\numberline {12.2}Perched owl}{18}{subsection.12.2}%
-\contentsline {subsection}{\numberline {12.3}Articulated bat models}{18}{subsection.12.3}%
-\contentsline {subsection}{\numberline {12.4}Bat swarm trajectories}{18}{subsection.12.4}%
-\contentsline {subsection}{\numberline {12.5}Volumetric cloud lobes}{18}{subsection.12.5}%
-\contentsline {subsection}{\numberline {12.6}Cloud drift and toroidal wrapping}{18}{subsection.12.6}%
-\contentsline {subsection}{\numberline {12.7}Cloud shadow casting}{18}{subsection.12.7}%
-\contentsline {section}{\numberline {13}Lighting and the Reflection Model}{19}{section.13}%
-\contentsline {subsection}{\numberline {13.1}Ambient, diffuse, specular and emissive terms}{19}{subsection.13.1}%
-\contentsline {subsection}{\numberline {13.2}Geometric derivation of lighting vectors}{20}{subsection.13.2}%
-\contentsline {subsection}{\numberline {13.3}Hardware light source inventory}{20}{subsection.13.3}%
-\contentsline {subsection}{\numberline {13.4}Distance attenuation formulation}{21}{subsection.13.4}%
-\contentsline {subsection}{\numberline {13.5}Spotlight angular cone falloff}{21}{subsection.13.5}%
-\contentsline {subsection}{\numberline {13.6}Material coefficients and shading implementation}{21}{subsection.13.6}%
-\contentsline {section}{\numberline {14}Planar Shadow Projection and Stencil Processing}{21}{section.14}%
-\contentsline {subsection}{\numberline {14.1}Planar projection matrix derivation}{21}{subsection.14.1}%
-\contentsline {subsection}{\numberline {14.2}Geometric diagram of planar shadow projection}{22}{subsection.14.2}%
-\contentsline {subsection}{\numberline {14.3}Two-pass stencil buffer pipeline and Z-fighting elimination}{22}{subsection.14.3}%
-\contentsline {subsection}{\numberline {14.4}Shadow casters and environmental occlusion}{23}{subsection.14.4}%
-\contentsline {subsection}{\numberline {14.5}Shadow casters and practical limitations}{23}{subsection.14.5}%
-\contentsline {section}{\numberline {15}Texture Mapping and Surface Appearance}{23}{section.15}%
-\contentsline {subsection}{\numberline {15.1}Texture classes and identifiers}{23}{subsection.15.1}%
-\contentsline {subsection}{\numberline {15.2}Sampling, mipmaps and modulation}{24}{subsection.15.2}%
-\contentsline {subsection}{\numberline {15.3}UV coordinate behavior and spatial scaling}{24}{subsection.15.3}%
-\contentsline {section}{\numberline {16}Terrain Mathematics and Procedural Placement}{24}{section.16}%
-\contentsline {subsection}{\numberline {16.1}Multi-harmonic height function}{24}{subsection.16.1}%
-\contentsline {subsection}{\numberline {16.2}Finite-difference normal calculation}{24}{subsection.16.2}%
-\contentsline {subsection}{\numberline {16.3}Road centerline and cubic smoothstep spline}{25}{subsection.16.3}%
-\contentsline {section}{\numberline {17}Animation and Temporal Effects}{25}{section.17}%
-\contentsline {subsection}{\numberline {17.1}Harmonic swaying bulb pendulum}{25}{subsection.17.1}%
-\contentsline {subsection}{\numberline {17.2}Bulb and candle flicker factors}{26}{subsection.17.2}%
-\contentsline {subsection}{\numberline {17.3}Lightning flash state machine}{26}{subsection.17.3}%
-\contentsline {subsection}{\numberline {17.4}Procedural drifting clouds and flapping bats}{26}{subsection.17.4}%
-\contentsline {section}{\numberline {18}Camera, Perspective, Collision and Navigation}{26}{section.18}%
-\contentsline {subsection}{\numberline {18.1}Spherical viewing direction vector}{26}{subsection.18.1}%
-\contentsline {subsection}{\numberline {18.2}Collision detection and auto-stepping staircase climbing}{27}{subsection.18.2}%
-\contentsline {subsection}{\numberline {18.3}Automated 90-second cinematic tour}{27}{subsection.18.3}%
-\contentsline {section}{\numberline {19}Interactivity, HUD and Application States}{27}{section.19}%
-\contentsline {subsection}{\numberline {19.1}Verified interactive control inventory}{27}{subsection.19.1}%
-\contentsline {section}{\numberline {20}Audio, Screenshot Capture and Assets}{28}{section.20}%
-\contentsline {subsection}{\numberline {20.1}Screenshot interface}{28}{subsection.20.1}%
-\contentsline {subsection}{\numberline {20.2}Sound integration}{29}{subsection.20.2}%
-\contentsline {subsection}{\numberline {20.3}Asset strategy}{29}{subsection.20.3}%
-\contentsline {section}{\numberline {21}Rendering Sequence and OpenGL State Management}{29}{section.21}%
-\contentsline {subsection}{\numberline {21.1}Scene composition order}{29}{subsection.21.1}%
-\contentsline {subsection}{\numberline {21.2}Depth, double buffering and normal correction}{29}{subsection.21.2}%
-\contentsline {subsection}{\numberline {21.3}Transparency and blend modes}{29}{subsection.21.3}%
-\contentsline {section}{\numberline {22}Algorithmic Details and Source-Level Examples}{30}{section.22}%
-\contentsline {subsection}{\numberline {22.1}House parent transform}{30}{subsection.22.1}%
-\contentsline {subsection}{\numberline {22.2}Terrain normal}{30}{subsection.22.2}%
-\contentsline {subsection}{\numberline {22.3}Camera perspective}{30}{subsection.22.3}%
-\contentsline {subsection}{\numberline {22.4}Light attenuation}{31}{subsection.22.4}%
-\contentsline {subsection}{\numberline {22.5}Timed update}{31}{subsection.22.5}%
-\contentsline {section}{\numberline {23}Evaluation and Reproducible Test Plan}{31}{section.23}%
-\contentsline {subsection}{\numberline {23.1}Functional tests}{31}{subsection.23.1}%
-\contentsline {subsection}{\numberline {23.2}Screenshot evidence sheet}{31}{subsection.23.2}%
-\contentsline {section}{\numberline {24}Limitations and Possible Improvements}{35}{section.24}%
-\contentsline {subsection}{\numberline {24.1}Limitations established by source inspection}{35}{subsection.24.1}%
-\contentsline {subsection}{\numberline {24.2}Future work}{35}{subsection.24.2}%
-\contentsline {section}{\numberline {25}Conclusion}{35}{section.25}%
-\contentsline {section}{\numberline {A}Full Source Inventory and Function Map}{36}{appendix.A}%
-\contentsline {subsection}{\numberline {A.1}\texttt {src/entities/House.cpp}}{36}{subsection.A.1}%
-\contentsline {subsection}{\numberline {A.2}\texttt {src/entities/Terrain.cpp}}{36}{subsection.A.2}%
-\contentsline {subsection}{\numberline {A.3}\texttt {src/entities/Graveyard.cpp}}{37}{subsection.A.3}%
-\contentsline {subsection}{\numberline {A.4}\texttt {src/entities/Props.cpp}}{37}{subsection.A.4}%
-\contentsline {subsection}{\numberline {A.5}\texttt {src/entities/Vegetation.cpp}}{37}{subsection.A.5}%
-\contentsline {subsection}{\numberline {A.6}\texttt {src/entities/Particles.cpp}}{37}{subsection.A.6}%
-\contentsline {subsection}{\numberline {A.7}\texttt {src/entities/Creatures.cpp}}{37}{subsection.A.7}%
-\contentsline {subsection}{\numberline {A.8}\texttt {src/entities/Clouds.cpp}}{37}{subsection.A.8}%
-\contentsline {subsection}{\numberline {A.9}\texttt {src/graphics/Primitives.cpp}}{38}{subsection.A.9}%
-\contentsline {subsection}{\numberline {A.10}\texttt {src/graphics/Shadow.cpp}}{38}{subsection.A.10}%
-\contentsline {subsection}{\numberline {A.11}\texttt {src/graphics/TextureManager.cpp}}{38}{subsection.A.11}%
-\contentsline {subsection}{\numberline {A.12}\texttt {src/core/Camera.cpp}}{38}{subsection.A.12}%
+\contentsline {subsection}{\numberline {6.1}Damaged floorboards}{11}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Fireplace and hearth}{11}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Grandfather clock}{11}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Tables, chairs and overturned furniture}{11}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Wall ornament and cobwebs}{11}{subsection.6.5}%
+\contentsline {subsection}{\numberline {6.6}First-floor rooms and navigation flow}{11}{subsection.6.6}%
+\contentsline {section}{\numberline {7}Second Floor, Bedroom, Study and Staircase}{12}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Upper-floor platform and stairwell cutout}{13}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Fifteen-step staircase}{13}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Banisters and balusters}{13}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Four-poster bed}{14}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Study desk and grimoire}{14}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}Candelabra and hanging lantern}{14}{subsection.7.6}%
+\contentsline {subsection}{\numberline {7.7}Upper floor light integration}{14}{subsection.7.7}%
+\contentsline {section}{\numberline {8}Terrain, Pathway and Yard Props}{14}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Procedural ground}{15}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Cobblestone pathway}{15}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Terrain normals}{15}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Grass and undergrowth}{15}{subsection.8.4}%
+\contentsline {subsection}{\numberline {8.5}Rocks and stones}{16}{subsection.8.5}%
+\contentsline {subsection}{\numberline {8.6}Crates, buckets and barrels}{16}{subsection.8.6}%
+\contentsline {subsection}{\numberline {8.7}Signs, lampposts and outdoor furniture}{16}{subsection.8.7}%
+\contentsline {subsection}{\numberline {8.8}Puddle routines}{16}{subsection.8.8}%
+\contentsline {section}{\numberline {9}Trees, Vegetation and Falling Leaves}{16}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Deciduous trees}{17}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Pine trees}{17}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Twisted Gothic trees}{17}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Root flares}{17}{subsection.9.4}%
+\contentsline {subsection}{\numberline {9.5}Stable procedural variation}{17}{subsection.9.5}%
+\contentsline {subsection}{\numberline {9.6}Falling leaves particle system}{17}{subsection.9.6}%
+\contentsline {subsection}{\numberline {9.7}Wind sway dynamics}{17}{subsection.9.7}%
+\contentsline {section}{\numberline {10}Graveyard and Halloween Props}{18}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Arched headstones}{19}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Celtic crosses}{19}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Stone crosses and sarcophagi}{19}{subsection.10.3}%
+\contentsline {subsection}{\numberline {10.4}Burial mounds}{19}{subsection.10.4}%
+\contentsline {subsection}{\numberline {10.5}Broken iron fence}{19}{subsection.10.5}%
+\contentsline {subsection}{\numberline {10.6}Carved jack-o'-lantern pumpkins}{19}{subsection.10.6}%
+\contentsline {section}{\numberline {11}Rusted Vintage Vehicle}{20}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Chassis and cabin body}{21}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Wheels and tires}{21}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Grille and bumpers}{21}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Cabin windows}{21}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Interior detail}{21}{subsection.11.5}%
+\contentsline {subsection}{\numberline {11.6}Ajar driver door}{21}{subsection.11.6}%
+\contentsline {subsection}{\numberline {11.7}Prop world placement}{22}{subsection.11.7}%
+\contentsline {section}{\numberline {12}Animals, Bats and Clouds}{22}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Patrolling black cat}{23}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Perched owl}{23}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Articulated bat models}{23}{subsection.12.3}%
+\contentsline {subsection}{\numberline {12.4}Bat swarm trajectories}{23}{subsection.12.4}%
+\contentsline {subsection}{\numberline {12.5}Volumetric cloud lobes}{23}{subsection.12.5}%
+\contentsline {subsection}{\numberline {12.6}Cloud drift and toroidal wrapping}{23}{subsection.12.6}%
+\contentsline {subsection}{\numberline {12.7}Cloud shadow casting}{23}{subsection.12.7}%
+\contentsline {section}{\numberline {13}Lighting and the Reflection Model}{24}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Ambient, diffuse, specular and emissive terms}{24}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Geometric derivation of lighting vectors}{25}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Hardware light source inventory}{25}{subsection.13.3}%
+\contentsline {subsection}{\numberline {13.4}Distance attenuation formulation}{26}{subsection.13.4}%
+\contentsline {subsection}{\numberline {13.5}Spotlight angular cone falloff}{26}{subsection.13.5}%
+\contentsline {subsection}{\numberline {13.6}Material coefficients and shading implementation}{26}{subsection.13.6}%
+\contentsline {section}{\numberline {14}Planar Shadow Projection and Stencil Processing}{26}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Planar projection matrix derivation}{26}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}Geometric diagram of planar shadow projection}{27}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Two-pass stencil buffer pipeline and Z-fighting elimination}{27}{subsection.14.3}%
+\contentsline {subsection}{\numberline {14.4}Shadow casters and environmental occlusion}{28}{subsection.14.4}%
+\contentsline {subsection}{\numberline {14.5}Shadow casters and practical limitations}{28}{subsection.14.5}%
+\contentsline {section}{\numberline {15}Texture Mapping and Surface Appearance}{28}{section.15}%
+\contentsline {subsection}{\numberline {15.1}Texture classes and identifiers}{28}{subsection.15.1}%
+\contentsline {subsection}{\numberline {15.2}Sampling, mipmaps and modulation}{29}{subsection.15.2}%
+\contentsline {subsection}{\numberline {15.3}UV coordinate behavior and spatial scaling}{29}{subsection.15.3}%
+\contentsline {section}{\numberline {16}Terrain Mathematics and Procedural Placement}{29}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Multi-harmonic height function}{29}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}Finite-difference normal calculation}{29}{subsection.16.2}%
+\contentsline {subsection}{\numberline {16.3}Road centerline and cubic smoothstep spline}{30}{subsection.16.3}%
+\contentsline {section}{\numberline {17}Animation and Temporal Effects}{30}{section.17}%
+\contentsline {subsection}{\numberline {17.1}Harmonic swaying bulb pendulum}{30}{subsection.17.1}%
+\contentsline {subsection}{\numberline {17.2}Bulb and candle flicker factors}{31}{subsection.17.2}%
+\contentsline {subsection}{\numberline {17.3}Lightning flash state machine}{31}{subsection.17.3}%
+\contentsline {subsection}{\numberline {17.4}Procedural drifting clouds and flapping bats}{31}{subsection.17.4}%
+\contentsline {section}{\numberline {18}Camera, Perspective, Collision and Navigation}{31}{section.18}%
+\contentsline {subsection}{\numberline {18.1}Spherical viewing direction vector}{31}{subsection.18.1}%
+\contentsline {subsection}{\numberline {18.2}Collision detection and auto-stepping staircase climbing}{32}{subsection.18.2}%
+\contentsline {subsection}{\numberline {18.3}Automated 90-second cinematic tour}{32}{subsection.18.3}%
+\contentsline {section}{\numberline {19}Interactivity, HUD and Application States}{32}{section.19}%
+\contentsline {subsection}{\numberline {19.1}Verified interactive control inventory}{32}{subsection.19.1}%
+\contentsline {section}{\numberline {20}Audio, Screenshot Capture and Assets}{33}{section.20}%
+\contentsline {subsection}{\numberline {20.1}Screenshot interface}{33}{subsection.20.1}%
+\contentsline {subsection}{\numberline {20.2}Sound integration}{34}{subsection.20.2}%
+\contentsline {subsection}{\numberline {20.3}Asset strategy}{34}{subsection.20.3}%
+\contentsline {section}{\numberline {21}Rendering Sequence and OpenGL State Management}{34}{section.21}%
+\contentsline {subsection}{\numberline {21.1}Scene composition order}{34}{subsection.21.1}%
+\contentsline {subsection}{\numberline {21.2}Depth, double buffering and normal correction}{34}{subsection.21.2}%
+\contentsline {subsection}{\numberline {21.3}Transparency and blend modes}{34}{subsection.21.3}%
+\contentsline {section}{\numberline {22}Algorithmic Details and Mathematical Formulations}{35}{section.22}%
+\contentsline {subsection}{\numberline {22.1}Hierarchical parent transformation pipeline}{35}{subsection.22.1}%
+\contentsline {subsection}{\numberline {22.2}Finite-difference terrain normal evaluation}{35}{subsection.22.2}%
+\contentsline {subsection}{\numberline {22.3}Perspective viewing frustum and camera basis}{36}{subsection.22.3}%
+\contentsline {subsection}{\numberline {22.4}Radial distance light attenuation}{36}{subsection.22.4}%
+\contentsline {subsection}{\numberline {22.5}Delta-time numerical integration and frame rate decoupling}{36}{subsection.22.5}%
+\contentsline {section}{\numberline {23}Evaluation and Reproducible Test Plan}{36}{section.23}%
+\contentsline {subsection}{\numberline {23.1}Functional tests}{36}{subsection.23.1}%
+\contentsline {subsection}{\numberline {23.2}Screenshot evidence sheet}{37}{subsection.23.2}%
+\contentsline {section}{\numberline {24}Limitations and Possible Improvements}{40}{section.24}%
+\contentsline {subsection}{\numberline {24.1}Limitations established by source inspection}{40}{subsection.24.1}%
+\contentsline {subsection}{\numberline {24.2}Future work}{41}{subsection.24.2}%
+\contentsline {section}{\numberline {25}Conclusion}{41}{section.25}%
+\contentsline {section}{\numberline {A}Full Source Inventory and Function Map}{42}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}\texttt {src/entities/House.cpp}}{42}{subsection.A.1}%
+\contentsline {subsection}{\numberline {A.2}\texttt {src/entities/Terrain.cpp}}{42}{subsection.A.2}%
+\contentsline {subsection}{\numberline {A.3}\texttt {src/entities/Graveyard.cpp}}{42}{subsection.A.3}%
+\contentsline {subsection}{\numberline {A.4}\texttt {src/entities/Props.cpp}}{42}{subsection.A.4}%
+\contentsline {subsection}{\numberline {A.5}\texttt {src/entities/Vegetation.cpp}}{42}{subsection.A.5}%
+\contentsline {subsection}{\numberline {A.6}\texttt {src/entities/Particles.cpp}}{43}{subsection.A.6}%
+\contentsline {subsection}{\numberline {A.7}\texttt {src/entities/Creatures.cpp}}{43}{subsection.A.7}%
+\contentsline {subsection}{\numberline {A.8}\texttt {src/entities/Clouds.cpp}}{43}{subsection.A.8}%
+\contentsline {subsection}{\numberline {A.9}\texttt {src/graphics/Primitives.cpp}}{43}{subsection.A.9}%
+\contentsline {subsection}{\numberline {A.10}\texttt {src/graphics/Shadow.cpp}}{43}{subsection.A.10}%
+\contentsline {subsection}{\numberline {A.11}\texttt {src/graphics/TextureManager.cpp}}{43}{subsection.A.11}%
+\contentsline {subsection}{\numberline {A.12}\texttt {src/core/Camera.cpp}}{43}{subsection.A.12}%
