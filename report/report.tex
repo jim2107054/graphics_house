@@ -23,8 +23,8 @@
 \newcommand{\sourcefile}[1]{\par\noindent\textit{Source: \texttt{\detokenize{#1}}.}\par}
 \newcommand{\figureplaceholder}[2]{%
 \begin{figure}[H]\centering
-\IfFileExists{images/#1}{\includegraphics[width=0.88\linewidth,height=5.0cm,keepaspectratio]{images/#1}}{%
-\fbox{\begin{minipage}[c][3.8cm][c]{0.86\linewidth}\centering
+\IfFileExists{images/#1}{\includegraphics[width=0.95\linewidth]{images/#1}}{%
+\fbox{\begin{minipage}[c][3.8cm][c]{0.95\linewidth}\centering
 \textbf{Screenshot to insert}\par\vspace{7pt}
 {\small\ttfamily\detokenize{#1}}\par\vspace{8pt}
 {\footnotesize Place the image in the images/ folder; it will appear automatically.}
@@ -40,8 +40,39 @@
 \vspace{0.4cm}{\Large An Interactive 3D Gothic Environment Developed in OpenGL\par}
 \vspace{0.9cm}
 \IfFileExists{images/cover_exterior.png}{\includegraphics[width=0.73\linewidth,height=5.2cm,keepaspectratio]{images/cover_exterior.png}}{\fbox{\begin{minipage}[c][4.4cm][c]{0.74\linewidth}\centering\large Cover screenshot\\[8pt]\normalsize\texttt{cover\_exterior.png}\end{minipage}}}
-\vfill\begin{tabular}{rl}\textbf{Submitted by:} & MD Jahid Hasan Jim\\\textbf{Roll:} & 2107054\\\textbf{Department:} & Computer Science and Engineering\\\textbf{Submitted to:} & Course Teachers, CSE 4102\\\textbf{Institution:} & KUET\end{tabular}
-\vspace{0.55cm}\par October 2026\end{titlepage}
+\vfill
+\noindent
+\begin{minipage}[t]{0.485\linewidth}\raggedright
+\setlength{\fboxsep}{10pt}%
+\fbox{\begin{minipage}[t][4.7cm][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}\raggedright
+{\bfseries SUBMITTED BY}\par
+\vspace{3pt}\hrule\vspace{9pt}
+MD Jahid Hasan Jim\par
+\vspace{6pt}
+Roll: 2107054\par
+\vspace{5pt}
+Section: A\par
+\vspace{5pt}
+Session: 2024-2025\par
+\vspace{7pt}
+Dept. of CSE, KUET
+\end{minipage}}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.485\linewidth}\raggedright
+\setlength{\fboxsep}{10pt}%
+\fbox{\begin{minipage}[t][4.7cm][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}\raggedright
+{\bfseries SUBMITTED TO}\par
+\vspace{3pt}\hrule\vspace{9pt}
+Md Tajmilur Rahman\par
+Lecturer\par
+\vspace{9pt}
+Md. Mubtashim Abrar Nihal\par
+Lecturer\par
+\vspace{13pt}
+Dept. of CSE, KUET
+\end{minipage}}
+\end{minipage}
+\vspace{0.5cm}\par October 2026\end{titlepage}
 \pagenumbering{roman}
 \section*{Abstract}\addcontentsline{toc}{section}{Abstract}
 This report documents the implementation of \emph{Horror House at Night}, an interactive three-dimensional Gothic environment programmed in C++17 using legacy OpenGL, GLU, and FreeGLUT. The application constructs a large haunted house with explorable ground- and upper-floor interiors, a surrounding graveyard, a rusted automobile, procedural terrain, vegetation, atmospheric clouds, animated animals, and decorative props. The implementation combines geometric primitives, matrix transformations, textured material surfaces, OpenGL fixed-function ambient--diffuse--specular lighting, multiple moving and stationary light sources, planar projected shadows using stencil processing, keyboard and mouse navigation, and time-dependent animation. The central contribution of the project is the integration of these graphics concepts into one coherent real-time interactive scene. Technical discussion in the following chapters is derived primarily from the supplied source files; material in the separate sample report is used as a reference for academic report organization, not as evidence that any feature exists in this project.
