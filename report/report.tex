@@ -15,10 +15,10 @@
 \setlength{\parskip}{0pt}
 \setlength{\LTpre}{5pt}\setlength{\LTpost}{5pt}
 \captionsetup{font=small,labelfont=bf,skip=5pt}
-\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.6em}{}
-\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
-\titlespacing*{\section}{0pt}{15pt plus 3pt minus 2pt}{6pt}
-\titlespacing*{\subsection}{0pt}{10pt plus 2pt minus 1pt}{4pt}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt plus 4pt minus 2pt}{7pt}
+\titlespacing*{\subsection}{0pt}{12pt plus 3pt minus 1pt}{5pt}
 \lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,frame=single,columns=fullflexible,showstringspaces=false}
 \newcommand{\sourcefile}[1]{\par\noindent\textit{Source: \texttt{\detokenize{#1}}.}\par}
 \newcommand{\figureplaceholder}[2]{%
@@ -546,11 +546,17 @@ Simplified cloud geometry is submitted to the planar shadow pass, casting soft m
 \textbf{Illumination modeling} is a central focus of the project, implemented directly through the \textbf{OpenGL compatibility profile fixed-function lighting pipeline} rather than external GLSL fragment shaders. The active light types, spatial positions, distance attenuation factors, spotlight cones, and material reflectance coefficients determine the rendered coloration of every vertex. The reflection formulation corresponds strictly to the classical \textbf{Phong reflection model} combining ambient, diffuse, specular, and emissive terms, with per-polygon interpolation governed by \textbf{Gouraud smooth shading} (\texttt{glShadeModel(GL\_SMOOTH)}).
 
 \subsection{Ambient, diffuse, specular and emissive terms}
-For an illuminated surface fragment at spatial location $\mathbf{p}$ with unit surface normal $\mathbf{N}$, incident light direction $\mathbf{L}_i$, and viewer direction $\mathbf{V}$, the total perceived radiant intensity $\mathbf{I}$ evaluates as:
+The illumination at an illuminated surface fragment at spatial location $\mathbf{p}$ with unit surface normal $\mathbf{N}$, incident light direction $\mathbf{L}$, and viewer direction $\mathbf{V}$ follows the classical \textbf{Phong reflection model}. The canonical formulation with labeled physical reflection terms evaluates as:
 \begin{equation}
-\mathbf{I} = \mathbf{k}_e + \mathbf{k}_a \odot \mathbf{I}_{global\_ambient} + \sum_{i=0}^{5} f_{\text{att},i} \cdot f_{\text{spot},i} \left[ \mathbf{k}_d \odot \mathbf{I}_{d,i} \max(\mathbf{N} \cdot \mathbf{L}_i, 0) + \mathbf{k}_s \odot \mathbf{I}_{s,i} \max(\mathbf{R}_i \cdot \mathbf{V}, 0)^s \right].
+I = \underbrace{\mathbf{k}_e}_{\text{emissive}} + \underbrace{I_a k_a \mathbf{c}}_{\text{ambient}} + \underbrace{I_d k_d \mathbf{c} \max(\mathbf{N} \cdot \mathbf{L}, 0)}_{\text{diffuse}} + \underbrace{I_s k_s \max(\mathbf{R} \cdot \mathbf{V}, 0)^s}_{\text{specular}},
 \end{equation}
-Here $\mathbf{k}_e$ represents material \textbf{emissive color} (\texttt{GL\_EMISSION}), $\mathbf{k}_a, \mathbf{k}_d, \mathbf{k}_s$ denote the material's \textbf{ambient, diffuse, and specular reflection coefficients} (\texttt{glMaterialfv}), $\odot$ signifies component-wise vector multiplication, and $s$ is the \textbf{specular shininess exponent} (\texttt{GL\_SHININESS}).
+where $\mathbf{k}_e$ represents material \textbf{emissive color} (\texttt{GL\_EMISSION}), $I_a, I_d, I_s$ denote the incident ambient, diffuse, and specular source intensities, $k_a, k_d, k_s$ represent material reflection coefficients, $\mathbf{c}$ is the surface color, and $s$ is the \textbf{specular shininess exponent} (\texttt{GL\_SHININESS}).
+
+In our real-time interactive estate, the renderer accumulates illumination from six active hardware light sources (\texttt{GL\_LIGHT0} through \texttt{GL\_LIGHT5}) under distance attenuation $f_{\text{att},i}$ and spotlight cone factor $f_{\text{spot},i}$. The full composite radiant intensity $\mathbf{I}$ evaluates in vector form as:
+\begin{equation}
+\mathbf{I} = \underbrace{\mathbf{k}_e}_{\text{emissive}} + \underbrace{\mathbf{k}_a \odot \mathbf{I}_{\text{global\_amb}}}_{\text{ambient}} + \sum_{i=0}^{5} f_{\text{att},i} \cdot f_{\text{spot},i} \left[ \underbrace{\mathbf{k}_d \odot \mathbf{I}_{d,i} \max(\mathbf{N} \cdot \mathbf{L}_i, 0)}_{\text{diffuse}} + \underbrace{\mathbf{k}_s \odot \mathbf{I}_{s,i} \max(\mathbf{R}_i \cdot \mathbf{V}, 0)^s}_{\text{specular}} \right].
+\end{equation}
+Here $\odot$ signifies component-wise vector multiplication between material reflectance vectors ($\mathbf{k}_a, \mathbf{k}_d, \mathbf{k}_s$) and light spectral energies ($\mathbf{I}_{d,i}, \mathbf{I}_{s,i}$).
 
 \subsection{Geometric derivation of lighting vectors}
 Figure~\ref{fig:lighting_vectors} details the complete vector geometry evaluated at an illuminated surface fragment $P$:
