@@ -27,54 +27,69 @@ struct TourKeyframe {
 };
 
 const TourKeyframe TOUR_KEYS[] = {
-    // Stage 1: Exterior Overview & Moonlit Atmosphere (0.0s - 8.0s)
-    {  0.0f,   1.20f,  1.35f, 22.0f, -94.0f,   5.0f, "1/10: Exterior Overview & Sky Dome", "Directional Moonlight (GL_LIGHT1)" },
-    {  4.0f,   0.20f,  1.45f, 19.5f, -90.0f,   6.0f, "1/10: Lightning Flash & Thunder Demo", "Atmospheric Lightning Flash [L]" },
-    
-    // Stage 2: Atmospheric Fog & Environmental Depth (8.0s - 14.0s)
-    {  8.0f,  -0.50f,  1.50f, 16.5f, -88.0f,   4.0f, "2/10: Atmospheric Fog Demonstration", "GL_FOG Exponential Distance Attenuation" },
-    { 11.0f,  -1.20f,  1.40f, 14.0f, -85.0f,   0.0f, "2/10: Night Mist & Ambient Horizon", "GL_FOG Dynamic Density" },
+    // Stage 1: Exterior Overview & Sky Dome (0.0s - 10.0s)
+    {   0.0f,   1.20f,  1.35f, 22.0f,  -94.0f,   5.0f, "1/12: Exterior Overview & Sky Dome", "Directional Moonlight [GL_LIGHT1]" },
+    {   5.0f,   0.20f,  1.45f, 19.5f,  -90.0f,   6.0f, "1/12: Distant Lightning Flash & Sky Surge", "Atmospheric Lightning Strike [L]" },
+    {  10.0f,  -0.60f,  1.45f, 17.0f,  -88.0f,   4.0f, "1/12: Moonlight Restored & Shadow Casting", "Planar Stencil Shadows on Terrain" },
 
-    // Stage 3: Walkway Approach & Jack-o'-Lantern Candle Lights (14.0s - 22.0s)
-    { 14.0f,  -1.60f,  1.20f, 11.5f, -65.0f, -12.0f, "3/10: Carved Jack-o'-Lanterns (Close-up)", "Halloween Pumpkins lining Pathway" },
-    { 18.0f,   0.50f,  1.20f,  9.5f, -120.0f, -10.0f, "3/10: Candle Point Lights & Ground Halos", "Internal Flame Flicker & Ground Halos" },
+    // Stage 2: Gothic Landscape & Vegetation (10.0s - 20.0s)
+    {  10.0f,  -0.60f,  1.45f, 17.0f,  -88.0f,   4.0f, "2/12: Gothic Landscape & Vegetation", "Winding Cobblestone Road & Warning Sign" },
+    {  15.0f,  -2.20f,  1.40f, 14.5f,  -82.0f,  -2.0f, "2/12: Spooky Dead Trees & Pine Canopies", "Natural Root Flares & Organic Branches" },
+    {  20.0f,  -1.80f,  1.30f, 12.8f,  -75.0f,  -8.0f, "2/12: Falling Leaves Particle Dynamics", "Wind Drift & Rotational Tumble" },
 
-    // Stage 4: Vintage 1950s Rusted Car & Spotlight Cone (22.0s - 30.0s)
-    { 22.0f,   4.80f,  1.40f, 12.0f, -125.0f,   2.0f, "4/10: Vintage 1950s Rusted Car (Right Yard)", "Weathered Rust & Chrome Shading" },
-    { 26.0f,   7.50f,  1.55f,  9.2f, -155.0f,  -2.0f, "4/10: Spot Light (GL_LIGHT2) Demonstration", "Focused 22 deg Soft Cone & Volumetric Beam [3/F]" },
+    // Stage 3: Carved Jack-o'-Lanterns (20.0s - 30.0s)
+    {  20.0f,  -1.80f,  1.30f, 12.8f,  -75.0f,  -8.0f, "3/12: Carved Jack-o'-Lanterns (Close-up)", "Halloween Pumpkins Lining Pathway" },
+    {  25.0f,  -1.20f,  1.15f, 10.8f,  -60.0f, -14.0f, "3/12: Pumpkin Candle Lights Demonstration", "Candle Point Lights Extinguished & Reignited [K]" },
+    {  30.0f,   0.40f,  1.20f,  9.5f, -115.0f, -10.0f, "3/12: Fiery Carved Faces & Ground Halos", "Internal Flame Flicker & Amber Glow" },
 
-    // Stage 5: Foggy Cemetery & Celtic Crosses (30.0s - 37.0s)
-    { 30.0f,  -6.50f,  1.50f,  9.5f,  -45.0f,   3.0f, "5/10: Foggy Graveyard & Celtic Crosses", "Stone Sarcophagi & Gravestones (Left Yard)" },
-    { 34.0f, -10.50f,  1.65f,  4.5f,  -55.0f,  -2.0f, "5/10: Ancient Crosses in Drifting Mist", "Stone Material Shading & Ground Mist" },
+    // Stage 4: Vintage 1930s Abandoned Automobile (30.0s - 42.0s)
+    {  30.0f,   0.40f,  1.20f,  9.5f, -115.0f, -10.0f, "4/12: Vintage 1930s Abandoned Automobile", "Weathered Chassis, Radiator Grill & Open Door" },
+    {  35.0f,   4.80f,  1.40f, 12.0f, -125.0f,   2.0f, "4/12: Tactical Flashlight Spotlight [GL_LIGHT2]", "Focused 25 deg Cone & Volumetric Beam [3/F]" },
+    {  42.0f,   7.50f,  1.55f,  9.2f, -155.0f,  -2.0f, "4/12: Whitewall Wheels, Steering Wheel & Engine", "Chrome Highlights & Rusted Metal Shading" },
 
-    // Stage 6: Front Porch & Hanging Bulb Harmonic Motion (37.0s - 46.0s)
-    { 37.0f,  -7.40f,  1.75f,  7.8f,  -90.0f,   8.0f, "6/10: Front Porch & Gothic Columns", "Ascending Porch Stone Steps" },
-    { 41.5f,  -7.40f,  2.05f,  6.2f,  -85.0f,  18.0f, "6/10: Point Light (GL_LIGHT0) Sway & Light Pool", "Hanging Porch Bulb Sway & Amber Pool [1/B]" },
+    // Stage 5: Haunted Cemetery & Crypts (42.0s - 54.0s)
+    {  42.0f,   7.50f,  1.55f,  9.2f, -155.0f,  -2.0f, "5/12: Haunted Cemetery & Crypts (Left Yard)", "Stone Sarcophagi & Weathered Picket Fence" },
+    {  48.0f,  -6.50f,  1.50f,  9.5f,  -45.0f,   3.0f, "5/12: Celtic Crosses & Carved Headstones", "Ancient Tomb Inscriptions & Crosses" },
+    {  54.0f, -10.50f,  1.65f,  4.5f,  -55.0f,  -2.0f, "5/12: Fresh Earth Burial Mounds & Mist", "Translucent Ground Mist Rolling Across Graves" },
 
-    // Stage 7: Dilapidated Ground Floor Parlor & Texture Mapping (46.0s - 56.0s)
-    { 46.0f,  -7.40f,  1.65f,  3.5f,  -90.0f,  -4.0f, "7/10: Stepping through Gothic Arched Doorway", "Entering Haunted Ground Floor Parlor" },
-    { 49.5f,  -5.80f,  1.65f,  0.5f, -135.0f,  -2.0f, "7/10: Grandfather Clock & Dilapidated Furniture", "Texture Mapping vs Solid Phong Shading [T]" },
-    { 53.0f,  -7.80f,  1.65f, -0.8f,  -65.0f,   5.0f, "7/10: Dilapidated Fireplace & Archway", "Interior Wallpaper, Floorboards & Cobwebs" },
+    // Stage 6: Front Porch & Prowling Creatures (54.0s - 66.0s)
+    {  54.0f, -10.50f,  1.65f,  4.5f,  -55.0f,  -2.0f, "6/12: Front Porch & Prowling Creatures", "Ascending Porch Stone Steps" },
+    {  60.0f,  -7.40f,  1.75f,  7.8f,  -90.0f,   8.0f, "6/12: Hanging Porch Bulb Kinematics [GL_LIGHT0]", "Double-Pendulum Sway & Light Pool [1/B]" },
+    {  66.0f,  -7.40f,  2.05f,  6.2f,  -85.0f,  18.0f, "6/12: Prowling Black Cat & Perched Horned Owl", "Articulated Walking Cycle & Glowing Raptor Eyes" },
 
-    // Stage 8: Ascending Completed 15-Step Staircase to 2nd Floor (56.0s - 66.0s)
-    { 56.0f,  -4.15f,  1.65f,  2.2f, -180.0f,  16.0f, "8/10: Approaching 15-Step Wooden Staircase", "Looking up the Staircase Rise" },
-    { 60.0f,  -4.15f,  3.00f,  0.2f, -180.0f,  15.0f, "8/10: Climbing Completed 15-Step Staircase", "Ascending Stairway with Railing & Balusters" },
-    { 63.5f,  -4.15f,  4.60f, -1.2f, -150.0f,  10.0f, "8/10: Stepping onto 2nd Floor (Dotola) Landing", "Reaching Second Floor Opening" },
+    // Stage 7: Haunted Ground Floor Parlor (66.0s - 78.0s)
+    {  66.0f,  -7.40f,  2.05f,  6.2f,  -85.0f,  18.0f, "7/12: Entering Haunted Ground Floor Parlor", "Stepping through Gothic Arched Doorway" },
+    {  70.0f,  -7.40f,  1.65f,  3.5f,  -90.0f,  -4.0f, "7/12: Fireplace Hearth & Grandfather Clock", "Ticking Clock Pendulum & Brick Fireplace" },
+    {  74.0f,  -5.80f,  1.65f,  0.5f, -135.0f,  -2.0f, "7/12: Texture Mapping vs Solid Phong Shading", "Toggling GL_MODULATE vs Materials Only [T]" },
+    {  78.0f,  -7.80f,  1.65f, -0.8f,  -65.0f,   5.0f, "7/12: Antique Dining Furniture & Cobwebs", "Turned Wood Legs, Bookshelf & Wallpapers" },
 
-    // Stage 9: 2nd Floor (Dotola) Attic Bedroom, Grimoire & Dormer Window (66.0s - 76.0s)
-    { 66.0f,  -7.20f,  5.85f, -1.5f,  -90.0f,  -5.0f, "9/10: 2nd Floor (Dotola) Attic Bedroom", "Gothic Four-Poster Bed & Occult Desk" },
-    { 71.0f,  -7.40f,  5.85f,  1.8f,  -70.0f,   4.0f, "9/10: Upper Dormer Window Moonlit Panorama", "Looking Out Dormer Window at the Moon" },
+    // Stage 8: Ascending 15-Step Staircase (78.0s - 88.0s)
+    {  78.0f,  -7.80f,  1.65f, -0.8f,  -65.0f,   5.0f, "8/12: Approaching 15-Step Wooden Staircase", "Looking up the Continuous Stairway Rise" },
+    {  83.0f,  -4.15f,  1.65f,  2.2f, -180.0f,  16.0f, "8/12: Climbing Completed 15-Step Staircase", "Turned Baluster Spindles & Master Newel Post" },
+    {  88.0f,  -4.15f,  4.60f, -1.2f, -150.0f,  10.0f, "8/12: Reaching Second Floor Mezzanine", "Smooth Collision-Aware Stair Ascension" },
 
-    // Stage 10: High Aerial Rooftop Panorama (3D Estate Architecture) (76.0s - 85.0s)
-    { 76.0f,   2.50f, 13.50f, 16.5f, -115.0f, -28.0f, "10/10: High Aerial Rooftop Panorama", "Bird's-Eye View: Roof Shingles, Tower & Chimneys" },
-    { 81.0f,   6.50f, 11.50f, 14.5f, -135.0f, -22.0f, "10/10: 360 Degree Estate Architecture", "Hierarchical 3D Modeling Overview" },
+    // Stage 9: 2nd Floor Attic & Alchemist Study (88.0s - 98.0s)
+    {  88.0f,  -4.15f,  4.60f, -1.2f, -150.0f,  10.0f, "9/12: 2nd Floor (Dotola) Attic Bedroom & Study", "Gothic Four-Poster Bed & Occult Desk" },
+    {  93.0f,  -7.20f,  5.85f, -1.5f,  -90.0f,  -5.0f, "9/12: Human Skull, Ancient Grimoire & Candlelight", "Candelabra [GL_LIGHT4] & Wall Sconces" },
+    {  98.0f,  -7.40f,  5.85f,  1.8f,  -70.0f,   4.0f, "9/12: Hanging Brass Lantern [GL_LIGHT5]", "Localized Amber Attenuation in Attic Chamber" },
 
-    // Stage 11: Tour Completed & Return to Vantage (85.0s - 90.0s)
-    { 85.0f,   1.20f,  1.35f, 22.0f,  -94.0f,   5.0f, "Tour Completed! [Press C to Explore Freely]", "All Systems Verified & Active" },
-    { 90.0f,   1.20f,  1.35f, 22.0f,  -94.0f,   5.0f, "Tour Completed! [Press C to Explore Freely]", "All Systems Verified & Active" }
+    // Stage 10: Dormer Window & Bat Swarm (98.0s - 108.0s)
+    {  98.0f,  -7.40f,  5.85f,  1.8f,  -70.0f,   4.0f, "10/12: Upper Dormer Window Moonlit Panorama", "Looking Out Dormer Window at the Night Sky" },
+    { 103.0f,  -4.50f,  7.50f,  4.5f,  -85.0f,  12.0f, "10/12: Animated Bat Swarm & Volumetric Clouds", "Multi-Agent Orbital Flocking Around the Moon" },
+    { 108.0f,  -2.00f,  9.50f,  8.0f, -100.0f,   8.0f, "10/12: Secondary Rooftop Lightning Flash", "Dramatic Electric Flash Illuminating Bats [L]" },
+
+    // Stage 11: Aerial Rooftop & 3D Architecture (108.0s - 116.0s)
+    { 108.0f,  -2.00f,  9.50f,  8.0f, -100.0f,   8.0f, "11/12: Aerial Rooftop & 3D Architecture", "Steeple Spire, Weather Vane & Double Chimneys" },
+    { 112.0f,   2.50f, 13.50f, 16.5f, -115.0f, -28.0f, "11/12: 360 Degree Bird's-Eye Estate Panorama", "Pitched Gable Roofs & Shingle Geometry" },
+    { 116.0f,   6.50f, 11.50f, 14.5f, -135.0f, -22.0f, "11/12: Planar Stencil Shadows Across Terrain", "Directional Shadows & Stencil Buffer Masking" },
+
+    // Stage 12: Grand Finale & HUD Overlay (116.0s - 120.0s)
+    { 116.0f,   6.50f, 11.50f, 14.5f, -135.0f, -22.0f, "12/12: Grand Finale Return & 2D HUD", "Descending to Front Reference Vantage Point" },
+    { 118.5f,   1.20f,  1.35f, 22.0f,  -94.0f,   5.0f, "12/12: Full 2D Orthographic HUD Dashboard [TAB]", "Live FPS, In-Game Time & Controls Overlay" },
+    { 120.0f,   1.20f,  1.35f, 22.0f,  -94.0f,   5.0f, "Showcase Complete! All Systems Verified", "Interactive 3D Gothic Environment Developed in OpenGL" }
 };
 const int NUM_TOUR_KEYS = sizeof(TOUR_KEYS) / sizeof(TOUR_KEYS[0]);
-const float TOTAL_TOUR_DURATION = 90.0f;
+const float TOTAL_TOUR_DURATION = 120.0f;
 
 void updateCinematicCamera(float dt) {
     float prevTime = g_cinematicTime;
@@ -93,48 +108,58 @@ void updateCinematicCamera(float dt) {
     }
 
     // Dynamic Live Demonstrations during Guided Tour:
-    // 1. Distant Lightning Strike at t = 2.2s
-    if (prevTime < 2.2f && g_cinematicTime >= 2.2f) {
+    // 1. Distant Lightning Strike at t = 2.5s
+    if (prevTime < 2.5f && g_cinematicTime >= 2.5f) {
         triggerLightning();
     }
     // 2. Directional Moonlight Demonstration (GL_LIGHT1)
-    if (prevTime < 4.2f && g_cinematicTime >= 4.2f) {
+    if (prevTime < 5.0f && g_cinematicTime >= 5.0f) {
         g_light1DirectionalOn = false; // DEMO: Moonlight OFF
     }
-    if (prevTime < 6.5f && g_cinematicTime >= 6.5f) {
+    if (prevTime < 8.0f && g_cinematicTime >= 8.0f) {
         g_light1DirectionalOn = true;  // DEMO: Moonlight ON (Silvery blue & planar shadows restored)
     }
 
-    // 4. Jack-o'-Lantern Pumpkin Candle Lights Demonstration
-    if (prevTime < 14.8f && g_cinematicTime >= 14.8f) {
+    // 3. Jack-o'-Lantern Pumpkin Candle Lights Demonstration
+    if (prevTime < 23.5f && g_cinematicTime >= 23.5f) {
         g_pumpkinLightsOn = false; // DEMO: Pumpkin lights OFF (Extinguished)
     }
-    if (prevTime < 17.5f && g_cinematicTime >= 17.5f) {
+    if (prevTime < 27.0f && g_cinematicTime >= 27.0f) {
         g_pumpkinLightsOn = true;  // DEMO: Pumpkin lights ON (Fiery faces & ground halos)
     }
 
-    // 5. Spotlight / Flashlight Demonstration (GL_LIGHT2)
-    if (prevTime < 22.8f && g_cinematicTime >= 22.8f) {
-        g_light2SpotOn = true;  // DEMO: Flashlight ON (Focused 22 deg cone & volumetric beam)
+    // 4. Spotlight / Flashlight Demonstration (GL_LIGHT2)
+    if (prevTime < 34.0f && g_cinematicTime >= 34.0f) {
+        g_light2SpotOn = true;  // DEMO: Flashlight ON (Focused 25 deg cone & volumetric beam)
     }
-    if (prevTime < 28.5f && g_cinematicTime >= 28.5f) {
+    if (prevTime < 40.5f && g_cinematicTime >= 40.5f) {
         g_light2SpotOn = false; // DEMO: Flashlight OFF
     }
 
-    // 6. House Front Porch Light Demonstration (GL_LIGHT0)
-    if (prevTime < 38.0f && g_cinematicTime >= 38.0f) {
+    // 5. House Front Porch Light Demonstration (GL_LIGHT0)
+    if (prevTime < 58.5f && g_cinematicTime >= 58.5f) {
         g_light0PointOn = false; // DEMO: Porch Bulb OFF (Dark porch)
     }
-    if (prevTime < 41.0f && g_cinematicTime >= 41.0f) {
+    if (prevTime < 62.0f && g_cinematicTime >= 62.0f) {
         g_light0PointOn = true;  // DEMO: Porch Bulb ON (Amber glow & light pool on porch deck)
     }
 
-    // 7. Texture Mapping vs Solid Phong Shading Demonstration
-    if (prevTime < 48.0f && g_cinematicTime >= 48.0f) {
+    // 6. Texture Mapping vs Solid Phong Shading Demonstration
+    if (prevTime < 71.0f && g_cinematicTime >= 71.0f) {
         g_texturesEnabled = false; // DEMO: Textures OFF (Solid Phong material colors)
     }
-    if (prevTime < 51.5f && g_cinematicTime >= 51.5f) {
+    if (prevTime < 75.0f && g_cinematicTime >= 75.0f) {
         g_texturesEnabled = true;  // DEMO: Textures ON (GL_MODULATE texture mapping)
+    }
+
+    // 7. Secondary Rooftop Lightning Flash at t = 104.0s
+    if (prevTime < 104.0f && g_cinematicTime >= 104.0f) {
+        triggerLightning();
+    }
+
+    // 8. Full HUD Overlay Dashboard at t = 117.5s
+    if (prevTime < 117.5f && g_cinematicTime >= 117.5f) {
+        g_showHUD = true; // DEMO: 2D HUD Dashboard
     }
 
     int idx = 0;

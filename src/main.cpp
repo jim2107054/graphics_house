@@ -335,13 +335,15 @@ void displayCallback() {
     glutSwapBuffers();
 }
 
-void reshapeCallback(int w, int h) {    if (h == 0) h = 1;
+void reshapeCallback(int w, int h) {
+    if (h == 0) h = 1;
     g_windowWidth  = w;
     g_windowHeight = h;
     glViewport(0, 0, w, h);
 }
 
-void idleCallback() {    int curTimeMs = glutGet(GLUT_ELAPSED_TIME);
+void idleCallback() {
+    int curTimeMs = glutGet(GLUT_ELAPSED_TIME);
     if (g_prevTimeMs == 0) g_prevTimeMs = curTimeMs;
     g_deltaTime = (curTimeMs - g_prevTimeMs) * 0.001f;
     g_prevTimeMs = curTimeMs;
