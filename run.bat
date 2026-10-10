@@ -7,7 +7,7 @@ echo ===================================================
 :: Close any existing running instances to prevent file lock
 taskkill /F /IM main.exe >nul 2>&1
 
-g++ -std=c++17 src/main.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
+g++ -std=c++17 src/main.cpp src/stb_image.cpp src/core/*.cpp src/audio/*.cpp src/graphics/*.cpp src/entities/*.cpp src/ui/*.cpp -Iinclude -Llib -lfreeglut -lopengl32 -lglu32 -lgdi32 -lwinmm -o main.exe
 
 if %ERRORLEVEL% EQU 0 (
     echo.
